@@ -1,0 +1,899 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String                   @id @default(cuid())
+  email                  String                   @unique
+  name                   String?
+  firstName              String?
+  lastName               String?
+  password               String
+  role                   User_role                @default(FREELANCER)
+  employeeType           EmployeeType?            @default(FREELANCER)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  company                String?
+  phone                  String?
+  status                 UserStatus               @default(AVAILABLE)
+  archived               Boolean                  @default(false)
+  archivedAt             DateTime?
+  lastClockIn            DateTime?
+  lastClockOut           DateTime?
+  address                String?
+  btwNumber              String?
+  hasContract            Boolean                  @default(false)
+  contractType           ContractType?
+  contractStartDate      DateTime?
+  contractEndDate        DateTime?
+  contractStatus         ContractStatus           @default(NONE)
+  contractFileName       String?
+  contractFileUrl        String?
+  contractNotes          String?
+  hourlyRate             String?
+  monthlySalary          String?
+  hourlyWage             String?
+  kvkNumber              String?
+  iban                   String?
+  availableDays          String?
+  profileImage           String?
+  twoFactorEnabled       Boolean                  @default(false)
+  twoFactorSecret        String?
+  backupCodes            Json?                    @default("[]")
+  lastLoginAt            DateTime?
+  loginAttempts          Int                      @default(0)
+  lockoutUntil           DateTime?
+  passwordChangedAt      DateTime                 @default(now())
+  actorActivities        ActivityFeed[]           @relation("ActorActivities")
+  userActivities         ActivityFeed[]           @relation("UserActivities")
+  Availability           Availability[]
+  sentChatMessages       ChatMessage[]            @relation("ChatMessageSender")
+  chatMessageReactions   ChatMessageReaction[]    @relation("ChatMessageReactions")
+  chatMessageReads       ChatMessageRead[]        @relation("ChatMessageReads")
+  createdChatRooms       ChatRoom[]               @relation("ChatRoomCreator")
+  chatRoomMemberships    ChatRoomMember[]         @relation("ChatRoomMembership")
+  EmailSettings          EmailSettings[]
+  notifications          Notification[]
+  ProjectInterest        ProjectInterest[]
+  projectMembers         ProjectMember[]
+  pushSubscriptions      PushSubscription[]       @relation("PushSubscriptions")
+  Schedule               Schedule[]
+  ScheduleShift          ScheduleShift[]
+  SecurityLog            SecurityLog[]
+  sentNotifications      SystemNotification[]     @relation("SentNotifications")
+  receivedNotifications  SystemNotification[]     @relation("UserNotifications")
+  timeEntries            TimeEntry[]
+  TrustedDevice          TrustedDevice[]
+  UserSession            UserSession[]
+  UserWorkType           UserWorkType[]
+  WorkDescription        WorkDescription[]
+  WorkDescriptionLike    WorkDescriptionLike[]
+  WorkDescriptionVersion WorkDescriptionVersion[]
+  WorkDescriptionView    WorkDescriptionView[]
+  WorkLocation           WorkLocation[]
+  WorkType               WorkType[]
+  leaveRequests          LeaveRequest[]           @relation("UserLeaveRequests")
+  approvedLeaveRequests  LeaveRequest[]           @relation("ApprovedBy")
+  ScheduleTemplate       ScheduleTemplate[]
+  UserScheduleAssignment UserScheduleAssignment[]
+  FilterPreset           FilterPreset[]
+  contracts              Contract[]               @relation("UserContracts")
+
+  @@index([email])
+  @@index([company])
+  @@index([role])
+  @@index([archived])
+  @@index([contractEndDate])
+  @@index([contractStatus])
+}
+
+model UserWorkType {
+  id         String   @id @default(cuid())
+  userId     String
+  workTypeId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workType   WorkType @relation(fields: [workTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workTypeId])
+  @@index([workTypeId])
+}
+
+model Project {
+  id                    String                  @id @default(cuid())
+  name                  String
+  description           String
+  startDate             DateTime
+  endDate               DateTime
+  status                String                  @default("ACTIVE")
+  company               String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  duration              String?
+  location              String?
+  projectNumber         String?
+  workDescription       String?
+  address               String?
+  city                  String?
+  postalCode            String?
+  country               String?
+  latitude              Float?
+  longitude             Float?
+  contactPerson         String?
+  contactPhone          String?
+  ChatRoom              ChatRoom[]
+  projectInterests      ProjectInterest[]
+  assignments           ProjectMember[]         @relation("assignments")
+  ScheduleShift         ScheduleShift[]
+  timeEntries           TimeEntry[]
+  ScheduleTemplateShift ScheduleTemplateShift[]
+}
+
+model ProjectMember {
+  id        String             @id @default(cuid())
+  projectId String
+  userId    String
+  role      ProjectMember_role @default(FREELANCER)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  status    String             @default("ACCEPTED")
+  project   Project            @relation("assignments", fields: [projectId], references: [id])
+  user      User               @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  description String
+  projectId   String?
+  approved    Boolean   @default(false)
+  endTime     DateTime?
+  startTime   DateTime
+  isWarehouse Boolean   @default(false)
+  project     Project?  @relation(fields: [projectId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Availability {
+  id        String             @id @default(cuid())
+  userId    String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  date      DateTime
+  hours     Float?
+  notes     String?
+  status    AvailabilityStatus
+  user      User               @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  type      Notification_type
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  enabled   Boolean           @default(true)
+  user      User              @relation(fields: [userId], references: [id])
+
+  @@unique([userId, type])
+}
+
+model WorkDescription {
+  id                  String                   @id @default(cuid())
+  title               String
+  type                WorkDescriptionType
+  category            WorkDescriptionCategory
+  description         String
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  createdById         String
+  views               Int                      @default(0)
+  likes               Int                      @default(0)
+  isArchived          Boolean                  @default(false)
+  version             Int                      @default(1)
+  createdBy           User                     @relation(fields: [createdById], references: [id])
+  content             WorkDescriptionContent[]
+  WorkDescriptionLike WorkDescriptionLike[]
+  previousVersions    WorkDescriptionVersion[]
+  WorkDescriptionView WorkDescriptionView[]
+
+  @@index([createdById])
+}
+
+model WorkDescriptionContent {
+  id                String          @id @default(cuid())
+  type              ContentType
+  content           String
+  order             Int
+  workDescriptionId String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  videoThumbnail    String?
+  videoDuration     Int?
+  altText           String?
+  workDescription   WorkDescription @relation(fields: [workDescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([workDescriptionId])
+}
+
+model WorkDescriptionVersion {
+  id                String                  @id @default(cuid())
+  workDescriptionId String
+  version           Int
+  title             String
+  description       String
+  category          WorkDescriptionCategory
+  content           Json
+  createdAt         DateTime                @default(now())
+  createdById       String
+  createdBy         User                    @relation(fields: [createdById], references: [id])
+  workDescription   WorkDescription         @relation(fields: [workDescriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([workDescriptionId, version])
+  @@index([createdById])
+}
+
+model WorkDescriptionView {
+  id                String          @id @default(cuid())
+  workDescriptionId String
+  userId            String
+  viewedAt          DateTime        @default(now())
+  videoProgress     Int?
+  user              User            @relation(fields: [userId], references: [id])
+  workDescription   WorkDescription @relation(fields: [workDescriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([workDescriptionId, userId])
+  @@index([userId])
+}
+
+model WorkDescriptionLike {
+  id                String          @id @default(cuid())
+  workDescriptionId String
+  userId            String
+  createdAt         DateTime        @default(now())
+  user              User            @relation(fields: [userId], references: [id])
+  workDescription   WorkDescription @relation(fields: [workDescriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([workDescriptionId, userId])
+  @@index([userId])
+}
+
+model ProjectInterest {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  status    String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model Schedule {
+  id          String          @id @default(cuid())
+  date        DateTime        @unique
+  title       String?
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  createdById String
+  createdBy   User            @relation(fields: [createdById], references: [id])
+  shifts      ScheduleShift[]
+
+  @@index([createdById])
+}
+
+model ScheduleShift {
+  id             String        @id @default(cuid())
+  scheduleId     String
+  userId         String
+  projectId      String?
+  workLocationId String?
+  startTime      DateTime
+  endTime        DateTime
+  breaks         Json? // Array van pauzes: [{ startTime: "10:00", endTime: "10:15", type: "morning" }, { startTime: "12:00", endTime: "12:30", type: "lunch" }, { startTime: "15:00", endTime: "15:15", type: "afternoon" }]
+  role           String?
+  notes          String?
+  status         ShiftStatus   @default(SCHEDULED)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  project        Project?      @relation(fields: [projectId], references: [id])
+  schedule       Schedule      @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id])
+  workLocation   WorkLocation? @relation(fields: [workLocationId], references: [id])
+
+  @@index([scheduleId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([workLocationId])
+}
+
+model WorkType {
+  id           String         @id @default(cuid())
+  name         String         @unique
+  description  String?
+  emoji        String?
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  createdBy    String
+  UserWorkType UserWorkType[]
+  creator      User           @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+}
+
+model WorkLocation {
+  id                    String                  @id @default(cuid())
+  name                  String                  @unique
+  description           String?
+  address               String
+  city                  String
+  postalCode            String
+  country               String                  @default("Nederland")
+  latitude              Float?
+  longitude             Float?
+  isActive              Boolean                 @default(true)
+  company               String
+  contactInfo           String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  createdBy             String
+  ScheduleShift         ScheduleShift[]
+  creator               User                    @relation(fields: [createdBy], references: [id])
+  ScheduleTemplateShift ScheduleTemplateShift[]
+
+  @@index([createdBy])
+  @@index([company])
+}
+
+model EmailSettings {
+  id        String   @id @default(cuid())
+  smtpHost  String
+  smtpPort  Int      @default(587)
+  smtpUser  String
+  smtpPass  String
+  smtpFrom  String
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  updatedBy String
+  user      User     @relation(fields: [updatedBy], references: [id])
+
+  @@index([updatedBy])
+}
+
+model ChatRoom {
+  id           String           @id @default(cuid())
+  name         String
+  description  String?
+  type         ChatRoomType     @default(GROUP)
+  projectId    String?
+  avatar       String?
+  isArchived   Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  createdById  String
+  lastActivity DateTime         @default(now())
+  messages     ChatMessage[]
+  createdBy    User             @relation("ChatRoomCreator", fields: [createdById], references: [id])
+  project      Project?         @relation(fields: [projectId], references: [id])
+  members      ChatRoomMember[]
+
+  @@index([createdById])
+  @@index([projectId])
+  @@index([type])
+}
+
+model ChatRoomMember {
+  id         String         @id @default(cuid())
+  roomId     String
+  userId     String
+  role       ChatMemberRole @default(MEMBER)
+  joinedAt   DateTime       @default(now())
+  lastSeen   DateTime?
+  isNotified Boolean        @default(true)
+  room       ChatRoom       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user       User           @relation("ChatRoomMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id          String                @id @default(cuid())
+  content     String
+  senderId    String
+  roomId      String
+  type        ChatMessageType       @default(TEXT)
+  attachments String?
+  replyToId   String?
+  isEdited    Boolean               @default(false)
+  editedAt    DateTime?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  replyTo     ChatMessage?          @relation("ChatMessageReply", fields: [replyToId], references: [id])
+  replies     ChatMessage[]         @relation("ChatMessageReply")
+  room        ChatRoom              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender      User                  @relation("ChatMessageSender", fields: [senderId], references: [id])
+  reactions   ChatMessageReaction[]
+  readStatus  ChatMessageRead[]
+
+  @@index([senderId])
+  @@index([roomId])
+  @@index([replyToId])
+  @@index([createdAt])
+}
+
+model ChatMessageReaction {
+  id        String      @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime    @default(now())
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ChatMessageReactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([userId])
+}
+
+model ChatMessageRead {
+  id        String      @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime    @default(now())
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ChatMessageReads", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+model SystemNotification {
+  id        String                 @id @default(cuid())
+  userId    String
+  senderId  String?
+  type      SystemNotificationType
+  title     String
+  message   String
+  priority  NotificationPriority   @default(NORMAL)
+  data      String?
+  read      Boolean                @default(false)
+  readAt    DateTime?
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  sender    User?                  @relation("SentNotifications", fields: [senderId], references: [id])
+  user      User                   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([senderId])
+  @@index([type])
+  @@index([priority])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  subscription String
+  userAgent    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation("PushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model ActivityFeed {
+  id          String       @id @default(cuid())
+  userId      String
+  actorId     String
+  type        ActivityType
+  title       String
+  description String?
+  data        String?
+  resourceId  String?
+  createdAt   DateTime     @default(now())
+  actor       User         @relation("ActorActivities", fields: [actorId], references: [id])
+  user        User         @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([actorId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([resourceId])
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model UserSession {
+  id         String   @id @default(cuid())
+  userId     String
+  sessionId  String   @unique
+  deviceInfo Json?
+  ipAddress  String?
+  isActive   Boolean  @default(true)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model TrustedDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  deviceId   String
+  deviceName String?
+  deviceType String?
+  isActive   Boolean  @default(true)
+  lastUsed   DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+}
+
+model LeaveRequest {
+  id          String             @id @default(cuid())
+  userId      String
+  type        LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  reason      String?
+  description String?
+  status      LeaveRequestStatus @default(PENDING)
+  approvedBy  String?
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  dayCount    Int? // Number of leave days requested
+  isFullDay   Boolean            @default(true)
+  startTime   String? // For partial day leave (e.g., "09:00")
+  endTime     String? // For partial day leave (e.g., "13:00")
+  approver    User?              @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  user        User               @relation("UserLeaveRequests", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+// Rooster Templates voor herbruikbare roosters
+model ScheduleTemplate {
+  id              String                   @id @default(cuid())
+  name            String
+  description     String?
+  category        ScheduleTemplateCategory @default(DAILY)
+  isActive        Boolean                  @default(true)
+  usageCount      Int                      @default(0)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  createdById     String
+  shifts          ScheduleTemplateShift[]
+  createdBy       User                     @relation(fields: [createdById], references: [id])
+  userAssignments UserScheduleAssignment[]
+
+  @@index([createdById])
+  @@index([category])
+}
+
+// Template shifts voor herbruikbare diensten
+model ScheduleTemplateShift {
+  id                 String           @id @default(cuid())
+  templateId         String
+  role               String
+  startTime          String // Format: "HH:MM"
+  endTime            String // Format: "HH:MM"
+  breaks             Json? // Array van pauzes: [{ startTime: "10:00", endTime: "10:15", type: "morning", duration: 15 }, { startTime: "12:00", endTime: "12:30", type: "lunch", duration: 30 }, { startTime: "15:00", endTime: "15:15", type: "afternoon", duration: 15 }]
+  totalBreakDuration Int? // Totale pauze duur in minuten (60 = 15+30+15)
+  minPersons         Int              @default(1)
+  maxPersons         Int?
+  requirements       String[] // JSON array van vereisten
+  notes              String?
+  workLocationId     String?
+  projectId          String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  template           ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  workLocation       WorkLocation?    @relation(fields: [workLocationId], references: [id])
+  project            Project?         @relation(fields: [projectId], references: [id])
+
+  @@index([templateId])
+  @@index([workLocationId])
+  @@index([projectId])
+}
+
+// Vaste rooster toewijzingen aan gebruikers
+model UserScheduleAssignment {
+  id              String           @id @default(cuid())
+  userId          String
+  templateId      String
+  dayOfWeek       Int // 0-6 (Sunday-Saturday)
+  isActive        Boolean          @default(true)
+  validFrom       DateTime         @default(now())
+  validUntil      DateTime?
+  customStartTime String? // Override template start time
+  customEndTime   String? // Override template end time
+  customBreaks    Json? // Override template breaks: [{ startTime: "10:00", endTime: "10:15", type: "morning", duration: 15 }]
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template        ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, templateId, dayOfWeek])
+  @@index([userId])
+  @@index([templateId])
+  @@index([dayOfWeek])
+}
+
+// Filter presets voor opgeslagen filters
+model FilterPreset {
+  id        String   @id @default(cuid())
+  name      String
+  filters   String // JSON string van filter criteria
+  userId    String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isDefault])
+}
+
+// New Contract model for detailed contract management
+model Contract {
+  id           String         @id @default(cuid())
+  userId       String
+  contractType ContractType
+  title        String // "Arbeidscontract 2024", "Freelance Agreement", etc.
+  description  String?
+  startDate    DateTime
+  endDate      DateTime? // null for indefinite contracts
+  status       ContractStatus @default(ACTIVE)
+  fileName     String? // Original filename
+  fileUrl      String? // URL to stored contract file
+  fileSize     Int? // File size in bytes
+  mimeType     String? // File MIME type
+  uploadedAt   DateTime? // When the file was uploaded
+  signedDate   DateTime? // When the contract was signed
+  salary       String? // Contract salary/rate
+  notes        String? // Additional notes
+  isActive     Boolean        @default(true)
+  version      Int            @default(1)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  createdBy    String // Who created/uploaded this contract
+  user         User           @relation("UserContracts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([contractType])
+  @@index([status])
+  @@index([endDate])
+  @@index([isActive])
+}
+
+enum UserStatus {
+  AVAILABLE
+  WORKING
+  UNAVAILABLE
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  PARTIAL
+}
+
+enum WorkDescriptionType {
+  DRIVER
+  ORDER_PICKER
+}
+
+enum WorkDescriptionCategory {
+  LOADING
+  CUSTOMER_SERVICE
+  ROUTE_PLANNING
+  SCANNER_USAGE
+  PACKAGING
+  RFID_TUNNEL
+  OTHER
+}
+
+enum ContentType {
+  TEXT
+  IMAGE
+  VIDEO
+}
+
+enum Notification_type {
+  EMAIL
+  PROJECT
+  TIME_TRACKING
+  AVAILABILITY
+}
+
+enum ProjectMember_role {
+  ADMIN
+  MANAGER
+  FREELANCER
+}
+
+enum User_role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+  FREELANCER
+}
+
+enum EmployeeType {
+  PERMANENT
+  FREELANCER
+  FLEX_WORKER
+}
+
+enum ShiftStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ChatRoomType {
+  DIRECT
+  GROUP
+  PROJECT
+  GENERAL
+}
+
+enum ChatMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  FILE
+  MEDIA
+  SYSTEM
+}
+
+enum SystemNotificationType {
+  TIME_TRACKING
+  PROJECT_UPDATE
+  PROJECT_ASSIGNMENT
+  CHAT_MESSAGE
+  CHAT_MENTION
+  TEAM_UPDATE
+  SCHEDULE_UPDATE
+  SYSTEM_ALERT
+  DEADLINE_REMINDER
+  APPROVAL_REQUEST
+  APPROVAL_RESPONSE
+  USER_STATUS
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ActivityType {
+  USER_JOINED
+  USER_LEFT
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_COMPLETED
+  TIME_STARTED
+  TIME_ENDED
+  SCHEDULE_CREATED
+  SCHEDULE_UPDATED
+  CHAT_MESSAGE_SENT
+  FILE_UPLOADED
+  NOTIFICATION_SENT
+  SYSTEM_UPDATE
+}
+
+enum LeaveType {
+  VACATION
+  SICK_LEAVE
+  PERSONAL_LEAVE
+  MATERNITY_LEAVE
+  PATERNITY_LEAVE
+  STUDY_LEAVE
+  EMERGENCY_LEAVE
+  UNPAID_LEAVE
+  COMPENSATORY_LEAVE
+  DOCTOR_VISIT
+  DENTIST_VISIT
+  SPECIAL_LEAVE
+  TIME_OFF_IN_LIEU
+  BEREAVEMENT_LEAVE
+  MOVING_DAY
+  CALAMITY_LEAVE
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ScheduleTemplateCategory {
+  DAILY // Dagelijks rooster
+  WEEKLY // Wekelijks rooster
+  PROJECT // Project specifiek
+  SPECIAL // Speciale gebeurtenissen
+  HOLIDAY // Feestdagen
+  MAINTENANCE // Onderhoud
+}
+
+enum ContractType {
+  PERMANENT_FULL_TIME // Vast contract voltijd
+  PERMANENT_PART_TIME // Vast contract deeltijd
+  TEMPORARY_FULL_TIME // Tijdelijk contract voltijd
+  TEMPORARY_PART_TIME // Tijdelijk contract deeltijd
+  FREELANCE // Freelance overeenkomst
+  ZERO_HOURS // 0-urencontract
+  INTERNSHIP // Stage overeenkomst
+  PROBATION // Proeftijd contract
+}
+
+enum ContractStatus {
+  NONE // Geen contract
+  DRAFT // Concept
+  PENDING_SIGNATURE // Wacht op ondertekening
+  ACTIVE // Actief contract
+  EXPIRED // Verlopen
+  TERMINATED // Beëindigd
+  SUSPENDED // Opgeschort
+}
