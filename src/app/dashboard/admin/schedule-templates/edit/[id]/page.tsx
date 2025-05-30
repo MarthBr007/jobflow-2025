@@ -573,7 +573,7 @@ export default function EditScheduleTemplatePage() {
       </form>
 
       {/* Toast */}
-      {toast && (
+      {toast && toast.message && (
         <Toast
           message={toast.message}
           type={toast.type}
