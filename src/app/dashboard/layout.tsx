@@ -58,7 +58,7 @@ const baseNavigation = [
 ];
 
 const adminNavigation = [
-  ...baseNavigation.slice(0, 4),
+  ...baseNavigation.slice(0, 3),
   { name: "Personeel", href: "/dashboard/personnel", icon: UserGroupIcon },
   { name: "Rooster", href: "/dashboard/schedule", icon: CalendarIcon },
   ...baseNavigation.slice(4),
