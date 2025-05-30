@@ -165,13 +165,10 @@ export default function EditEmployeeTabs() {
 
   const fetchScheduleTemplates = async () => {
     try {
-      console.log("Fetching schedule templates");
       const response = await fetch("/api/schedule-templates?active=true");
       const data = await response.json();
-      console.log("Schedule templates response:", data);
       if (response.ok) {
         setScheduleTemplates(data);
-        console.log("Schedule templates set:", data);
       } else {
         console.error("Error fetching schedule templates:", data.error);
       }
@@ -182,15 +179,12 @@ export default function EditEmployeeTabs() {
 
   const fetchScheduleAssignments = async (userId: string) => {
     try {
-      console.log("Fetching schedule assignments for user:", userId);
       const response = await fetch(
         `/api/user-schedule-assignments?userId=${userId}`
       );
       const data = await response.json();
-      console.log("Schedule assignments response:", data);
       if (response.ok) {
         setScheduleAssignments(data);
-        console.log("Schedule assignments set:", data);
       } else {
         console.error("Error fetching schedule assignments:", data.error);
       }
@@ -813,17 +807,6 @@ export default function EditEmployeeTabs() {
                       </Button>
                     )}
                   </div>
-
-                  {/* Debug logging */}
-                  {(() => {
-                    console.log(
-                      "Debug - Employee type:",
-                      employee.employeeType,
-                      "Schedule assignments:",
-                      scheduleAssignments
-                    );
-                    return null;
-                  })()}
 
                   {employee.employeeType === "FREELANCER" ? (
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
