@@ -32,7 +32,7 @@ import ExcelImport from "@/components/ui/ExcelImport";
 import AdvancedFilters, {
   FilterCriteria,
 } from "@/components/ui/AdvancedFilters";
-import ContractManagement from "@/components/ui/ContractManagement";
+import ContractViewer from "@/components/ui/ContractViewer";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -87,7 +87,6 @@ const defaultFilters: FilterCriteria = {
     lastActivity: { startDate: null, endDate: null },
   },
   quickFilters: [],
-  hasContract: null,
   status: "",
 };
 
@@ -137,7 +136,6 @@ export default function Personnel() {
     workTypes: [],
     kvkNumber: "",
     btwNumber: "",
-    hasContract: false,
     firstName: "",
     lastName: "",
     iban: "",
@@ -168,8 +166,6 @@ export default function Personnel() {
         params.set("employeeType", filters.employeeType);
       if (filters.company) params.set("company", filters.company);
       if (filters.status) params.set("status", filters.status);
-      if (filters.hasContract !== null)
-        params.set("hasContract", String(filters.hasContract));
       if (filters.workTypes.length > 0)
         params.set("workTypes", filters.workTypes.join(","));
       if (filters.quickFilters.length > 0)
@@ -320,11 +316,6 @@ export default function Personnel() {
       console.error("Error unarchiving employee:", error);
       setError("Er is een fout opgetreden bij het dearchiveren");
     }
-  };
-
-  const handleContractManagement = (employee: Employee): void => {
-    setEmployeeForContract(employee);
-    setShowContractModal(true);
   };
 
   const confirmDeleteEmployee = async () => {
@@ -598,144 +589,202 @@ export default function Personnel() {
       )}
 
       {!loading && !error && filteredEmployees.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Medewerker
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Bedrijf
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Contract
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Acties
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredEmployees.map((employee) => (
-                  <tr
-                    key={employee.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                      employee.archived
-                        ? "bg-gray-100 dark:bg-gray-800 opacity-75"
-                        : ""
-                    }`}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                          <UserGroupIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="ml-4">
-                          <div
-                            className={`text-sm font-medium ${
-                              employee.archived
-                                ? "text-gray-500 dark:text-gray-400 line-through"
-                                : "text-gray-900 dark:text-white"
-                            }`}
-                          >
-                            {employee.name}
-                            {employee.archived && (
-                              <span className="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
-                                Gearchiveerd
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {employee.email}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full font-medium ${getEmployeeTypeColor(
-                          employee.employeeType || ""
-                        )}`}
-                      >
-                        {getEmployeeTypeText(employee.employeeType || "")}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {employee.company || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            employee.hasContract
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-                          }`}
+        <div className="space-y-8">
+          {/* Active Employees Section */}
+          {filteredEmployees.filter((emp) => !emp.archived).length > 0 && (
+            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                    <UserGroupIcon className="h-5 w-5 mr-2 text-green-600" />
+                    Actieve Medewerkers (
+                    {filteredEmployees.filter((emp) => !emp.archived).length})
+                  </h3>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Medewerker
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Bedrijf
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Acties
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredEmployees
+                      .filter((emp) => !emp.archived)
+                      .map((employee) => (
+                        <tr
+                          key={employee.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
-                          {employee.hasContract
-                            ? "📄 Contract"
-                            : "❌ Geen contract"}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleContractManagement(employee)}
-                          leftIcon={<DocumentTextIcon className="h-3 w-3" />}
-                          className="text-xs px-2 py-1"
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                <UserGroupIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {employee.name}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {employee.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full font-medium ${getEmployeeTypeColor(
+                                employee.employeeType || ""
+                              )}`}
+                            >
+                              {getEmployeeTypeText(employee.employeeType || "")}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {employee.company || "-"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/personnel/edit/${employee.id}`
+                                  )
+                                }
+                                leftIcon={<PencilIcon className="h-4 w-4" />}
+                              >
+                                Bewerken
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteEmployee(employee.id)
+                                }
+                                leftIcon={<TrashIcon className="h-4 w-4" />}
+                                className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
+                              >
+                                Uit Dienst
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Archived Employees Section */}
+          {filteredEmployees.filter((emp) => emp.archived).length > 0 && (
+            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                    <TrashIcon className="h-5 w-5 mr-2 text-gray-600" />
+                    Oud Medewerkers (
+                    {filteredEmployees.filter((emp) => emp.archived).length})
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Medewerkers die uit dienst zijn
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Medewerker
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Bedrijf
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Acties
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredEmployees
+                      .filter((emp) => emp.archived)
+                      .map((employee) => (
+                        <tr
+                          key={employee.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700 opacity-75"
                         >
-                          Beheer
-                        </Button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        {!employee.archived ? (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                router.push(
-                                  `/dashboard/personnel/edit/${employee.id}`
-                                )
-                              }
-                              leftIcon={<PencilIcon className="h-4 w-4" />}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center">
+                                <UserGroupIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 line-through">
+                                  {employee.name}
+                                  <span className="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
+                                    Gearchiveerd
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-400 dark:text-gray-500">
+                                  {employee.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full font-medium opacity-60 ${getEmployeeTypeColor(
+                                employee.employeeType || ""
+                              )}`}
                             >
-                              Bewerken
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteEmployee(employee.id)}
-                              leftIcon={<TrashIcon className="h-4 w-4" />}
-                              className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
-                            >
-                              Archiveren
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUnarchiveEmployee(employee)}
-                            leftIcon={<CheckCircleIcon className="h-4 w-4" />}
-                            className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
-                          >
-                            Dearchiveren
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                              {getEmployeeTypeText(employee.employeeType || "")}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {employee.company || "-"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleUnarchiveEmployee(employee)
+                                }
+                                leftIcon={
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                }
+                                className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+                              >
+                                Terugzetten
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1283,69 +1332,15 @@ export default function Personnel() {
                   />
                 </div>
 
-                {/* Contract checkbox */}
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={newEmployee.hasContract || false}
-                      onChange={(e) =>
-                        setNewEmployee({
-                          ...newEmployee,
-                          hasContract: e.target.checked,
-                        })
-                      }
-                      className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-3 text-sm font-medium text-gray-700">
-                      📄 Freelance overeenkomst ondertekend
-                    </span>
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1 ml-7">
-                    Vink aan als er een freelance overeenkomst is ondertekend
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Contract section for non-freelancers */}
-            {newEmployee.role && newEmployee.role !== "FREELANCER" && (
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <DocumentTextIcon className="h-5 w-5 mr-2 text-gray-600" />
-                  📄 Contract Informatie
-                </h3>
-
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={newEmployee.hasContract || false}
-                      onChange={(e) =>
-                        setNewEmployee({
-                          ...newEmployee,
-                          hasContract: e.target.checked,
-                        })
-                      }
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      📄 Arbeidscontract ondertekend
-                    </span>
-                  </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-7">
-                    Vink aan als er een arbeidscontract is ondertekend
-                  </p>
-                </div>
-
-                <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
                       <DocumentTextIcon className="h-5 w-5 text-blue-400" />
                     </div>
                     <div className="ml-3">
                       <p className="text-sm text-blue-800 dark:text-blue-200">
-                        💡 KvK en BTW nummer zijn alleen nodig voor freelancers
+                        💡 Contracten kunnen na aanmaken van de medewerker
+                        worden gegenereerd via het bewerkingsscherm
                       </p>
                     </div>
                   </div>
@@ -1627,10 +1622,9 @@ export default function Personnel() {
 
       {/* Contract Management Modal */}
       {employeeForContract && (
-        <ContractManagement
+        <ContractViewer
           userId={employeeForContract.id}
           userName={employeeForContract.name}
-          userEmail={employeeForContract.email}
           isOpen={showContractModal}
           onClose={() => {
             setShowContractModal(false);

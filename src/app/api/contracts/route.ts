@@ -1,89 +1,99 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { z } from "zod";
 
-export async function GET(request: Request) {
+const contractSchema = z.object({
+    userId: z.string(),
+    contractType: z.enum([
+        "PERMANENT_FULL_TIME",
+        "PERMANENT_PART_TIME",
+        "TEMPORARY_FULL_TIME",
+        "TEMPORARY_PART_TIME",
+        "FREELANCE",
+        "ZERO_HOURS",
+        "INTERNSHIP",
+        "PROBATION"
+    ]),
+    title: z.string().min(1),
+    description: z.string().optional(),
+    startDate: z.string(),
+    endDate: z.string().optional().nullable(),
+    salary: z.string().optional(),
+    notes: z.string().optional(),
+    fileContent: z.string().optional(), // Base64 encoded file content for uploads
+    fileName: z.string().optional(), // Original filename for uploads
+});
+
+// GET /api/contracts - List contracts
+export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const url = new URL(request.url);
-        const userId = url.searchParams.get('userId');
-        const status = url.searchParams.get('status');
-        const expiringIn = url.searchParams.get('expiringIn'); // days
+        const { searchParams } = new URL(request.url);
+        const userId = searchParams.get("userId");
+        const status = searchParams.get("status");
+        const contractType = searchParams.get("contractType");
 
-        const whereClause: any = {};
+        const where: any = {};
 
-        if (userId) {
-            whereClause.userId = userId;
+        // Admin/Manager can see all contracts, others only their own
+        if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
+            where.userId = session.user.id;
+        } else if (userId) {
+            where.userId = userId;
         }
 
         if (status) {
-            whereClause.status = status;
+            where.status = status;
         }
 
-        // Filter contracts expiring in X days
-        if (expiringIn) {
-            const days = parseInt(expiringIn);
-            const futureDate = new Date();
-            futureDate.setDate(futureDate.getDate() + days);
-
-            whereClause.endDate = {
-                lte: futureDate,
-                gte: new Date()
-            };
-            whereClause.status = 'ACTIVE';
+        if (contractType) {
+            where.contractType = contractType;
         }
 
         const contracts = await prisma.contract.findMany({
-            where: whereClause,
+            where,
             include: {
                 user: {
                     select: {
                         id: true,
                         name: true,
-                        firstName: true,
-                        lastName: true,
                         email: true,
-                        company: true,
-                        employeeType: true
+                        employeeType: true,
                     }
                 }
             },
-            orderBy: {
-                createdAt: 'desc'
-            }
+            orderBy: [
+                { createdAt: "desc" }
+            ]
         });
 
-        // Transform user names
-        const transformedContracts = contracts.map(contract => ({
-            ...contract,
-            user: {
-                ...contract.user,
-                name: contract.user.firstName && contract.user.lastName
-                    ? `${contract.user.firstName} ${contract.user.lastName}`.trim()
-                    : contract.user.name || contract.user.email.split('@')[0]
-            }
-        }));
-
-        return NextResponse.json(transformedContracts);
+        return NextResponse.json(contracts);
     } catch (error) {
-        console.error('Error fetching contracts:', error);
+        console.error("Error fetching contracts:", error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: "Internal server error" },
             { status: 500 }
         );
     }
 }
 
-export async function POST(request: Request) {
+// POST /api/contracts - Create new contract
+export async function POST(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Only admin/manager can create contracts for others
+        if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const body = await request.json();
@@ -94,85 +104,81 @@ export async function POST(request: Request) {
             description,
             startDate,
             endDate,
-            status = 'DRAFT',
             salary,
             notes,
-            signedDate,
+            fileContent,
             fileName,
-            fileUrl,
-            fileSize,
-            mimeType
         } = body;
 
-        // Check if user exists
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
+        const validatedData = contractSchema.parse(body);
 
-        if (!user) {
-            return NextResponse.json(
-                { error: 'User not found' },
-                { status: 404 }
-            );
+        // Handle file processing for both uploads and generated contracts
+        let fileUrl = null;
+        let fileSize = null;
+        let mimeType = null;
+        let uploadedAt = null;
+
+        if (fileContent) {
+            // For uploaded files, we have base64 content
+            try {
+                const buffer = Buffer.from(fileContent, 'base64');
+                fileSize = buffer.length;
+                mimeType = 'application/pdf';
+                uploadedAt = new Date();
+
+                // For now, we store the base64 content directly
+                // In production, you might want to store it in a file storage service
+                fileUrl = `data:application/pdf;base64,${fileContent}`;
+            } catch (error) {
+                console.error('Error processing uploaded file:', error);
+                return NextResponse.json(
+                    { error: "Invalid file format" },
+                    { status: 400 }
+                );
+            }
         }
 
         // Create the contract
         const contract = await prisma.contract.create({
             data: {
-                userId,
-                contractType,
-                title,
-                description,
-                startDate: new Date(startDate),
-                endDate: endDate ? new Date(endDate) : null,
-                status,
-                salary,
-                notes,
-                signedDate: signedDate ? new Date(signedDate) : null,
-                fileName,
-                fileUrl,
-                fileSize,
-                mimeType,
-                uploadedAt: fileName ? new Date() : null,
-                createdBy: session.user.id || session.user.email
+                userId: validatedData.userId,
+                createdBy: session.user.id,
+                contractType: validatedData.contractType,
+                status: fileContent ? "ACTIVE" : "PENDING_SIGNATURE",
+                title: validatedData.title,
+                description: validatedData.description,
+                startDate: new Date(validatedData.startDate),
+                endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
+                salary: validatedData.salary,
+                notes: validatedData.notes,
+                // Store the uploaded file information
+                fileName: fileName || `${validatedData.title}.pdf`,
+                fileUrl: fileUrl,
+                fileSize: fileSize,
+                mimeType: mimeType,
+                uploadedAt: uploadedAt,
             },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        company: true,
-                        employeeType: true
-                    }
-                }
+        });
+
+        // Update user's contract status
+        await prisma.user.update({
+            where: { id: validatedData.userId },
+            data: {
+                hasContract: true,
+                contractStatus: fileContent ? "ACTIVE" : "PENDING_SIGNATURE", // Uploaded contracts are immediately active
+                contractType: validatedData.contractType,
+                contractStartDate: new Date(validatedData.startDate),
+                contractEndDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
+                contractFileName: validatedData.fileName,
+                contractFileUrl: fileUrl,
             }
         });
 
-        // Update user contract status if this is an active contract
-        if (status === 'ACTIVE') {
-            await prisma.user.update({
-                where: { id: userId },
-                data: {
-                    hasContract: true,
-                    contractType,
-                    contractStartDate: new Date(startDate),
-                    contractEndDate: endDate ? new Date(endDate) : null,
-                    contractStatus: status,
-                    contractFileName: fileName,
-                    contractFileUrl: fileUrl,
-                    contractNotes: notes
-                }
-            });
-        }
-
-        return NextResponse.json(contract);
+        return NextResponse.json(contract, { status: 201 });
     } catch (error) {
-        console.error('Error creating contract:', error);
+        console.error("Error creating contract:", error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: "Internal server error" },
             { status: 500 }
         );
     }

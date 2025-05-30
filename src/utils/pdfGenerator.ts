@@ -45,7 +45,84 @@ export interface ContractData {
     substitutionAllowed?: boolean;
     performanceBased?: boolean;
     ownRisk?: boolean;
+
+    // Additional fields for database storage
+    userId?: string;
+    createdById?: string;
 }
+
+// Function to save contract to database
+export const saveContractToDatabase = async (contractData: ContractData, pdfBlob: Blob): Promise<string | null> => {
+    try {
+        // Convert PDF blob to base64
+        const arrayBuffer = await pdfBlob.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...Array.from(new Uint8Array(arrayBuffer))));
+
+        // Determine contract type enum value
+        let dbContractType = 'FREELANCE';
+        if (contractData.contractType === 'EMPLOYMENT') {
+            if (contractData.employeeType === 'PERMANENT') {
+                dbContractType = 'PERMANENT_FULL_TIME';
+            } else {
+                dbContractType = 'TEMPORARY_FULL_TIME';
+            }
+        } else if (contractData.contractType === 'ON_CALL') {
+            dbContractType = 'ZERO_HOURS';
+        }
+
+        // Generate contract title
+        const contractTitle = `${contractData.contractType === 'FREELANCE'
+            ? 'Freelance Overeenkomst'
+            : contractData.contractType === 'ON_CALL'
+                ? 'Oproepovereenkomst'
+                : 'Arbeidsovereenkomst'
+            } - ${contractData.employeeName}`;
+
+        // Generate file name
+        const fileName = `${contractTitle.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+
+        // Salary value based on contract type
+        let salary = '';
+        if (contractData.contractType === 'FREELANCE') {
+            salary = contractData.projectValue ? `€${contractData.projectValue}` : '';
+        } else if (contractData.contractType === 'ON_CALL') {
+            salary = contractData.hourlyWage ? `€${contractData.hourlyWage}/uur` : '';
+        } else {
+            salary = contractData.monthlySalary ? `€${contractData.monthlySalary}/maand` : '';
+        }
+
+        // Create contract in database
+        const response = await fetch('/api/contracts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: contractData.userId,
+                contractType: dbContractType,
+                title: contractTitle,
+                description: contractData.projectDescription || `${contractData.position} - ${contractData.department}`,
+                startDate: contractData.startDate,
+                endDate: contractData.endDate,
+                salary: salary,
+                notes: `Gegenereerd op ${new Date().toLocaleDateString('nl-NL')}`,
+                fileContent: base64,
+                fileName: fileName,
+            }),
+        });
+
+        if (response.ok) {
+            const contract = await response.json();
+            return contract.id;
+        } else {
+            console.error('Failed to save contract to database:', await response.text());
+            return null;
+        }
+    } catch (error) {
+        console.error('Error saving contract to database:', error);
+        return null;
+    }
+};
 
 export class PDFGenerator {
     private doc: jsPDF;
@@ -312,20 +389,54 @@ export const generateOnCallPDF = (data: ContractData): Blob => {
     return generator.getBlob();
 };
 
-export const downloadFreelanceContract = (data: ContractData): void => {
+// Updated download functions that also save to database
+export const downloadFreelanceContract = async (data: ContractData): Promise<string | null> => {
     const generator = new PDFGenerator();
     generator.generateFreelanceContract(data);
-    generator.download(`Freelance_Overeenkomst_${data.employeeName.replace(/\s+/g, '_')}.pdf`);
+    const blob = generator.getBlob();
+
+    // Download PDF
+    const filename = `Freelance_Overeenkomst_${data.employeeName.replace(/\s+/g, '_')}.pdf`;
+    generator.download(filename);
+
+    // Save to database if userId is provided
+    if (data.userId) {
+        return await saveContractToDatabase(data, blob);
+    }
+
+    return null;
 };
 
-export const downloadEmploymentContract = (data: ContractData): void => {
+export const downloadEmploymentContract = async (data: ContractData): Promise<string | null> => {
     const generator = new PDFGenerator();
     generator.generateEmploymentContract(data);
-    generator.download(`Arbeidsovereenkomst_${data.employeeName.replace(/\s+/g, '_')}.pdf`);
+    const blob = generator.getBlob();
+
+    // Download PDF
+    const filename = `Arbeidsovereenkomst_${data.employeeName.replace(/\s+/g, '_')}.pdf`;
+    generator.download(filename);
+
+    // Save to database if userId is provided
+    if (data.userId) {
+        return await saveContractToDatabase(data, blob);
+    }
+
+    return null;
 };
 
-export const downloadOnCallContract = (data: ContractData): void => {
+export const downloadOnCallContract = async (data: ContractData): Promise<string | null> => {
     const generator = new PDFGenerator();
     generator.generateOnCallContract(data);
-    generator.download(`Oproepovereenkomst_${data.employeeName.replace(/\s+/g, '_')}.pdf`);
+    const blob = generator.getBlob();
+
+    // Download PDF
+    const filename = `Oproepovereenkomst_${data.employeeName.replace(/\s+/g, '_')}.pdf`;
+    generator.download(filename);
+
+    // Save to database if userId is provided
+    if (data.userId) {
+        return await saveContractToDatabase(data, blob);
+    }
+
+    return null;
 }; 

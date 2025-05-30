@@ -176,7 +176,7 @@ export async function PUT(
                     // Create new work type associations
                     if (workTypeRecords.length > 0) {
                         await prisma.userWorkType.createMany({
-                            data: workTypeRecords.map((workType) => ({
+                            data: workTypeRecords.map((workType: any) => ({
                                 userId: params.id,
                                 workTypeId: workType.id
                             }))

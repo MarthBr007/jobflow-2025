@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { WorkDescriptionType, WorkDescriptionCategory, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 // GET /api/work-descriptions
 export async function GET(request: Request) {
@@ -13,21 +13,21 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const type = searchParams.get('type') as WorkDescriptionType | null;
-        const category = searchParams.get('category') as WorkDescriptionCategory | null;
+        const type = searchParams.get('type') as string | null;
+        const category = searchParams.get('category') as string | null;
         const search = searchParams.get('search') || '';
         const sortBy = searchParams.get('sortBy') || 'createdAt';
         const sortOrder = searchParams.get('sortOrder') || 'desc';
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
 
-        const where = {
+        const where: any = {
             ...(type && { type }),
             ...(category && { category }),
             ...(search && {
                 OR: [
-                    { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
-                    { description: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                    { title: { contains: search, mode: 'insensitive' as any } },
+                    { description: { contains: search, mode: 'insensitive' as any } },
                 ],
             }),
             isArchived: false,

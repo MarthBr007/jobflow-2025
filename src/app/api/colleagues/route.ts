@@ -35,9 +35,9 @@ export async function GET() {
         });
 
         // Transform the data to match the expected format
-        const formattedColleagues = colleagues.map(colleague => ({
+        const formattedColleagues = colleagues.map((colleague: any) => ({
             ...colleague,
-            workTypes: colleague.UserWorkType.map(wt => wt.workType)
+            workTypes: colleague.UserWorkType.map((wt: any) => wt.workType)
         }));
 
         return NextResponse.json(formattedColleagues);

@@ -54,6 +54,7 @@ interface QuickContractGeneratorProps {
     hourlyWage?: string;
     kvkNumber?: string;
     btwNumber?: string;
+    id?: string;
   };
   onContractGenerated?: (contractData: QuickContractData) => void;
 }
@@ -259,19 +260,27 @@ export default function QuickContractGenerator({
         ownRisk: employeeType === "FREELANCER",
 
         vacation: "25",
+
+        // Add userId for database storage
+        userId: employeeData?.id,
       };
 
-      // Download appropriate contract type
+      // Download appropriate contract type and save to database
+      let contractId = null;
       switch (employeeType) {
         case "FREELANCER":
-          downloadFreelanceContract(contractDocument);
+          contractId = await downloadFreelanceContract(contractDocument);
           break;
         case "FLEX_WORKER":
-          downloadOnCallContract(contractDocument);
+          contractId = await downloadOnCallContract(contractDocument);
           break;
         default:
-          downloadEmploymentContract(contractDocument);
+          contractId = await downloadEmploymentContract(contractDocument);
           break;
+      }
+
+      if (contractId) {
+        console.log("Contract saved to database with ID:", contractId);
       }
 
       onContractGenerated?.(contractData);

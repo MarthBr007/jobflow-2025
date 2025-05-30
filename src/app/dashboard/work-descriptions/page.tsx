@@ -14,15 +14,14 @@ import {
   ClockIcon,
   HeartIcon,
 } from "@heroicons/react/24/outline";
-import { WorkDescriptionType, WorkDescriptionCategory } from "@prisma/client";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 
 interface WorkDescription {
   id: string;
   title: string;
-  type: WorkDescriptionType;
-  category: WorkDescriptionCategory;
+  type: string;
+  category: string;
   description: string;
   createdAt: string;
   createdBy: {

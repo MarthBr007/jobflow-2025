@@ -20,7 +20,7 @@ async function getUsers() {
         console.log('Totaal aantal accounts:', users.length);
         console.log('');
 
-        users.forEach((user, index) => {
+        users.forEach((user: any, index: number) => {
             console.log(`${index + 1}. ${user.name || 'Geen naam'}`);
             console.log(`   Email: ${user.email}`);
             console.log(`   Rol: ${user.role}`);

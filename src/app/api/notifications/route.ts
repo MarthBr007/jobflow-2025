@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         }
 
         // Maak notificaties aan voor de doelgebruikers
-        await Promise.all(targetUsers.map(user =>
+        await Promise.all(targetUsers.map((user: any) =>
             prisma.notification.create({
                 data: {
                     userId: user.id,

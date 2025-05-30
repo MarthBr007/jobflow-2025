@@ -75,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
 
         // Send push notifications
-        const notifications = subscriptions.map(async (subscription) => {
+        const notifications = subscriptions.map(async (subscription: any) => {
             try {
                 const pushSubscription = JSON.parse(subscription.subscription);
 

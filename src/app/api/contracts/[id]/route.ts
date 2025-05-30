@@ -1,16 +1,17 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
+// GET /api/contracts/[id] - Get specific contract
 export async function GET(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const contract = await prisma.contract.findUnique({
@@ -20,57 +21,55 @@ export async function GET(
                     select: {
                         id: true,
                         name: true,
-                        firstName: true,
-                        lastName: true,
                         email: true,
+                        employeeType: true,
                         company: true,
-                        employeeType: true
                     }
                 }
             }
         });
 
         if (!contract) {
-            return NextResponse.json(
-                { error: 'Contract not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Contract not found" }, { status: 404 });
         }
 
-        // Transform user name
-        const transformedContract = {
-            ...contract,
-            user: {
-                ...contract.user,
-                name: contract.user.firstName && contract.user.lastName
-                    ? `${contract.user.firstName} ${contract.user.lastName}`.trim()
-                    : contract.user.name || contract.user.email.split('@')[0]
-            }
-        };
+        // Check permission - users can only view their own contracts unless admin/manager
+        if (
+            session.user.role !== "ADMIN" &&
+            session.user.role !== "MANAGER" &&
+            contract.userId !== session.user.id
+        ) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
 
-        return NextResponse.json(transformedContract);
+        return NextResponse.json(contract);
     } catch (error) {
-        console.error('Error fetching contract:', error);
+        console.error("Error fetching contract:", error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: "Internal server error" },
             { status: 500 }
         );
     }
 }
 
+// PUT /api/contracts/[id] - Update contract
 export async function PUT(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Only admin/manager can update contracts
+        if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const body = await request.json();
         const {
-            contractType,
             title,
             description,
             startDate,
@@ -79,151 +78,181 @@ export async function PUT(
             salary,
             notes,
             signedDate,
-            fileName,
-            fileUrl,
-            fileSize,
-            mimeType
         } = body;
 
-        // Check if contract exists
         const existingContract = await prisma.contract.findUnique({
-            where: { id: params.id },
-            include: { user: true }
+            where: { id: params.id }
         });
 
         if (!existingContract) {
-            return NextResponse.json(
-                { error: 'Contract not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Contract not found" }, { status: 404 });
         }
 
-        // Update the contract
-        const contract = await prisma.contract.update({
+        const updatedContract = await prisma.contract.update({
             where: { id: params.id },
             data: {
-                contractType,
-                title,
-                description,
-                startDate: startDate ? new Date(startDate) : undefined,
-                endDate: endDate ? new Date(endDate) : null,
-                status,
-                salary,
-                notes,
-                signedDate: signedDate ? new Date(signedDate) : null,
-                fileName,
-                fileUrl,
-                fileSize,
-                mimeType,
-                uploadedAt: fileName && !existingContract.fileName ? new Date() : undefined,
-                updatedAt: new Date()
+                title: title || existingContract.title,
+                description: description !== undefined ? description : existingContract.description,
+                startDate: startDate ? new Date(startDate) : existingContract.startDate,
+                endDate: endDate ? new Date(endDate) : endDate === null ? null : existingContract.endDate,
+                status: status || existingContract.status,
+                salary: salary !== undefined ? salary : existingContract.salary,
+                notes: notes !== undefined ? notes : existingContract.notes,
+                signedDate: signedDate ? new Date(signedDate) : signedDate === null ? null : existingContract.signedDate,
+                updatedAt: new Date(),
             },
             include: {
                 user: {
                     select: {
                         id: true,
                         name: true,
-                        firstName: true,
-                        lastName: true,
                         email: true,
-                        company: true,
-                        employeeType: true
+                        employeeType: true,
                     }
                 }
             }
         });
 
-        // Update user contract status if this is the active contract
-        if (status === 'ACTIVE') {
+        // Update user's contract status if status changed
+        if (status && status !== existingContract.status) {
             await prisma.user.update({
                 where: { id: existingContract.userId },
                 data: {
-                    hasContract: true,
-                    contractType,
-                    contractStartDate: startDate ? new Date(startDate) : undefined,
-                    contractEndDate: endDate ? new Date(endDate) : null,
                     contractStatus: status,
-                    contractFileName: fileName,
-                    contractFileUrl: fileUrl,
-                    contractNotes: notes
+                    hasContract: status !== "NONE",
                 }
             });
         }
 
-        return NextResponse.json(contract);
+        return NextResponse.json(updatedContract);
     } catch (error) {
-        console.error('Error updating contract:', error);
+        console.error("Error updating contract:", error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: "Internal server error" },
             { status: 500 }
         );
     }
 }
 
-export async function DELETE(
-    request: Request,
+// PATCH /api/contracts/[id] - Update contract status (for signing, etc.)
+export async function PATCH(
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Check if contract exists
+        const body = await request.json();
+        const { status, signedDate } = body;
+
         const existingContract = await prisma.contract.findUnique({
             where: { id: params.id }
         });
 
         if (!existingContract) {
-            return NextResponse.json(
-                { error: 'Contract not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Contract not found" }, { status: 404 });
         }
 
-        // Delete the contract
+        // Users can sign their own contracts, admin/manager can change any status
+        const canUpdate =
+            session.user.role === "ADMIN" ||
+            session.user.role === "MANAGER" ||
+            (existingContract.userId === session.user.id && status === "ACTIVE");
+
+        if (!canUpdate) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const updatedContract = await prisma.contract.update({
+            where: { id: params.id },
+            data: {
+                status,
+                signedDate: signedDate ? new Date(signedDate) : (status === "ACTIVE" ? new Date() : existingContract.signedDate),
+                updatedAt: new Date(),
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        employeeType: true,
+                    }
+                }
+            }
+        });
+
+        // Update user's contract status
+        await prisma.user.update({
+            where: { id: existingContract.userId },
+            data: {
+                contractStatus: status,
+                hasContract: status === "ACTIVE",
+            }
+        });
+
+        return NextResponse.json(updatedContract);
+    } catch (error) {
+        console.error("Error updating contract status:", error);
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 }
+        );
+    }
+}
+
+// DELETE /api/contracts/[id] - Delete contract
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Only admin can delete contracts
+        if (session.user.role !== "ADMIN") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const existingContract = await prisma.contract.findUnique({
+            where: { id: params.id }
+        });
+
+        if (!existingContract) {
+            return NextResponse.json({ error: "Contract not found" }, { status: 404 });
+        }
+
         await prisma.contract.delete({
             where: { id: params.id }
         });
 
-        // Check if this was the active contract and update user
-        if (existingContract.status === 'ACTIVE') {
-            // Check if user has other active contracts
-            const otherActiveContracts = await prisma.contract.findMany({
-                where: {
-                    userId: existingContract.userId,
-                    status: 'ACTIVE',
-                    id: { not: params.id }
-                }
-            });
-
-            if (otherActiveContracts.length === 0) {
-                // No other active contracts, update user status
-                await prisma.user.update({
-                    where: { id: existingContract.userId },
-                    data: {
-                        hasContract: false,
-                        contractType: null,
-                        contractStartDate: null,
-                        contractEndDate: null,
-                        contractStatus: 'NONE',
-                        contractFileName: null,
-                        contractFileUrl: null,
-                        contractNotes: null
-                    }
-                });
+        // Update user's contract status
+        const remainingContracts = await prisma.contract.findMany({
+            where: {
+                userId: existingContract.userId,
+                status: "ACTIVE"
             }
-        }
-
-        return NextResponse.json({
-            success: true,
-            message: 'Contract successfully deleted'
         });
+
+        await prisma.user.update({
+            where: { id: existingContract.userId },
+            data: {
+                hasContract: remainingContracts.length > 0,
+                contractStatus: remainingContracts.length > 0 ? "ACTIVE" : "NONE",
+            }
+        });
+
+        return NextResponse.json({ message: "Contract deleted successfully" });
     } catch (error) {
-        console.error('Error deleting contract:', error);
+        console.error("Error deleting contract:", error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: "Internal server error" },
             { status: 500 }
         );
     }

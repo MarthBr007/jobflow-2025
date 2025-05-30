@@ -249,12 +249,12 @@ export async function GET(request: Request) {
         });
 
         // Transform data for frontend
-        const transformedUsers = users.map(user => ({
+        const transformedUsers = users.map((user: any) => ({
             ...user,
             name: user.firstName && user.lastName
                 ? `${user.firstName} ${user.lastName}`.trim()
                 : user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0],
-            workTypes: user.UserWorkType.map(uwt => uwt.workType),
+            workTypes: user.UserWorkType.map((uwt: any) => uwt.workType),
             recentActivity: user.timeEntries.length > 0 ? user.timeEntries[0].startTime : user.lastLoginAt
         }));
 
@@ -355,7 +355,7 @@ export async function POST(request: Request) {
                 btwNumber,
                 hasContract,
                 UserWorkType: {
-                    create: workTypeRecords.map((workType) => ({
+                    create: workTypeRecords.map((workType: any) => ({
                         workTypeId: workType.id
                     }))
                 }

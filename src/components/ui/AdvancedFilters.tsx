@@ -29,14 +29,13 @@ export interface FilterCriteria {
   salaryRange: {
     min: number | null;
     max: number | null;
-    type: "hourlyRate" | "monthlySalary" | "hourlyWage" | "all";
+    type: "all" | "hourlyRate" | "hourlyWage" | "monthlySalary";
   };
   dateRanges: {
     hiredDate: { startDate: Date | null; endDate: Date | null };
     lastActivity: { startDate: Date | null; endDate: Date | null };
   };
   quickFilters: string[];
-  hasContract: boolean | null;
   status: string;
 }
 
@@ -72,7 +71,6 @@ const defaultFilters: FilterCriteria = {
     lastActivity: { startDate: null, endDate: null },
   },
   quickFilters: [],
-  hasContract: null,
   status: "",
 };
 
@@ -175,7 +173,6 @@ export default function AdvancedFilters({
     )
       count++;
     if (filters.quickFilters.length > 0) count++;
-    if (filters.hasContract !== null) count++;
     if (filters.status) count++;
 
     setActiveFiltersCount(count);
@@ -546,34 +543,6 @@ export default function AdvancedFilters({
                     placeholder="Selecteer periode"
                     maxDate={new Date()}
                   />
-                </div>
-              </div>
-
-              {/* Contract Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Contract Status
-                </label>
-                <div className="flex space-x-4">
-                  {[
-                    { value: null, label: "Alle" },
-                    { value: true, label: "Heeft Contract" },
-                    { value: false, label: "Geen Contract" },
-                  ].map((option) => (
-                    <button
-                      key={String(option.value)}
-                      onClick={() =>
-                        updateFilters({ hasContract: option.value })
-                      }
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        filters.hasContract === option.value
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 ring-2 ring-blue-500/20"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>

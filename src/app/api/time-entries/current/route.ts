@@ -46,7 +46,7 @@ export async function GET() {
             },
         });
 
-        const todayHours = todayEntries.reduce((acc, entry) => {
+        const todayHours = todayEntries.reduce((acc: number, entry: any) => {
             const duration = new Date(entry.endTime!).getTime() - new Date(entry.startTime).getTime();
             return acc + duration / (1000 * 60 * 60);
         }, 0);
@@ -64,7 +64,7 @@ export async function GET() {
             },
         });
 
-        const weekHours = weekEntries.reduce((acc, entry) => {
+        const weekHours = weekEntries.reduce((acc: number, entry: any) => {
             const duration = new Date(entry.endTime!).getTime() - new Date(entry.startTime).getTime();
             return acc + duration / (1000 * 60 * 60);
         }, 0);

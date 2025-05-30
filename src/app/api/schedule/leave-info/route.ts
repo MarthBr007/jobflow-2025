@@ -82,7 +82,7 @@ export async function GET(request: Request) {
         });
 
         // Transform the data for schedule integration
-        const leaveInfo = leaveRequests.map(leave => ({
+        const leaveInfo = leaveRequests.map((leave: any) => ({
             id: leave.id,
             userId: leave.userId,
             userName: leave.user.name,

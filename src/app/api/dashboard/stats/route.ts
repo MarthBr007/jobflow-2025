@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
                 }
             });
 
-            const weekHours = timeEntries.reduce((total, entry) => {
+            const weekHours = timeEntries.reduce((total: number, entry: any) => {
                 if (entry.endTime) {
                     const duration = (entry.endTime.getTime() - entry.startTime.getTime()) / (1000 * 60 * 60);
                     return total + duration;

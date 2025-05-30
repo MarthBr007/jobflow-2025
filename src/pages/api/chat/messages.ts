@@ -71,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
 
             // Format messages
-            const formattedMessages = messages.map(message => ({
+            const formattedMessages = messages.map((message: any) => ({
                 id: message.id,
                 content: message.content,
                 senderId: message.senderId,
@@ -80,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 timestamp: message.createdAt.toISOString(),
                 type: message.type.toLowerCase(),
                 attachments: message.attachments ? JSON.parse(message.attachments) : [],
-                reactions: message.reactions.reduce((acc, reaction) => {
+                reactions: message.reactions.reduce((acc: any, reaction: any) => {
                     if (!acc[reaction.emoji]) {
                         acc[reaction.emoji] = {
                             emoji: reaction.emoji,
