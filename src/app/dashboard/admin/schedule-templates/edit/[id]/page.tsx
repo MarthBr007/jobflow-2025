@@ -215,13 +215,42 @@ export default function EditScheduleTemplatePage() {
     endTime: string,
     breakDuration?: number
   ) => {
-    const start = new Date(`2000-01-01T${startTime}:00`);
-    const end = new Date(`2000-01-01T${endTime}:00`);
-    const totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    const workMinutes = totalMinutes - (breakDuration || 0);
-    const hours = Math.floor(workMinutes / 60);
-    const minutes = workMinutes % 60;
-    return `${hours}u ${minutes > 0 ? `${minutes}m` : ""}`;
+    // Validate input
+    if (!startTime || !endTime) {
+      return "-- u --m";
+    }
+
+    try {
+      // Ensure time format is correct (HH:MM)
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+        return "-- u --m";
+      }
+
+      const start = new Date(`2000-01-01T${startTime}:00`);
+      const end = new Date(`2000-01-01T${endTime}:00`);
+
+      // Check if dates are valid
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return "-- u --m";
+      }
+
+      let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+
+      // Handle overnight shifts
+      if (totalMinutes < 0) {
+        totalMinutes += 24 * 60; // Add 24 hours for overnight shifts
+      }
+
+      const workMinutes = Math.max(0, totalMinutes - (breakDuration || 0));
+      const hours = Math.floor(workMinutes / 60);
+      const minutes = Math.round(workMinutes % 60);
+
+      return `${hours}u ${minutes > 0 ? `${minutes}m` : ""}`.trim();
+    } catch (error) {
+      console.error("Error calculating shift duration:", error);
+      return "-- u --m";
+    }
   };
 
   if (loading) {
