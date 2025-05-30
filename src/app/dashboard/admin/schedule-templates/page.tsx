@@ -395,6 +395,15 @@ export default function ScheduleTemplatesPage() {
                         variant="outline"
                         size="sm"
                         leftIcon={<DocumentDuplicateIcon className="h-4 w-4" />}
+                        onClick={() => {
+                          // Create duplicate with modified name
+                          const duplicateName = `${template.name} (Kopie)`;
+                          router.push(
+                            `/dashboard/admin/schedule-templates/create?duplicate=${
+                              template.id
+                            }&name=${encodeURIComponent(duplicateName)}`
+                          );
+                        }}
                       >
                         Dupliceren
                       </Button>
@@ -402,6 +411,11 @@ export default function ScheduleTemplatesPage() {
                         variant="outline"
                         size="sm"
                         leftIcon={<PencilIcon className="h-4 w-4" />}
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/admin/schedule-templates/edit/${template.id}`
+                          )
+                        }
                       >
                         Bewerken
                       </Button>
