@@ -6,6 +6,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 
 interface DatePickerProps {
@@ -18,9 +19,12 @@ interface DatePickerProps {
   minDate?: Date;
   maxDate?: Date;
   className?: string;
-  variant?: "docked" | "modal";
+  variant?: "docked" | "modal" | "inline";
   helperText?: string;
   error?: string;
+  showTimeSelect?: boolean;
+  size?: "sm" | "md" | "lg";
+  context?: "near-future" | "far-future" | "past" | "any";
 }
 
 const MONTHS = [
@@ -40,6 +44,54 @@ const MONTHS = [
 
 const DAYS = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"];
 
+// Quick date presets based on context
+const getQuickPresets = (context: string) => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+
+  const nextMonth = new Date(today);
+  nextMonth.setMonth(today.getMonth() + 1);
+
+  switch (context) {
+    case "near-future":
+      return [
+        { label: "Vandaag", date: today },
+        { label: "Morgen", date: tomorrow },
+        { label: "Volgende week", date: nextWeek },
+      ];
+    case "far-future":
+      return [
+        { label: "Over 1 maand", date: nextMonth },
+        {
+          label: "Over 3 maanden",
+          date: new Date(
+            today.getFullYear(),
+            today.getMonth() + 3,
+            today.getDate()
+          ),
+        },
+        {
+          label: "Over 6 maanden",
+          date: new Date(
+            today.getFullYear(),
+            today.getMonth() + 6,
+            today.getDate()
+          ),
+        },
+      ];
+    default:
+      return [
+        { label: "Vandaag", date: today },
+        { label: "Morgen", date: tomorrow },
+        { label: "Volgende week", date: nextWeek },
+      ];
+  }
+};
+
 export default function DatePicker({
   value,
   onChange,
@@ -53,6 +105,9 @@ export default function DatePicker({
   variant = "docked",
   helperText,
   error,
+  showTimeSelect = false,
+  size = "md",
+  context = "any",
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(
@@ -62,9 +117,21 @@ export default function DatePicker({
     value ? value.getFullYear() : new Date().getFullYear()
   );
   const [inputValue, setInputValue] = useState(value ? formatDate(value) : "");
+  const [viewMode, setViewMode] = useState<"days" | "months" | "years">("days");
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -91,6 +158,15 @@ export default function DatePicker({
   }, [value]);
 
   function formatDate(date: Date): string {
+    if (showTimeSelect) {
+      return date.toLocaleString("nl-NL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
     return date.toLocaleDateString("nl-NL", {
       day: "2-digit",
       month: "2-digit",
@@ -99,14 +175,16 @@ export default function DatePicker({
   }
 
   function parseDate(dateString: string): Date | null {
-    const parts = dateString.split(/[-\/]/);
-    if (parts.length === 3) {
+    const parts = dateString.split(/[-\/\s:]/);
+    if (parts.length >= 3) {
       const day = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10) - 1;
       const year = parseInt(parts[2], 10);
+      const hour = parts[3] ? parseInt(parts[3], 10) : 0;
+      const minute = parts[4] ? parseInt(parts[4], 10) : 0;
 
       if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-        const date = new Date(year, month, day);
+        const date = new Date(year, month, day, hour, minute);
         if (
           date.getDate() === day &&
           date.getMonth() === month &&
@@ -135,8 +213,20 @@ export default function DatePicker({
 
   function handleDateSelect(day: number) {
     const selectedDate = new Date(currentYear, currentMonth, day);
+    if (showTimeSelect && value) {
+      selectedDate.setHours(value.getHours(), value.getMinutes());
+    }
     if (!isDateDisabled(selectedDate)) {
       onChange(selectedDate);
+      if (!showTimeSelect) {
+        setIsOpen(false);
+      }
+    }
+  }
+
+  function handlePresetSelect(presetDate: Date) {
+    if (!isDateDisabled(presetDate)) {
+      onChange(presetDate);
       setIsOpen(false);
     }
   }
@@ -164,6 +254,9 @@ export default function DatePicker({
       setIsOpen(!isOpen);
     } else if (e.key === "Escape") {
       setIsOpen(false);
+    } else if (e.key === "ArrowDown" && !isOpen) {
+      e.preventDefault();
+      setIsOpen(true);
     }
   }
 
@@ -183,6 +276,68 @@ export default function DatePicker({
         setCurrentMonth(currentMonth + 1);
       }
     }
+  }
+
+  function handleMonthSelect(month: number) {
+    setCurrentMonth(month);
+    setViewMode("days");
+  }
+
+  function handleYearSelect(year: number) {
+    setCurrentYear(year);
+    setViewMode("months");
+  }
+
+  function renderMonthView() {
+    return (
+      <div className="grid grid-cols-3 gap-2 p-2">
+        {MONTHS.map((month, index) => (
+          <button
+            key={month}
+            type="button"
+            onClick={() => handleMonthSelect(index)}
+            className={`
+              px-3 py-2 text-sm rounded-md transition-colors duration-200
+              ${
+                index === currentMonth
+                  ? "bg-blue-600 text-white font-semibold"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }
+            `}
+          >
+            {month.substring(0, 3)}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  function renderYearView() {
+    const yearRange = Array.from(
+      { length: 21 },
+      (_, i) => currentYear - 10 + i
+    );
+    return (
+      <div className="grid grid-cols-3 gap-2 p-2 max-h-48 overflow-y-auto">
+        {yearRange.map((year) => (
+          <button
+            key={year}
+            type="button"
+            onClick={() => handleYearSelect(year)}
+            className={`
+              px-3 py-2 text-sm rounded-md transition-colors duration-200
+              ${
+                year === currentYear
+                  ? "bg-blue-600 text-white font-semibold"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }
+            `}
+          >
+            {year}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   function renderCalendar() {
@@ -217,17 +372,18 @@ export default function DatePicker({
           disabled={isDisabled}
           className={`
             w-8 h-8 text-sm rounded-md transition-colors duration-200 flex items-center justify-center
+            ${isMobile ? "w-10 h-10 text-base" : "w-8 h-8 text-sm"}
             ${
               isSelected
-                ? "bg-blue-600 text-white font-semibold"
+                ? "bg-blue-600 text-white font-semibold shadow-lg"
                 : isToday
-                ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 font-medium"
+                ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 font-medium ring-2 ring-blue-300 dark:ring-blue-700"
                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             }
             ${
               isDisabled
                 ? "text-gray-300 dark:text-gray-600 cursor-not-allowed hover:bg-transparent"
-                : "cursor-pointer"
+                : "cursor-pointer hover:scale-105"
             }
           `}
         >
@@ -239,8 +395,15 @@ export default function DatePicker({
     return days;
   }
 
+  const sizeClasses = {
+    sm: "px-2 py-1.5 text-sm",
+    md: "px-3 py-2 text-sm",
+    lg: "px-4 py-3 text-base",
+  };
+
   const inputClasses = `
-    w-full px-3 py-2 pr-10 border rounded-lg shadow-sm transition-colors duration-200
+    w-full pr-10 border rounded-lg shadow-sm transition-all duration-200
+    ${sizeClasses[size]}
     ${
       error
         ? "border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500"
@@ -250,8 +413,175 @@ export default function DatePicker({
     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
     placeholder-gray-500 dark:placeholder-gray-400
     ${disabled ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""}
+    ${isMobile ? "text-base" : ""}
     ${className}
   `;
+
+  // Mobile modal or desktop dropdown
+  const calendarContent = (
+    <div
+      className={`
+      ${
+        variant === "modal" || (isMobile && variant === "docked")
+          ? "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          : "absolute z-50 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"
+      }
+    `}
+    >
+      <div
+        className={`
+        bg-white dark:bg-gray-800 rounded-lg shadow-xl
+        ${
+          variant === "modal" || (isMobile && variant === "docked")
+            ? "w-full max-w-sm mx-auto"
+            : "min-w-[320px]"
+        }
+      `}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={() => navigateMonth("prev")}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          </button>
+
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() =>
+                setViewMode(viewMode === "months" ? "days" : "months")
+              }
+              className="text-sm font-medium bg-transparent text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded transition-colors"
+            >
+              {MONTHS[currentMonth]}
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setViewMode(viewMode === "years" ? "days" : "years")
+              }
+              className="text-sm font-medium bg-transparent text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded transition-colors"
+            >
+              {currentYear}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigateMonth("next")}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          </button>
+
+          {(variant === "modal" || (isMobile && variant === "docked")) && (
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors ml-2"
+            >
+              <XMarkIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          )}
+        </div>
+
+        <div className="p-4">
+          {viewMode === "days" && (
+            <>
+              {/* Days of week */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {DAYS.map((day) => (
+                  <div
+                    key={day}
+                    className="w-8 h-8 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center justify-center"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-1 mb-4">
+                {renderCalendar()}
+              </div>
+            </>
+          )}
+
+          {viewMode === "months" && renderMonthView()}
+          {viewMode === "years" && renderYearView()}
+
+          {/* Quick presets for context-aware selection */}
+          {viewMode === "days" && context !== "any" && (
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                Snelle selectie
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {getQuickPresets(context).map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => handlePresetSelect(preset.date)}
+                    disabled={isDateDisabled(preset.date)}
+                    className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Today button */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+            <button
+              type="button"
+              onClick={() => {
+                const today = new Date();
+                if (!isDateDisabled(today)) {
+                  onChange(today);
+                  setIsOpen(false);
+                }
+              }}
+              disabled={isDateDisabled(new Date())}
+              className="w-full px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              <ClockIcon className="h-4 w-4" />
+              <span>Vandaag</span>
+            </button>
+          </div>
+
+          {/* Time selector for datetime picker */}
+          {showTimeSelect && value && (
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+              <div className="flex items-center space-x-2">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Tijd:
+                </label>
+                <input
+                  type="time"
+                  value={value.toTimeString().slice(0, 5)}
+                  onChange={(e) => {
+                    if (value) {
+                      const [hours, minutes] = e.target.value.split(":");
+                      const newDate = new Date(value);
+                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      onChange(newDate);
+                    }
+                  }}
+                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-1">
@@ -302,98 +632,8 @@ export default function DatePicker({
           </div>
         </div>
 
-        {/* Calendar Dropdown */}
-        {isOpen && (
-          <div className="absolute z-50 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 min-w-[280px]">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <button
-                type="button"
-                onClick={() => navigateMonth("prev")}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-              </button>
-
-              <div className="flex items-center space-x-2">
-                <select
-                  value={currentMonth}
-                  onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
-                  className="text-sm font-medium bg-transparent text-gray-900 dark:text-white border-none outline-none cursor-pointer"
-                >
-                  {MONTHS.map((month, index) => (
-                    <option
-                      key={month}
-                      value={index}
-                      className="bg-white dark:bg-gray-800"
-                    >
-                      {month}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={currentYear}
-                  onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-                  className="text-sm font-medium bg-transparent text-gray-900 dark:text-white border-none outline-none cursor-pointer"
-                >
-                  {Array.from(
-                    { length: 21 },
-                    (_, i) => currentYear - 10 + i
-                  ).map((year) => (
-                    <option
-                      key={year}
-                      value={year}
-                      className="bg-white dark:bg-gray-800"
-                    >
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigateMonth("next")}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-              </button>
-            </div>
-
-            {/* Days of week */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {DAYS.map((day) => (
-                <div
-                  key={day}
-                  className="w-8 h-8 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center justify-center"
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>
-
-            {/* Today button */}
-            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={() => {
-                  const today = new Date();
-                  if (!isDateDisabled(today)) {
-                    onChange(today);
-                    setIsOpen(false);
-                  }
-                }}
-                className="w-full px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-              >
-                Vandaag
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Calendar */}
+        {isOpen && calendarContent}
       </div>
 
       {/* Helper text or error */}
