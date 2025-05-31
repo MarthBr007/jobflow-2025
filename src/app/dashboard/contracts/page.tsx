@@ -203,9 +203,7 @@ export default function ContractsPage() {
   const handleAddContract = () => {
     resetForm();
     setSelectedContract(null);
-    alert(
-      "Contract toevoegen tijdelijk uitgeschakeld - wordt binnenkort vervangen door inline form"
-    );
+    setShowAddModal(true);
   };
 
   const handleEditContract = (contract: Contract) => {
@@ -222,9 +220,7 @@ export default function ContractsPage() {
       file: null,
     });
     setSelectedContract(contract);
-    alert(
-      "Contract bewerken tijdelijk uitgeschakeld - wordt binnenkort vervangen door inline form"
-    );
+    setShowEditModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -261,7 +257,7 @@ export default function ContractsPage() {
       if (response.ok) {
         const savedContract = await response.json();
         await fetchContracts();
-        setShowAddModal(false); setShowEditModal(false);
+        setShowAddModal(false);
         setShowEditModal(false);
         resetForm();
 
@@ -511,7 +507,7 @@ export default function ContractsPage() {
           variant="outline"
           size="sm"
           onClick={() => {
-            setShowAddModal(false); setShowEditModal(false);
+            setShowAddModal(false);
             setShowEditModal(false);
             setSelectedContract(null);
             resetForm();
@@ -645,7 +641,7 @@ export default function ContractsPage() {
             type="button"
             variant="outline"
             onClick={() => {
-              setShowAddModal(false); setShowEditModal(false);
+              setShowAddModal(false);
               setShowEditModal(false);
               setSelectedContract(null);
               resetForm();
