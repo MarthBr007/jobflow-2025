@@ -15,6 +15,8 @@ import {
   DocumentArrowDownIcon,
   EnvelopeIcon,
   Cog8ToothIcon,
+  ArrowDownTrayIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import Button from "./Button";
 import Modal from "./Modal";
@@ -70,6 +72,9 @@ export default function ContractViewer({
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [showEmailOptions, setShowEmailOptions] = useState<string | null>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewContract, setPreviewContract] = useState<Contract | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -77,6 +82,23 @@ export default function ContractViewer({
       fetchContracts();
     }
   }, [isOpen, userId]);
+
+  // Close email dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showEmailOptions) {
+        const target = event.target as Element;
+        if (!target.closest(".email-dropdown")) {
+          setShowEmailOptions(null);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmailOptions]);
 
   const fetchContracts = async () => {
     setLoading(true);
@@ -222,6 +244,18 @@ export default function ContractViewer({
             setSelectedContract(updatedContract);
           }
         }
+
+        // Show PDF preview instead of direct download
+        const contract = contracts.find((c) => c.id === contractId);
+        if (contract) {
+          setPreviewContract({
+            ...contract,
+            fileUrl: result.fileUrl,
+            fileName: result.fileName,
+          });
+          setPreviewPdfUrl(result.fileUrl);
+          setShowPdfPreview(true);
+        }
       } else {
         const error = await response.json();
         showToast(error.error || "Fout bij PDF generatie", "error");
@@ -255,6 +289,14 @@ export default function ContractViewer({
         const result = await response.json();
         showToast(result.message, "success");
         setShowEmailOptions(null);
+
+        // Close PDF preview if open
+        if (showPdfPreview) {
+          setShowPdfPreview(false);
+          setPreviewPdfUrl(null);
+          setPreviewContract(null);
+        }
+
         await fetchContracts(); // Refresh to see updated notes
       } else {
         const error = await response.json();
@@ -533,7 +575,7 @@ export default function ContractViewer({
 
                               {/* Email Options Dropdown */}
                               {showEmailOptions === contract.id && (
-                                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                                <div className="email-dropdown absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                                   <div className="p-2 space-y-1">
                                     <button
                                       onClick={() =>
@@ -794,6 +836,118 @@ export default function ContractViewer({
             fetchContracts();
           }}
         />
+      )}
+
+      {/* PDF Preview Modal */}
+      {showPdfPreview && previewContract && previewPdfUrl && (
+        <Modal
+          isOpen={showPdfPreview}
+          onClose={() => {
+            setShowPdfPreview(false);
+            setPreviewPdfUrl(null);
+            setPreviewContract(null);
+          }}
+          title={`PDF Preview - ${previewContract.title}`}
+          size="xl"
+        >
+          <div className="space-y-4">
+            {/* Actions Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <DocumentTextIcon className="h-5 w-5 text-gray-400" />
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {previewContract.fileName || `${previewContract.title}.pdf`}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Download Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadPdf(previewContract)}
+                  leftIcon={<ArrowDownTrayIcon className="h-4 w-4" />}
+                >
+                  Download
+                </Button>
+
+                {/* Email Options */}
+                {(session?.user?.role === "ADMIN" ||
+                  session?.user?.role === "MANAGER") && (
+                  <div className="relative">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setShowEmailOptions(previewContract.id)}
+                      leftIcon={<EnvelopeIcon className="h-4 w-4" />}
+                      loading={sendingEmail === previewContract.id}
+                    >
+                      Email Versturen
+                    </Button>
+
+                    {showEmailOptions === previewContract.id && (
+                      <div className="email-dropdown absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                        <div className="p-2">
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                            onClick={() => {
+                              sendEmail(previewContract.id, "new");
+                            }}
+                          >
+                            📄 Nieuw contract versturen
+                          </button>
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                            onClick={() => {
+                              sendEmail(previewContract.id, "reminder");
+                            }}
+                          >
+                            ⏰ Herinnering versturen
+                          </button>
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                            onClick={() => {
+                              sendEmail(previewContract.id, "signed");
+                            }}
+                          >
+                            ✅ Ondertekend contract versturen
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* PDF Viewer */}
+            <div className="w-full h-[600px] border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+              <iframe
+                src={previewPdfUrl}
+                className="w-full h-full"
+                title="PDF Preview"
+                style={{ border: "none" }}
+              />
+            </div>
+
+            {/* Info Section */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="flex items-start space-x-3">
+                <InformationCircleIcon className="h-5 w-5 text-blue-500 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Contract Klaar voor Verzending
+                  </h4>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    Controleer de PDF zorgvuldig voordat je hem verstuurt. Je
+                    kunt de PDF downloaden of direct per email versturen naar{" "}
+                    {previewContract.user.name} ({previewContract.user.email}).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {/* Toast Notifications */}
