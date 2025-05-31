@@ -21,7 +21,7 @@ export async function POST(
 
         const contractId = params.id;
         const body = await request.json();
-        const { emailType = 'new' } = body; // 'new', 'signed', 'reminder'
+        const { emailType = 'new', subject, content } = body; // 'new', 'signed', 'reminder', 'custom'
 
         // Fetch contract with user details
         const contract = await prisma.contract.findUnique({
@@ -50,25 +50,56 @@ export async function POST(
         }
 
         // Validate email type
-        const validEmailTypes = ['new', 'signed', 'reminder'];
+        const validEmailTypes = ['new', 'signed', 'reminder', 'custom'];
         if (!validEmailTypes.includes(emailType)) {
             return NextResponse.json(
-                { error: "Ongeldig email type. Gebruik 'new', 'signed', of 'reminder'." },
+                { error: "Ongeldig email type. Gebruik 'new', 'signed', 'reminder', of 'custom'." },
                 { status: 400 }
             );
+        }
+
+        // For custom emails, validate subject and content
+        if (emailType === 'custom') {
+            if (!subject || !content) {
+                return NextResponse.json(
+                    { error: "Subject en content zijn verplicht voor custom emails." },
+                    { status: 400 }
+                );
+            }
         }
 
         // Create email service
         const emailService = createEmailService();
 
-        // Send email with contract PDF
-        const emailSent = await emailService.sendContractEmail(
-            contract.user.email,
-            contract.user.name || "Medewerker",
-            contract.title,
-            contract.fileUrl,
-            emailType as 'new' | 'signed' | 'reminder'
-        );
+        let emailSent = false;
+
+        if (emailType === 'custom') {
+            // Send custom email
+            const pdfBuffer = Buffer.from(contract.fileUrl.split(',')[1], 'base64');
+
+            emailSent = await emailService.sendEmail({
+                to: contract.user.email,
+                subject: subject,
+                text: content,
+                html: content.replace(/\n/g, '<br>'),
+                attachments: [
+                    {
+                        filename: `${contract.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                        content: pdfBuffer,
+                        contentType: 'application/pdf',
+                    },
+                ],
+            });
+        } else {
+            // Send template email
+            emailSent = await emailService.sendContractEmail(
+                contract.user.email,
+                contract.user.name || "Medewerker",
+                contract.title,
+                contract.fileUrl,
+                emailType as 'new' | 'signed' | 'reminder'
+            );
+        }
 
         if (!emailSent) {
             return NextResponse.json(
@@ -78,18 +109,26 @@ export async function POST(
         }
 
         // Log the email activity
+        const logMessage = emailType === 'custom'
+            ? `Custom email verstuurd naar ${contract.user.email} - Onderwerp: ${subject}`
+            : `${emailType.toUpperCase()} email verstuurd naar ${contract.user.email}`;
+
         await prisma.contract.update({
             where: { id: contractId },
             data: {
                 notes: contract.notes
-                    ? `${contract.notes}\n\n[${new Date().toLocaleString('nl-NL')}] ${emailType.toUpperCase()} email verstuurd naar ${contract.user.email}`
-                    : `[${new Date().toLocaleString('nl-NL')}] ${emailType.toUpperCase()} email verstuurd naar ${contract.user.email}`,
+                    ? `${contract.notes}\n\n[${new Date().toLocaleString('nl-NL')}] ${logMessage}`
+                    : `[${new Date().toLocaleString('nl-NL')}] ${logMessage}`,
             },
         });
 
+        const responseMessage = emailType === 'custom'
+            ? `Custom email succesvol verzonden naar ${contract.user.email}`
+            : `${emailType.charAt(0).toUpperCase() + emailType.slice(1)} email succesvol verzonden naar ${contract.user.email}`;
+
         return NextResponse.json({
             success: true,
-            message: `${emailType.charAt(0).toUpperCase() + emailType.slice(1)} email succesvol verzonden naar ${contract.user.email}`,
+            message: responseMessage,
             recipient: contract.user.email,
             emailType,
         });

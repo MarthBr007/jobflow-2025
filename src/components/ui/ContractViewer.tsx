@@ -22,6 +22,7 @@ import Button from "./Button";
 import Modal from "./Modal";
 import ContractUploader from "./ContractUploader";
 import { Toast, useToast } from "./Toast";
+import EmailComposer from "./EmailComposer";
 
 interface Contract {
   id: string;
@@ -75,6 +76,9 @@ export default function ContractViewer({
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   const [previewContract, setPreviewContract] = useState<Contract | null>(null);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [emailComposerContract, setEmailComposerContract] =
+    useState<Contract | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
@@ -311,6 +315,61 @@ export default function ContractViewer({
     } finally {
       setSendingEmail(null);
     }
+  };
+
+  const sendCustomEmail = async (
+    contractId: string,
+    subject: string,
+    content: string
+  ) => {
+    setSendingEmail(contractId);
+    try {
+      const response = await fetch(`/api/contracts/${contractId}/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          emailType: "custom",
+          subject,
+          content,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        showToast(result.message, "success");
+        setShowEmailOptions(null);
+        setShowEmailComposer(false);
+        setEmailComposerContract(null);
+
+        // Close PDF preview if open
+        if (showPdfPreview) {
+          setShowPdfPreview(false);
+          setPreviewPdfUrl(null);
+          setPreviewContract(null);
+        }
+
+        await fetchContracts(); // Refresh to see updated notes
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Fout bij verzenden email", "error");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      showToast(
+        "Er is een fout opgetreden bij het verzenden van de email",
+        "error"
+      );
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
+  const openEmailComposer = (contract: Contract) => {
+    setEmailComposerContract(contract);
+    setShowEmailComposer(true);
+    setShowEmailOptions(null);
   };
 
   const downloadPdf = async (contract: Contract) => {
@@ -600,6 +659,15 @@ export default function ContractViewer({
                                       className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
                                     >
                                       ✅ Ondertekend
+                                    </button>
+                                    <hr className="my-1 border-gray-200 dark:border-gray-600" />
+                                    <button
+                                      onClick={() =>
+                                        openEmailComposer(contract)
+                                      }
+                                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                    >
+                                      ✍️ Custom email
                                     </button>
                                   </div>
                                 </div>
@@ -912,6 +980,13 @@ export default function ContractViewer({
                           >
                             ✅ Ondertekend contract versturen
                           </button>
+                          <hr className="my-1 border-gray-200 dark:border-gray-600" />
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                            onClick={() => openEmailComposer(previewContract)}
+                          >
+                            ✍️ Custom email schrijven
+                          </button>
                         </div>
                       </div>
                     )}
@@ -948,6 +1023,20 @@ export default function ContractViewer({
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Email Composer Modal */}
+      {showEmailComposer && emailComposerContract && (
+        <EmailComposer
+          isOpen={showEmailComposer}
+          onClose={() => {
+            setShowEmailComposer(false);
+            setEmailComposerContract(null);
+          }}
+          contract={emailComposerContract}
+          onSendEmail={sendCustomEmail}
+          loading={sendingEmail === emailComposerContract.id}
+        />
       )}
 
       {/* Toast Notifications */}
