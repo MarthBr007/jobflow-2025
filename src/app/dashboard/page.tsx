@@ -20,6 +20,8 @@ import {
   WrenchScrewdriverIcon,
   DocumentTextIcon,
   Cog6ToothIcon,
+  ExclamationTriangleIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "@/components/ui/Button";
@@ -30,6 +32,7 @@ import MetricCard from "@/components/ui/MetricCard";
 import Tooltip from "@/components/ui/Tooltip";
 import SpeedDial from "@/components/ui/SpeedDial";
 import Timeline from "@/components/ui/Timeline";
+import ContractViewer from "@/components/ui/ContractViewer";
 
 interface TimeEntry {
   id: string;
@@ -73,6 +76,20 @@ export default function Dashboard() {
   >([]);
   const [isWarehouse, setIsWarehouse] = useState(false);
 
+  // New contract state for widget
+  const [contractInfo, setContractInfo] = useState<{
+    hasContract: boolean;
+    contractStatus?: string;
+    latestContract?: {
+      id: string;
+      title: string;
+      status: string;
+      signedDate?: string;
+      endDate?: string;
+    };
+  } | null>(null);
+  const [showContractViewer, setShowContractViewer] = useState(false);
+
   // Update current time every second
   useEffect(() => {
     const timer = setInterval(() => {
@@ -85,6 +102,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (session?.user) {
       fetchDashboardStats();
+      // Fetch contract info for employees/freelancers
+      if (
+        session.user.role === "EMPLOYEE" ||
+        session.user.role === "FREELANCER"
+      ) {
+        fetchContractInfo();
+      }
     }
   }, [session]);
 
@@ -97,6 +121,43 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
+    }
+  };
+
+  const fetchContractInfo = async () => {
+    try {
+      const response = await fetch("/api/contracts");
+      if (response.ok) {
+        const contracts = await response.json();
+        if (contracts.length > 0) {
+          // Get the most recent contract
+          const latest = contracts.sort(
+            (a: any, b: any) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )[0];
+
+          setContractInfo({
+            hasContract: true,
+            contractStatus: latest.status,
+            latestContract: {
+              id: latest.id,
+              title: latest.title,
+              status: latest.status,
+              signedDate: latest.signedDate,
+              endDate: latest.endDate,
+            },
+          });
+        } else {
+          setContractInfo({
+            hasContract: false,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching contract info:", error);
+      setContractInfo({
+        hasContract: false,
+      });
     }
   };
 
@@ -396,6 +457,144 @@ export default function Dashboard() {
           />
         ))}
       </div>
+
+      {/* Contract Status Widget - Only for employees/freelancers */}
+      {session.user.role !== "ADMIN" &&
+        session.user.role !== "MANAGER" &&
+        contractInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700"
+          >
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
+                Mijn Contract
+              </h3>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                Huidige contract status en details
+              </p>
+            </div>
+            <div className="p-4 sm:p-6">
+              {contractInfo.hasContract && contractInfo.latestContract ? (
+                <div className="space-y-4">
+                  {/* Contract Status - Mobile Optimized */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                    <div className="flex items-center space-x-3">
+                      {contractInfo.latestContract.status === "ACTIVE" ? (
+                        <CheckCircleIcon className="h-8 w-8 text-green-500 flex-shrink-0" />
+                      ) : contractInfo.latestContract.status ===
+                        "PENDING_SIGNATURE" ? (
+                        <ClockIcon className="h-8 w-8 text-amber-500 flex-shrink-0" />
+                      ) : (
+                        <ExclamationTriangleIcon className="h-8 w-8 text-red-500 flex-shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
+                          {contractInfo.latestContract.status === "ACTIVE"
+                            ? "Actief Contract"
+                            : contractInfo.latestContract.status ===
+                              "PENDING_SIGNATURE"
+                            ? "Wacht op Ondertekening"
+                            : "Contract Actie Vereist"}
+                        </h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {contractInfo.latestContract.title}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      leftIcon={<EyeIcon className="h-4 w-4" />}
+                      onClick={() => setShowContractViewer(true)}
+                      className="w-full sm:w-auto touch-manipulation min-h-[48px] sm:min-h-[auto]"
+                    >
+                      Bekijken
+                    </Button>
+                  </div>
+
+                  {/* Contract Details - Mobile Stacked */}
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                    {contractInfo.latestContract.signedDate && (
+                      <div className="p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircleIcon className="h-4 w-4 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium text-green-900 dark:text-green-100">
+                            Ondertekend op
+                          </span>
+                        </div>
+                        <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                          {new Date(
+                            contractInfo.latestContract.signedDate
+                          ).toLocaleDateString("nl-NL")}
+                        </p>
+                      </div>
+                    )}
+
+                    {contractInfo.latestContract.endDate && (
+                      <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <div className="flex items-center space-x-2">
+                          <CalendarIcon className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                          <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                            Geldig tot
+                          </span>
+                        </div>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                          {new Date(
+                            contractInfo.latestContract.endDate
+                          ).toLocaleDateString("nl-NL")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action needed notification - Mobile Enhanced */}
+                  {contractInfo.latestContract.status ===
+                    "PENDING_SIGNATURE" && (
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
+                      <div className="flex items-start space-x-3">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h5 className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                            Ondertekening Vereist
+                          </h5>
+                          <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                            Je contract wacht nog op ondertekening. Klik op
+                            "Bekijken" om het contract te ondertekenen.
+                          </p>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setShowContractViewer(true)}
+                            className="mt-3 w-full sm:w-auto touch-manipulation min-h-[44px]"
+                          >
+                            Contract Ondertekenen
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* No contract state - Mobile Enhanced */
+                <div className="text-center py-6 sm:py-8">
+                  <ExclamationTriangleIcon className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Geen Contract Gevonden
+                  </h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 px-4">
+                    Er is nog geen actief contract voor jouw account.
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 px-4">
+                    Neem contact op met HR voor meer informatie.
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
       {/* Clock In/Out Section - Only for employees/freelancers */}
       {session.user.role !== "ADMIN" && session.user.role !== "MANAGER" && (
@@ -849,22 +1048,66 @@ export default function Dashboard() {
               ) : (
                 // Employee/Freelancer activities
                 <>
+                  {/* Contract-related activities */}
+                  {contractInfo?.hasContract && contractInfo.latestContract && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="bg-green-100 dark:bg-green-900/20 rounded-xl p-2">
+                          {contractInfo.latestContract.status === "ACTIVE" ? (
+                            <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
+                          ) : contractInfo.latestContract.status ===
+                            "PENDING_SIGNATURE" ? (
+                            <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400" />
+                          ) : (
+                            <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {contractInfo.latestContract.status === "ACTIVE"
+                            ? "Contract actief"
+                            : contractInfo.latestContract.status ===
+                              "PENDING_SIGNATURE"
+                            ? "Contract wacht op ondertekening"
+                            : "Contract status bijgewerkt"}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {contractInfo.latestContract.title}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowContractViewer(true)}
+                        className="flex-shrink-0 touch-manipulation"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  )}
+
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl"
+                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
                   >
                     <div className="flex-shrink-0">
                       <div className="bg-blue-100 dark:bg-blue-900/20 rounded-xl p-2">
-                        <ClockIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
                         Tijdsregistratie bijgewerkt
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {clockState.isClocked
                           ? "Momenteel ingeklokt"
                           : "Laatste sessie: 8.5 uur"}
@@ -876,18 +1119,18 @@ export default function Dashboard() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl"
+                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
                   >
                     <div className="flex-shrink-0">
                       <div className="bg-green-100 dark:bg-green-900/20 rounded-xl p-2">
-                        <ClipboardDocumentListIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        <ClipboardDocumentListIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
                         Nieuwe projecten beschikbaar
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {dashboardStats.availableProjects} nieuwe klussen om
                         interesse voor te tonen
                       </p>
@@ -898,18 +1141,18 @@ export default function Dashboard() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl"
+                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
                   >
                     <div className="flex-shrink-0">
                       <div className="bg-orange-100 dark:bg-orange-900/20 rounded-xl p-2">
-                        <CalendarIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
                         Beschikbaarheid ingesteld
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         Planning bijgewerkt voor komende week
                       </p>
                     </div>
@@ -1025,6 +1268,19 @@ export default function Dashboard() {
           </Tooltip>
         )}
       </div>
+
+      {/* Contract Viewer Modal - Only for employees/freelancers */}
+      {session.user.role !== "ADMIN" &&
+        session.user.role !== "MANAGER" &&
+        contractInfo && (
+          <ContractViewer
+            isOpen={showContractViewer}
+            onClose={() => setShowContractViewer(false)}
+            userId={session.user.id}
+            userName={session.user.name || ""}
+            viewMode="employee"
+          />
+        )}
     </div>
   );
 }
