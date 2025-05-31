@@ -1,38 +1,84 @@
-# JobFlow 2025 - Personnel Management System
+# JobFlow 2025 - Employee Management System
 
-Een moderne, real-time personeelsbeheer applicatie gebouwd voor **Broers Verhuur**, **DCRT Event Decorations**, en **DCRT in Building**.
+<!-- Deployment trigger: Custom Email Composer Feature Added - 2025-01-18 -->
+
+An advanced employee management system built with Next.js, featuring comprehensive employee tracking, shift management, contract handling with PDF generation and email functionality.
 
 ## 🚀 Features
 
-### ✅ Core Functionaliteit
-- **Tijdsregistratie** - Real-time start/stop met automatische pauze detectie
-- **Team Chat** - Instant messaging met typing indicators en file uploads
-- **Beschikbaarheid** - Planning en rooster beheer
-- **Project Management** - Toewijzing en voortgang tracking
-- **Gebruikersbeheer** - Role-based access control (Admin/Manager/Employee)
+### PDF Generation & Email System
+- ✅ **Contract PDF Generation** - Professional Dutch contract templates
+- ✅ **Email Integration** - Send contracts via email with custom templates
+- ✅ **Custom Email Composer** - Rich text editor for personalized emails
+- ✅ **PDF Preview** - Review contracts before sending
+- ✅ **Multiple Email Templates** - New contract, reminders, signed contracts
+- ✅ **Email Logging** - Track all email activities in contract notes
 
-### 🔄 Real-time Features
-- **WebSocket verbindingen** - Live updates voor alle gebruikers
-- **Push notificaties** - Browser notifications voor belangrijke events
-- **Live status updates** - Zie wie online is en wat ze doen
-- **Instant chat** - Real-time team communicatie
-- **Live time tracking** - Directe updates van werkuren
+### Core Functionality
+- Employee dashboard with detailed profiles
+- Shift scheduling and time tracking  
+- Contract management system
+- Admin panel for HR management
+- Real-time notifications
+- Role-based access control (Admin, Manager, Employee)
+- Document management and file uploads
+- Comprehensive reporting and analytics
 
-### 📱 PWA Capabilities
-- **Offline functionaliteit** - Werk door zonder internetverbinding
-- **Installeerbare app** - Native app ervaring op desktop en mobiel
-- **Background sync** - Automatische synchronisatie bij verbinding
-- **Smart caching** - Optimale performance met intelligente cache strategieën
+## 🛠️ Tech Stack
 
-## 🛠 Tech Stack
-
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, WebSocket (Socket.io)
-- **Database**: MySQL met Prisma ORM
+- **Frontend**: Next.js 14, React, TypeScript
+- **Styling**: Tailwind CSS
+- **Database**: MySQL with Prisma ORM
 - **Authentication**: NextAuth.js
-- **Real-time**: Socket.io voor WebSocket verbindingen
-- **PWA**: Service Worker met offline support
-- **Push**: Web Push API met VAPID keys
+- **PDF Generation**: jsPDF, html2canvas, @react-pdf/renderer
+- **Email Service**: Nodemailer
+- **File Handling**: Base64 storage with database integration
+- **Deployment**: Vercel
+
+## 📧 Email & PDF Features
+
+The system includes a comprehensive email and PDF generation system:
+
+### PDF Generation
+- Professional contract templates in Dutch
+- Support for different contract types (permanent, temporary, freelance, etc.)
+- Company branding with customizable headers
+- Automatic PDF storage in database
+
+### Email System
+- **Template Emails**: Pre-designed templates for different scenarios
+- **Custom Email Composer**: Rich text editor for personalized messages
+- **PDF Attachments**: Contracts automatically attached to emails
+- **Email Tracking**: All email activities logged in contract notes
+- **Professional Templates**: Beautiful HTML email designs
+
+### Email Templates Available
+1. **New Contract** - For sending new contracts to employees
+2. **Reminder** - Follow-up emails for pending signatures
+3. **Signed Contract** - Confirmation emails for completed contracts
+4. **Custom Email** - Fully customizable emails with rich text editor
+
+## 🔐 Security
+
+- JWT-based authentication
+- Role-based access control
+- Environment variable configuration
+- Secure file handling with base64 encoding
+- SMTP authentication for email services
+
+## 📱 Responsive Design
+
+Fully responsive design optimized for:
+- Desktop computers
+- Tablets
+- Mobile devices
+- Dark/Light mode support
+
+---
+
+**Live Demo**: [https://jobflow-2025.vercel.app/](https://jobflow-2025.vercel.app/)
+
+**Latest Update**: Custom Email Composer with PDF attachments and professional email templates
 
 ## 📦 Installation
 
