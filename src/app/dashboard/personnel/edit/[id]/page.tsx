@@ -1093,7 +1093,7 @@ export default function EditEmployeeTabs() {
                                     <DocumentTextIcon className="h-4 w-4" />
                                   }
                                   onClick={() =>
-                                    router.push("/dashboard/contracts/quick")
+                                    router.push("/dashboard/contracts")
                                   }
                                 >
                                   Basis Template
@@ -1148,7 +1148,7 @@ export default function EditEmployeeTabs() {
                                   <DocumentTextIcon className="h-4 w-4" />
                                 }
                                 onClick={() =>
-                                  router.push("/dashboard/contracts/employee")
+                                  router.push("/dashboard/contracts")
                                 }
                               >
                                 {employee.employeeType === "FLEX_WORKER"
@@ -1163,7 +1163,7 @@ export default function EditEmployeeTabs() {
                                   <DocumentTextIcon className="h-4 w-4" />
                                 }
                                 onClick={() =>
-                                  router.push("/dashboard/contracts/quick")
+                                  router.push("/dashboard/contracts")
                                 }
                               >
                                 Basis Template
@@ -1235,7 +1235,7 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                router.push("/dashboard/contracts/quick")
+                                router.push("/dashboard/contracts")
                               }
                               className="w-full"
                             >
@@ -1378,7 +1378,7 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                router.push("/dashboard/contracts/quick")
+                                router.push("/dashboard/contracts")
                               }
                               className="w-full"
                             >
@@ -1392,7 +1392,7 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                router.push("/dashboard/contracts/employee")
+                                router.push("/dashboard/contracts")
                               }
                               className="w-full"
                             >
