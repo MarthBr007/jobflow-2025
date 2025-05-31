@@ -23,6 +23,8 @@ import {
   CalendarDaysIcon,
   ListBulletIcon,
   ExclamationTriangleIcon,
+  SparklesIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { format, addDays, subDays } from "date-fns";
@@ -39,6 +41,8 @@ import Card, { CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import SpeedDial from "@/components/ui/SpeedDial";
 import MetricCard from "@/components/ui/MetricCard";
 import Timeline from "@/components/ui/Timeline";
+import AutoScheduleGenerator from "@/components/schedule/AutoScheduleGenerator";
+import FixedScheduleIndicator from "@/components/schedule/FixedScheduleIndicator";
 
 interface User {
   id: string;
@@ -107,6 +111,7 @@ export default function SchedulePage() {
   const [leaveInfo, setLeaveInfo] = useState<LeaveInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showAutoGenerateModal, setShowAutoGenerateModal] = useState(false);
   const [emailData, setEmailData] = useState({
     recipients: "",
     subject: "",
@@ -518,6 +523,27 @@ export default function SchedulePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Auto-generate button - only show for admin/manager */}
+            {(session?.user?.role === "ADMIN" ||
+              session?.user?.role === "MANAGER") && (
+              <Tooltip
+                content="Genereer roosters automatisch op basis van vaste patronen"
+                placement="top"
+              >
+                <Button
+                  onClick={() => setShowAutoGenerateModal(true)}
+                  leftIcon={<SparklesIcon className="h-4 w-4" />}
+                  variant="secondary"
+                  size="md"
+                  elevation="medium"
+                  className="flex-1 sm:flex-none whitespace-nowrap"
+                >
+                  <span className="hidden sm:inline">Auto Rooster</span>
+                  <span className="sm:hidden">Auto</span>
+                </Button>
+              </Tooltip>
+            )}
+
             {/* Add shift button - only show for admin/manager */}
             {(session?.user?.role === "ADMIN" ||
               session?.user?.role === "MANAGER") && (
@@ -677,6 +703,15 @@ export default function SchedulePage() {
                   </div>
                 </div>
               </Card>
+
+              {/* Fixed Schedule Indicator - show fixed patterns for this day */}
+              {(session?.user?.role === "ADMIN" ||
+                session?.user?.role === "MANAGER") && (
+                <FixedScheduleIndicator
+                  selectedDate={selectedDate}
+                  onGeneratePressed={() => setShowAutoGenerateModal(true)}
+                />
+              )}
 
               {/* Day Schedule Content */}
               {schedule && schedule.shifts.length > 0 ? (
@@ -1149,11 +1184,6 @@ export default function SchedulePage() {
                                     <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                                       <DocumentTextIcon className="h-4 w-4 inline mr-1" />
                                       {leave.reason}
-                                    </div>
-                                  )}
-                                  {leave.description && (
-                                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic">
-                                      {leave.description}
                                     </div>
                                   )}
                                 </div>
@@ -1651,6 +1681,120 @@ export default function SchedulePage() {
           direction="up"
           size="md"
         />
+      )}
+
+      {/* Auto-Generate Schedule Modal */}
+      <AutoScheduleGenerator
+        isOpen={showAutoGenerateModal}
+        onClose={() => setShowAutoGenerateModal(false)}
+        onSuccess={() => {
+          setShowAutoGenerateModal(false);
+          fetchSchedule();
+          fetchWeekShifts();
+        }}
+        currentDate={selectedDate}
+      />
+
+      {/* Email Modal */}
+      {showEmailModal && (
+        <Modal
+          isOpen={showEmailModal}
+          onClose={() => setShowEmailModal(false)}
+          title="📧 Rooster Emailen"
+          description="Verstuur het rooster naar medewerkers"
+          size="lg"
+        >
+          <div className="space-y-4">
+            <Input
+              label="Ontvangers (gescheiden door komma's)"
+              value={emailData.recipients}
+              onChange={(e) =>
+                setEmailData({ ...emailData, recipients: e.target.value })
+              }
+              placeholder="naam@bedrijf.nl, naam2@bedrijf.nl"
+            />
+            <Input
+              label="Onderwerp"
+              value={emailData.subject}
+              onChange={(e) =>
+                setEmailData({ ...emailData, subject: e.target.value })
+              }
+              placeholder={`Rooster voor ${format(
+                new Date(selectedDate),
+                "dd-MM-yyyy"
+              )}`}
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Bericht
+              </label>
+              <textarea
+                value={emailData.message}
+                onChange={(e) =>
+                  setEmailData({ ...emailData, message: e.target.value })
+                }
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Optionele bericht bij het rooster..."
+              />
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowEmailModal(false)}
+                disabled={emailLoading}
+              >
+                Annuleren
+              </Button>
+              <Button
+                onClick={async () => {
+                  setEmailLoading(true);
+                  try {
+                    const response = await fetch("/api/schedule/email", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        ...emailData,
+                        scheduleId: schedule?.id,
+                        date: selectedDate,
+                      }),
+                    });
+
+                    if (response.ok) {
+                      alert("Email succesvol verzonden!");
+                      setShowEmailModal(false);
+                      setEmailData({
+                        recipients: "",
+                        subject: "",
+                        message: "",
+                      });
+                    } else {
+                      const data = await response.json();
+                      alert(`Fout bij verzenden: ${data.error}`);
+                    }
+                  } catch (error) {
+                    console.error("Error sending email:", error);
+                    alert("Er is een fout opgetreden");
+                  } finally {
+                    setEmailLoading(false);
+                  }
+                }}
+                disabled={emailLoading || !emailData.recipients}
+                leftIcon={
+                  emailLoading ? (
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <EnvelopeIcon className="h-4 w-4" />
+                  )
+                }
+              >
+                {emailLoading ? "Verzenden..." : "Email Versturen"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
