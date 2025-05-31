@@ -119,7 +119,13 @@ export default function ContractsPage() {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   const [previewContract, setPreviewContract] = useState<Contract | null>(null);
-
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailContract, setEmailContract] = useState<Contract | null>(null);
+  const [emailType, setEmailType] = useState<"new" | "signed" | "reminder">(
+    "new"
+  );
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
   const [formData, setFormData] = useState({
     contractType: "PERMANENT_FULL_TIME",
     title: "",
@@ -130,6 +136,15 @@ export default function ContractsPage() {
     salary: "",
     notes: "",
     signedDate: "",
+    firstName: "",
+    lastName: "",
+    address: "",
+    zipCode: "",
+    city: "",
+    iban: "",
+    kvkNumber: "",
+    btwNumber: "",
+    expenseAllowance: "",
     file: null as File | null,
   });
 
@@ -196,6 +211,15 @@ export default function ContractsPage() {
       salary: "",
       notes: "",
       signedDate: "",
+      firstName: "",
+      lastName: "",
+      address: "",
+      zipCode: "",
+      city: "",
+      iban: "",
+      kvkNumber: "",
+      btwNumber: "",
+      expenseAllowance: "",
       file: null,
     });
   };
@@ -217,6 +241,15 @@ export default function ContractsPage() {
       salary: contract.salary || "",
       notes: contract.notes || "",
       signedDate: contract.signedDate ? contract.signedDate.split("T")[0] : "",
+      firstName: "",
+      lastName: "",
+      address: "",
+      zipCode: "",
+      city: "",
+      iban: "",
+      kvkNumber: "",
+      btwNumber: "",
+      expenseAllowance: "",
       file: null,
     });
     setSelectedContract(contract);
@@ -496,171 +529,399 @@ export default function ContractsPage() {
       </Card>
 
       {/* Contracts Grid/List */}
-  {/* Inline Contract Form */}
-  {(showAddModal || showEditModal) && (
-    <Card className="p-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {selectedContract ? "📝 Contract Bewerken" : "📄 Nieuw Contract Toevoegen"}
-        </h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setShowAddModal(false);
-            setShowEditModal(false);
-            setSelectedContract(null);
-            resetForm();
-          }}
-        >
-          Annuleren
-        </Button>
-      </div>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Contract Type
-            </label>
-            <select
-              value={formData.contractType}
-              onChange={(e) => setFormData({...formData, contractType: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
+      {/* Enhanced Inline Contract Form */}
+      {(showAddModal || showEditModal) && (
+        <Card className="p-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {selectedContract
+                ? "📝 Contract Bewerken"
+                : "📄 Nieuw Contract Toevoegen"}
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowAddModal(false);
+                setShowEditModal(false);
+                setSelectedContract(null);
+                resetForm();
+              }}
             >
-              {Object.entries(contractTypeLabels).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+              Annuleren
+            </Button>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Contract Titel
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="Bijv. Arbeidsovereenkomst John Doe"
-              required
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Beschrijving
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Optionele beschrijving van het contract..."
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Startdatum
-            </label>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Einddatum (optioneel)
-            </label>
-            <input
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({...formData, status: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            >
-              {Object.entries(contractStatusLabels).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Salaris (optioneel)
-            </label>
-            <input
-              type="text"
-              value={formData.salary}
-              onChange={(e) => setFormData({...formData, salary: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="€ 3500 per maand"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Ondertekend op (optioneel)
-            </label>
-            <input
-              type="date"
-              value={formData.signedDate}
-              onChange={(e) => setFormData({...formData, signedDate: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Notities (optioneel)
-          </label>
-          <textarea
-            value={formData.notes}
-            onChange={(e) => setFormData({...formData, notes: e.target.value})}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Eventuele extra notities over dit contract..."
-          />
-        </div>
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setShowAddModal(false);
-              setShowEditModal(false);
-              setSelectedContract(null);
-              resetForm();
-            }}
-          >
-            Annuleren
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={loading}
-            disabled={loading}
-          >
-            {loading ? "Opslaan..." : (selectedContract ? "Contract Bijwerken" : "Contract Aanmaken")}
-          </Button>
-        </div>
-      </form>
-    </Card>
-  )}       {loading ? (
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Contract Basis Info */}
+            <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+              <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                Contract Informatie
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Contract Type
+                  </label>
+                  <select
+                    value={formData.contractType}
+                    onChange={(e) =>
+                      setFormData({ ...formData, contractType: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  >
+                    {Object.entries(contractTypeLabels).map(
+                      ([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Contract Titel
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Bijv. Arbeidsovereenkomst John Doe"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Beschrijving
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Optionele beschrijving van het contract..."
+                />
+              </div>
+            </div>
+
+            {/* Personal Details Section */}
+            {formData.contractType !== "FREELANCE" && (
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                  Personeelsgegevens
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Voornaam
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.firstName || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, firstName: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="John"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Achternaam
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.lastName || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lastName: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Doe"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Straatnaam + Huisnummer
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.address || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Hoofdstraat 123"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      IBAN
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.iban || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, iban: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="NL12 ABCD 0123 4567 89"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Postcode
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.zipCode || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, zipCode: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="1234 AB"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Woonplaats
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.city || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, city: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Amsterdam"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Freelance Details Section */}
+            {formData.contractType === "FREELANCE" && (
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                  Freelance Gegevens
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      KVK Nummer
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.kvkNumber || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, kvkNumber: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="12345678"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      BTW Nummer
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.btwNumber || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, btwNumber: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="NL123456789B01"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Contract Dates and Status */}
+            <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+              <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                Contract Periode & Status
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Startdatum
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Einddatum (optioneel)
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endDate: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  >
+                    {Object.entries(contractStatusLabels).map(
+                      ([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Financial Details Section */}
+            <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+              <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                Financiële Gegevens
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {formData.contractType === "ZERO_HOURS"
+                      ? "Bruto Uurtarief"
+                      : formData.contractType === "FREELANCE"
+                      ? "Uurtarief (excl. BTW)"
+                      : "Maandsalaris"}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.salary}
+                    onChange={(e) =>
+                      setFormData({ ...formData, salary: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder={
+                      formData.contractType === "ZERO_HOURS"
+                        ? "€ 15,00 per uur"
+                        : formData.contractType === "FREELANCE"
+                        ? "€ 75,00 per uur"
+                        : "€ 3500 per maand"
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Onkostenvergoeding (optioneel)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.expenseAllowance || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        expenseAllowance: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="€ 0,19 per km (reiskosten)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Ondertekend op (optioneel)
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.signedDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, signedDate: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Notities (optioneel)
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Eventuele extra notities over dit contract..."
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setShowEditModal(false);
+                  setSelectedContract(null);
+                  resetForm();
+                }}
+              >
+                Annuleren
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={loading}
+                disabled={loading}
+              >
+                {loading
+                  ? "Opslaan..."
+                  : selectedContract
+                  ? "Contract Bijwerken"
+                  : "Contract Aanmaken"}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {loading ? (
         <Card className="p-8">
           <div className="text-center">
             <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
@@ -857,7 +1118,12 @@ export default function ContractsPage() {
                           </div>
                           <div className="p-2 space-y-1">
                             <button
-                              onClick={() => sendEmail(contract.id, "new")}
+                              onClick={() => {
+                                setEmailContract(contract);
+                                setEmailType("new");
+                                setShowEmailModal(true);
+                                setShowEmailOptions(null);
+                              }}
                               className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex items-center space-x-2"
                             >
                               <span>📄</span>
@@ -871,7 +1137,12 @@ export default function ContractsPage() {
                               </div>
                             </button>
                             <button
-                              onClick={() => sendEmail(contract.id, "reminder")}
+                              onClick={() => {
+                                setEmailContract(contract);
+                                setEmailType("reminder");
+                                setShowEmailModal(true);
+                                setShowEmailOptions(null);
+                              }}
                               className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex items-center space-x-2"
                             >
                               <span>⏰</span>
@@ -883,7 +1154,12 @@ export default function ContractsPage() {
                               </div>
                             </button>
                             <button
-                              onClick={() => sendEmail(contract.id, "signed")}
+                              onClick={() => {
+                                setEmailContract(contract);
+                                setEmailType("signed");
+                                setShowEmailModal(true);
+                                setShowEmailOptions(null);
+                              }}
                               className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex items-center space-x-2"
                             >
                               <span>✅</span>
@@ -939,6 +1215,207 @@ export default function ContractsPage() {
           className="fixed inset-0 z-40"
           onClick={() => setShowEmailOptions(null)}
         />
+      )}
+      {/* Email Compose Modal */}
+      {showEmailModal && emailContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  📧 Contract Email Versturen
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowEmailModal(false);
+                    setEmailContract(null);
+                    setEmailSubject("");
+                    setEmailMessage("");
+                  }}
+                >
+                  Sluiten
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                    Contract Details
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Titel:</strong> {emailContract.title}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Naar:</strong> {emailContract.user.name} (
+                    {emailContract.user.email})
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Type:</strong>{" "}
+                    {contractTypeLabels[emailContract.contractType]}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email Type
+                  </label>
+                  <select
+                    value={emailType}
+                    onChange={(e) => {
+                      const type = e.target.value as
+                        | "new"
+                        | "signed"
+                        | "reminder";
+                      setEmailType(type);
+                      // Auto-fill subject based on type
+                      if (type === "new") {
+                        setEmailSubject(
+                          `Nieuw contract: ${emailContract.title}`
+                        );
+                        setEmailMessage(
+                          `Beste ${
+                            emailContract.user.name
+                          },\n\nHierbij ontvangt u uw nieuwe arbeidscontract ter ondertekening.\n\nContract details:\n- Titel: ${
+                            emailContract.title
+                          }\n- Type: ${
+                            contractTypeLabels[emailContract.contractType]
+                          }\n- Startdatum: ${format(
+                            new Date(emailContract.startDate),
+                            "dd MMMM yyyy",
+                            { locale: nl }
+                          )}\n\nGelieve het contract te controleren en te ondertekenen.\n\nMet vriendelijke groet,\nHR Team`
+                        );
+                      } else if (type === "reminder") {
+                        setEmailSubject(
+                          `Herinnering: Contract ondertekening - ${emailContract.title}`
+                        );
+                        setEmailMessage(
+                          `Beste ${emailContract.user.name},\n\nDit is een vriendelijke herinnering voor de ondertekening van uw contract.\n\nContract: ${emailContract.title}\n\nWij verzoeken u vriendelijk om het contract zo spoedig mogelijk te ondertekenen.\n\nMet vriendelijke groet,\nHR Team`
+                        );
+                      } else if (type === "signed") {
+                        setEmailSubject(
+                          `Bevestiging: Contract ondertekend - ${emailContract.title}`
+                        );
+                        setEmailMessage(
+                          `Beste ${emailContract.user.name},\n\nHierbij bevestigen wij de ontvangst van uw ondertekende contract.\n\nContract: ${emailContract.title}\n\nUw contract is nu actief en geldig.\n\nMet vriendelijke groet,\nHR Team`
+                        );
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="new">
+                      📄 Nieuw contract (voor ondertekening)
+                    </option>
+                    <option value="reminder">
+                      ⏰ Herinnering (niet ondertekend)
+                    </option>
+                    <option value="signed">
+                      ✅ Ondertekend contract (bevestiging)
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Onderwerp
+                  </label>
+                  <input
+                    type="text"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Email onderwerp..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Bericht
+                  </label>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    rows={8}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Typ hier uw email bericht..."
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowEmailModal(false);
+                      setEmailContract(null);
+                      setEmailSubject("");
+                      setEmailMessage("");
+                    }}
+                  >
+                    Annuleren
+                  </Button>
+                  <Button
+                    variant="primary"
+                    loading={sendingEmail === emailContract.id}
+                    onClick={async () => {
+                      if (!emailSubject.trim() || !emailMessage.trim()) {
+                        alert("Vul zowel onderwerp als bericht in.");
+                        return;
+                      }
+
+                      setSendingEmail(emailContract.id);
+                      try {
+                        const response = await fetch(
+                          `/api/contracts/${emailContract.id}/send-email`,
+                          {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              emailType,
+                              customSubject: emailSubject,
+                              customMessage: emailMessage,
+                            }),
+                          }
+                        );
+
+                        if (response.ok) {
+                          const result = await response.json();
+                          alert(`✅ ${result.message}`);
+                          setShowEmailModal(false);
+                          setEmailContract(null);
+                          setEmailSubject("");
+                          setEmailMessage("");
+                          setShowEmailOptions(null);
+                          await fetchContracts();
+                        } else {
+                          const error = await response.json();
+                          alert(
+                            `❌ ${error.error || "Fout bij verzenden email"}`
+                          );
+                        }
+                      } catch (error) {
+                        console.error("Error sending email:", error);
+                        alert(
+                          "❌ Er is een fout opgetreden bij het verzenden van de email"
+                        );
+                      } finally {
+                        setSendingEmail(null);
+                      }
+                    }}
+                    leftIcon={<EnvelopeIcon className="h-4 w-4" />}
+                  >
+                    {sendingEmail === emailContract.id
+                      ? "Verzenden..."
+                      : "📧 Email Versturen"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
