@@ -1,7 +1,8 @@
 {
-  "name": "jobflow",
+  "name": "jobflow-2025",
   "version": "0.1.0",
   "private": true,
+  "description": "JobFlow 2025 - Employee Management System with PDF and Email functionality",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
