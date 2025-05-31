@@ -259,16 +259,34 @@ export default function ContractManagement({
       });
 
       if (response.ok) {
+        const savedContract = await response.json();
         await fetchContracts();
         setShowAddModal(false);
         setShowEditModal(false);
         resetForm();
+
+        // If this is a new contract (not editing) and no file was uploaded,
+        // automatically generate PDF
+        if (!selectedContract && !formData.file) {
+          // Show success message and option to generate PDF
+          const generatePdfNow = confirm(
+            `Contract "${savedContract.title}" is succesvol aangemaakt!\n\nWil je nu automatisch een PDF genereren? Dan kun je het contract direct emailen.`
+          );
+
+          if (generatePdfNow) {
+            await generatePdf(savedContract.id);
+          }
+        }
       } else {
         const error = await response.json();
         console.error("Error saving contract:", error);
+        alert(
+          "Fout bij opslaan contract: " + (error.error || "Onbekende fout")
+        );
       }
     } catch (error) {
       console.error("Error saving contract:", error);
+      alert("Er is een fout opgetreden bij het opslaan van het contract");
     } finally {
       setLoading(false);
     }
@@ -531,15 +549,45 @@ export default function ContractManagement({
         const result = await response.json();
         await fetchContracts(); // Refresh to get updated contract with PDF
 
-        // Show success message or toast if you have one
-        console.log("PDF generated successfully");
+        // Find the updated contract
+        const updatedContract = contracts.find((c) => c.id === contractId);
+        if (updatedContract) {
+          // Show success message with options
+          const action = confirm(
+            `✅ PDF is succesvol gegenereerd voor "${updatedContract.title}"!\n\nWil je het contract nu bekijken en eventueel emailen?`
+          );
+
+          if (action) {
+            // Refresh contracts first to get the latest data
+            await fetchContracts();
+            // Find the contract again with updated data
+            const refreshedContracts = await fetch(
+              `/api/contracts?userId=${userId}`
+            );
+            if (refreshedContracts.ok) {
+              const latestContracts = await refreshedContracts.json();
+              const latestContract = latestContracts.find(
+                (c: Contract) => c.id === contractId
+              );
+              if (latestContract && latestContract.fileUrl) {
+                previewPdf(latestContract);
+              }
+            }
+          }
+        } else {
+          alert(
+            "✅ PDF succesvol gegenereerd! Ververs de pagina om de nieuwe opties te zien."
+          );
+        }
       } else {
         const error = await response.json();
-        alert(error.error || "Fout bij genereren PDF");
+        alert(
+          "❌ Fout bij genereren PDF: " + (error.error || "Onbekende fout")
+        );
       }
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Er is een fout opgetreden bij het genereren van de PDF");
+      alert("❌ Er is een fout opgetreden bij het genereren van de PDF");
     } finally {
       setGeneratingPdf(null);
     }
@@ -767,21 +815,26 @@ export default function ContractManagement({
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          onClick={() => generatePdf(contract.id)}
-                          variant="outline"
-                          size="sm"
-                          leftIcon={<DocumentTextIcon className="h-4 w-4" />}
-                          loading={generatingPdf === contract.id}
-                          className="text-purple-600 hover:text-purple-700 border-purple-300 hover:border-purple-400"
-                        >
-                          {generatingPdf === contract.id
-                            ? "Genereren..."
-                            : "PDF Maken"}
-                        </Button>
+                        <div className="flex flex-col items-center space-y-1">
+                          <Button
+                            onClick={() => generatePdf(contract.id)}
+                            variant="primary"
+                            size="sm"
+                            leftIcon={<DocumentTextIcon className="h-4 w-4" />}
+                            loading={generatingPdf === contract.id}
+                            className="bg-purple-600 hover:bg-purple-700 border-purple-600 hover:border-purple-700"
+                          >
+                            {generatingPdf === contract.id
+                              ? "PDF wordt gemaakt..."
+                              : "🚀 PDF Genereren"}
+                          </Button>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                            Genereer eerst PDF voor email opties
+                          </span>
+                        </div>
                       )}
 
-                      {/* Email Action */}
+                      {/* Email Action - only show if PDF exists */}
                       {contract.fileUrl && (
                         <div className="relative">
                           <Button
@@ -801,33 +854,65 @@ export default function ContractManagement({
                           >
                             {sendingEmail === contract.id
                               ? "Verzenden..."
-                              : "Email"}
+                              : "📧 Email"}
                           </Button>
 
                           {showEmailOptions === contract.id && (
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                              <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                  📧 Contract Emailen
+                                </h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  Naar: {userEmail}
+                                </p>
+                              </div>
                               <div className="p-2 space-y-1">
                                 <button
                                   onClick={() => sendEmail(contract.id, "new")}
-                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex items-center space-x-2"
                                 >
-                                  📄 Nieuw contract versturen
+                                  <span>📄</span>
+                                  <div>
+                                    <div className="font-medium">
+                                      Nieuw contract
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Voor ondertekening
+                                    </div>
+                                  </div>
                                 </button>
                                 <button
                                   onClick={() =>
                                     sendEmail(contract.id, "reminder")
                                   }
-                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex items-center space-x-2"
                                 >
-                                  ⏰ Herinnering versturen
+                                  <span>⏰</span>
+                                  <div>
+                                    <div className="font-medium">
+                                      Herinnering
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Voor niet-ondertekende contracten
+                                    </div>
+                                  </div>
                                 </button>
                                 <button
                                   onClick={() =>
                                     sendEmail(contract.id, "signed")
                                   }
-                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex items-center space-x-2"
                                 >
-                                  ✅ Ondertekend versturen
+                                  <span>✅</span>
+                                  <div>
+                                    <div className="font-medium">
+                                      Ondertekend contract
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Ter bevestiging
+                                    </div>
+                                  </div>
                                 </button>
                               </div>
                             </div>
