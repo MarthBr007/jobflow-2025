@@ -12,10 +12,14 @@ import {
   TrashIcon,
   PencilIcon,
   CloudArrowUpIcon,
+  DocumentArrowDownIcon,
+  EnvelopeIcon,
+  Cog8ToothIcon,
 } from "@heroicons/react/24/outline";
 import Button from "./Button";
 import Modal from "./Modal";
 import ContractUploader from "./ContractUploader";
+import { Toast, useToast } from "./Toast";
 
 interface Contract {
   id: string;
@@ -63,6 +67,10 @@ export default function ContractViewer({
   const [showContractDetails, setShowContractDetails] = useState(false);
   const [signingContract, setSigningContract] = useState<string | null>(null);
   const [showContractUploader, setShowContractUploader] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [showEmailOptions, setShowEmailOptions] = useState<string | null>(null);
+  const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -182,6 +190,109 @@ export default function ContractViewer({
     );
   };
 
+  const generatePdf = async (contractId: string) => {
+    setGeneratingPdf(contractId);
+    try {
+      const response = await fetch(
+        `/api/contracts/${contractId}/generate-pdf`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        showToast("PDF succesvol gegenereerd", "success");
+        await fetchContracts(); // Refresh contracts
+
+        // Update selected contract if it's the same one
+        if (selectedContract && selectedContract.id === contractId) {
+          const updatedContracts = contracts.map((c) =>
+            c.id === contractId
+              ? { ...c, fileUrl: result.fileUrl, fileName: result.fileName }
+              : c
+          );
+          const updatedContract = updatedContracts.find(
+            (c) => c.id === contractId
+          );
+          if (updatedContract) {
+            setSelectedContract(updatedContract);
+          }
+        }
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Fout bij PDF generatie", "error");
+      }
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showToast(
+        "Er is een fout opgetreden bij het genereren van de PDF",
+        "error"
+      );
+    } finally {
+      setGeneratingPdf(null);
+    }
+  };
+
+  const sendEmail = async (
+    contractId: string,
+    emailType: "new" | "signed" | "reminder"
+  ) => {
+    setSendingEmail(contractId);
+    try {
+      const response = await fetch(`/api/contracts/${contractId}/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emailType }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        showToast(result.message, "success");
+        setShowEmailOptions(null);
+        await fetchContracts(); // Refresh to see updated notes
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Fout bij verzenden email", "error");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      showToast(
+        "Er is een fout opgetreden bij het verzenden van de email",
+        "error"
+      );
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
+  const downloadPdf = async (contract: Contract) => {
+    if (!contract.fileUrl) {
+      showToast("Geen PDF beschikbaar. Genereer eerst een PDF.", "warning");
+      return;
+    }
+
+    try {
+      // Create download link
+      const link = document.createElement("a");
+      link.href = contract.fileUrl;
+      link.download = contract.fileName || `${contract.title}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast("PDF gedownload", "success");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      showToast("Fout bij downloaden PDF", "error");
+    }
+  };
+
   const viewContractDetails = (contract: Contract) => {
     setSelectedContract(contract);
     setShowContractDetails(true);
@@ -258,9 +369,6 @@ export default function ContractViewer({
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 Geen contracten gevonden
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                Er zijn nog geen contracten aangemaakt voor deze medewerker.
-              </p>
               {(session?.user?.role === "ADMIN" ||
                 session?.user?.role === "MANAGER") && (
                 <Button
@@ -374,6 +482,90 @@ export default function ContractViewer({
                       >
                         Bekijken
                       </Button>
+
+                      {/* PDF Actions - Only for Admin/Manager */}
+                      {(session?.user?.role === "ADMIN" ||
+                        session?.user?.role === "MANAGER") && (
+                        <div className="flex space-x-1">
+                          {contract.fileUrl ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={
+                                <DocumentArrowDownIcon className="h-4 w-4" />
+                              }
+                              onClick={() => downloadPdf(contract)}
+                              className="flex-1"
+                            >
+                              PDF
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<Cog8ToothIcon className="h-4 w-4" />}
+                              onClick={() => generatePdf(contract.id)}
+                              loading={generatingPdf === contract.id}
+                              className="flex-1"
+                            >
+                              PDF
+                            </Button>
+                          )}
+
+                          {contract.fileUrl && (
+                            <div className="relative">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                leftIcon={<EnvelopeIcon className="h-4 w-4" />}
+                                onClick={() =>
+                                  setShowEmailOptions(
+                                    showEmailOptions === contract.id
+                                      ? null
+                                      : contract.id
+                                  )
+                                }
+                                loading={sendingEmail === contract.id}
+                                className="flex-1"
+                              >
+                                Mail
+                              </Button>
+
+                              {/* Email Options Dropdown */}
+                              {showEmailOptions === contract.id && (
+                                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                                  <div className="p-2 space-y-1">
+                                    <button
+                                      onClick={() =>
+                                        sendEmail(contract.id, "new")
+                                      }
+                                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                    >
+                                      📄 Nieuw contract
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        sendEmail(contract.id, "reminder")
+                                      }
+                                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                    >
+                                      ⏰ Herinnering
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        sendEmail(contract.id, "signed")
+                                      }
+                                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                    >
+                                      ✅ Ondertekend
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {canSignContract(contract) && (
                         <Button
@@ -591,18 +783,26 @@ export default function ContractViewer({
       )}
 
       {/* Contract Uploader Modal */}
-      {userId && userName && (
+      {showContractUploader && (
         <ContractUploader
           isOpen={showContractUploader}
           onClose={() => setShowContractUploader(false)}
-          userId={userId}
-          userName={userName}
+          userId={userId || ""}
+          userName={userName || "Medewerker"}
           onContractUploaded={() => {
-            fetchContracts();
             setShowContractUploader(false);
+            fetchContracts();
           }}
         />
       )}
+
+      {/* Toast Notifications */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </>
   );
 }
