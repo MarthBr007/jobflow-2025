@@ -203,7 +203,7 @@ export default function ContractsPage() {
   const handleAddContract = () => {
     resetForm();
     setSelectedContract(null);
-    alert("Contract toevoegen tijdelijk uitgeschakeld - wordt binnenkort vervangen door inline form");
+    setShowAddModal(true);
   };
 
   const handleEditContract = (contract: Contract) => {
@@ -220,7 +220,7 @@ export default function ContractsPage() {
       file: null,
     });
     setSelectedContract(contract);
-    alert("Contract bewerken tijdelijk uitgeschakeld - wordt binnenkort vervangen door inline form");
+    setShowEditModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -769,6 +769,39 @@ export default function ContractsPage() {
         </div>
       )}
 
+      {/* Add Contract Modal */}
+      <div
+        className={`fixed inset-0 z-40 ${showAddModal ? "" : "hidden"}`}
+        onClick={() => {
+          setShowAddModal(false);
+          resetForm();
+        }}
+      >
+        <div className="fixed inset-0 bg-black opacity-50"></div>
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="absolute inset-0 max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-4">
+                📄 Nieuw Contract Toevoegen
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {userId
+                  ? `Voeg een nieuw contract toe voor ${userName}`
+                  : "Voeg een nieuw contract toe"}
+              </p>
+              <form onSubmit={handleSubmit}>
+                {/* Contract form implementation */}
+                <p>Contract formulier hier...</p>
+                <div className="mt-4">
+                  <Button type="submit" variant="primary">
+                    Contract Toevoegen
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Click outside to close email dropdowns */}
       {showEmailOptions && (
