@@ -12,6 +12,10 @@ import {
   CheckCircleIcon,
   ClockIcon,
   XMarkIcon,
+  DocumentArrowDownIcon,
+  EnvelopeIcon,
+  EyeIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button from "./Button";
@@ -99,6 +103,14 @@ export default function ContractManagement({
     null
   );
   const [fileUploading, setFileUploading] = useState(false);
+
+  // New states for PDF and email functionality
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [showEmailOptions, setShowEmailOptions] = useState<string | null>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewContract, setPreviewContract] = useState<Contract | null>(null);
 
   const [formData, setFormData] = useState({
     contractType: "PERMANENT_FULL_TIME",
@@ -504,6 +516,94 @@ export default function ContractManagement({
     </form>
   );
 
+  // New function: Generate PDF
+  const generatePdf = async (contractId: string) => {
+    setGeneratingPdf(contractId);
+    try {
+      const response = await fetch(
+        `/api/contracts/${contractId}/generate-pdf`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        await fetchContracts(); // Refresh to get updated contract with PDF
+
+        // Show success message or toast if you have one
+        console.log("PDF generated successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Fout bij genereren PDF");
+      }
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Er is een fout opgetreden bij het genereren van de PDF");
+    } finally {
+      setGeneratingPdf(null);
+    }
+  };
+
+  // New function: Send Email
+  const sendEmail = async (
+    contractId: string,
+    emailType: "new" | "signed" | "reminder"
+  ) => {
+    setSendingEmail(contractId);
+    try {
+      const response = await fetch(`/api/contracts/${contractId}/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emailType }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(result.message); // Or use a toast notification
+        setShowEmailOptions(null);
+        await fetchContracts(); // Refresh to see updated notes
+      } else {
+        const error = await response.json();
+        alert(error.error || "Fout bij verzenden email");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert("Er is een fout opgetreden bij het verzenden van de email");
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
+  // New function: Download PDF
+  const downloadPdf = (contract: Contract) => {
+    if (!contract.fileUrl) {
+      alert("Geen PDF beschikbaar. Genereer eerst een PDF.");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = contract.fileUrl;
+    link.download = contract.fileName || `${contract.title}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // New function: Preview PDF
+  const previewPdf = (contract: Contract) => {
+    if (!contract.fileUrl) {
+      alert("Geen PDF beschikbaar. Genereer eerst een PDF.");
+      return;
+    }
+
+    setPreviewContract(contract);
+    setPreviewPdfUrl(contract.fileUrl);
+    setShowPdfPreview(true);
+  };
+
   return (
     <>
       {/* Main Contract Management Modal */}
@@ -642,23 +742,119 @@ export default function ContractManagement({
                     </div>
 
                     <div className="flex space-x-2 ml-4">
-                      <Button
-                        onClick={() => handleEditContract(contract)}
-                        variant="outline"
-                        size="sm"
-                        leftIcon={<PencilIcon className="h-4 w-4" />}
-                      >
-                        Bewerken
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteContract(contract)}
-                        variant="outline"
-                        size="sm"
-                        leftIcon={<TrashIcon className="h-4 w-4" />}
-                        className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
-                      >
-                        Verwijderen
-                      </Button>
+                      {/* PDF Actions */}
+                      {contract.fileUrl ? (
+                        <div className="flex space-x-1">
+                          <Button
+                            onClick={() => previewPdf(contract)}
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<EyeIcon className="h-4 w-4" />}
+                            className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                          >
+                            Bekijken
+                          </Button>
+                          <Button
+                            onClick={() => downloadPdf(contract)}
+                            variant="outline"
+                            size="sm"
+                            leftIcon={
+                              <DocumentArrowDownIcon className="h-4 w-4" />
+                            }
+                            className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+                          >
+                            Download
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => generatePdf(contract.id)}
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<DocumentTextIcon className="h-4 w-4" />}
+                          loading={generatingPdf === contract.id}
+                          className="text-purple-600 hover:text-purple-700 border-purple-300 hover:border-purple-400"
+                        >
+                          {generatingPdf === contract.id
+                            ? "Genereren..."
+                            : "PDF Maken"}
+                        </Button>
+                      )}
+
+                      {/* Email Action */}
+                      {contract.fileUrl && (
+                        <div className="relative">
+                          <Button
+                            onClick={() =>
+                              setShowEmailOptions(
+                                showEmailOptions === contract.id
+                                  ? null
+                                  : contract.id
+                              )
+                            }
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<EnvelopeIcon className="h-4 w-4" />}
+                            rightIcon={<ChevronDownIcon className="h-3 w-3" />}
+                            loading={sendingEmail === contract.id}
+                            className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
+                          >
+                            {sendingEmail === contract.id
+                              ? "Verzenden..."
+                              : "Email"}
+                          </Button>
+
+                          {showEmailOptions === contract.id && (
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                              <div className="p-2 space-y-1">
+                                <button
+                                  onClick={() => sendEmail(contract.id, "new")}
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                >
+                                  📄 Nieuw contract versturen
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    sendEmail(contract.id, "reminder")
+                                  }
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                >
+                                  ⏰ Herinnering versturen
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    sendEmail(contract.id, "signed")
+                                  }
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                >
+                                  ✅ Ondertekend versturen
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Edit/Delete Actions */}
+                      <div className="flex space-x-1 border-l border-gray-300 dark:border-gray-600 pl-2 ml-2">
+                        <Button
+                          onClick={() => handleEditContract(contract)}
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<PencilIcon className="h-4 w-4" />}
+                        >
+                          Bewerken
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteContract(contract)}
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<TrashIcon className="h-4 w-4" />}
+                          className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                        >
+                          Verwijderen
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -741,6 +937,132 @@ export default function ContractManagement({
           </div>
         </div>
       </Modal>
+
+      {/* PDF Preview Modal */}
+      {showPdfPreview && previewContract && previewPdfUrl && (
+        <Modal
+          isOpen={showPdfPreview}
+          onClose={() => {
+            setShowPdfPreview(false);
+            setPreviewPdfUrl(null);
+            setPreviewContract(null);
+          }}
+          title={`📄 Contract Preview: ${previewContract.title}`}
+          size="full"
+        >
+          <div className="space-y-4">
+            {/* Preview Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                  {previewContract.title}
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Voor: {userName} ({userEmail})
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Download Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadPdf(previewContract)}
+                  leftIcon={<DocumentArrowDownIcon className="h-4 w-4" />}
+                >
+                  Download
+                </Button>
+
+                {/* Email Options */}
+                <div className="relative">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() =>
+                      setShowEmailOptions(
+                        showEmailOptions === previewContract.id
+                          ? null
+                          : previewContract.id
+                      )
+                    }
+                    leftIcon={<EnvelopeIcon className="h-4 w-4" />}
+                    rightIcon={<ChevronDownIcon className="h-3 w-3" />}
+                    loading={sendingEmail === previewContract.id}
+                  >
+                    Email Versturen
+                  </Button>
+
+                  {showEmailOptions === previewContract.id && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                      <div className="p-2">
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                          onClick={() => {
+                            sendEmail(previewContract.id, "new");
+                          }}
+                        >
+                          📄 Nieuw contract versturen
+                        </button>
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                          onClick={() => {
+                            sendEmail(previewContract.id, "reminder");
+                          }}
+                        >
+                          ⏰ Herinnering versturen
+                        </button>
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                          onClick={() => {
+                            sendEmail(previewContract.id, "signed");
+                          }}
+                        >
+                          ✅ Ondertekend contract versturen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* PDF Viewer */}
+            <div className="w-full h-[600px] border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+              <iframe
+                src={previewPdfUrl}
+                className="w-full h-full"
+                title="PDF Preview"
+                style={{ border: "none" }}
+              />
+            </div>
+
+            {/* Info Section */}
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+              <div className="flex items-start space-x-3">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-green-900 dark:text-green-100">
+                    Contract Klaar voor Verzending
+                  </h4>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                    Het contract is gegenereerd en klaar om te versturen. Je
+                    kunt de PDF downloaden of direct per email versturen naar{" "}
+                    {userName} ({userEmail}).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Click outside to close email dropdowns */}
+      {showEmailOptions && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowEmailOptions(null)}
+        />
+      )}
     </>
   );
 }
