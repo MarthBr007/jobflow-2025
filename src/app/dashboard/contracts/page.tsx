@@ -1219,11 +1219,11 @@ export default function ContractsPage() {
       {/* Email Compose Modal */}
       {showEmailModal && emailContract && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  📧 Contract Email Versturen
+          <Card className="w-full max-w-4xl mx-4 max-h-[95vh] overflow-y-auto">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                  📧 Professional Email Composer
                 </h3>
                 <Button
                   variant="outline"
@@ -1235,31 +1235,70 @@ export default function ContractsPage() {
                     setEmailMessage("");
                   }}
                 >
-                  Sluiten
+                  ✕ Sluiten
                 </Button>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                    Contract Details
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Titel:</strong> {emailContract.title}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Naar:</strong> {emailContract.user.name} (
-                    {emailContract.user.email})
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Type:</strong>{" "}
-                    {contractTypeLabels[emailContract.contractType]}
-                  </p>
+              <div className="space-y-6">
+                {/* Contract Details Card - Enhanced */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                      <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
+                        📎 Contract Bijlage Inbegrepen
+                      </h4>
+                      <div className="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-blue-800 dark:text-blue-200">
+                            Contract:
+                          </span>
+                          <span className="ml-2 text-blue-700 dark:text-blue-300">
+                            {emailContract.title}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-800 dark:text-blue-200">
+                            Ontvanger:
+                          </span>
+                          <span className="ml-2 text-blue-700 dark:text-blue-300">
+                            {emailContract.user.name}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-800 dark:text-blue-200">
+                            Email:
+                          </span>
+                          <span className="ml-2 text-blue-700 dark:text-blue-300">
+                            {emailContract.user.email}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-800 dark:text-blue-200">
+                            Type:
+                          </span>
+                          <span className="ml-2 text-blue-700 dark:text-blue-300">
+                            {contractTypeLabels[emailContract.contractType]}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center">
+                          <span className="mr-2">📄</span>
+                          Het contract PDF wordt automatisch als bijlage
+                          toegevoegd
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email Type
+                {/* Email Type Selector - Enhanced */}
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    📧 Email Template Type
                   </label>
                   <select
                     value={emailType}
@@ -1269,41 +1308,73 @@ export default function ContractsPage() {
                         | "signed"
                         | "reminder";
                       setEmailType(type);
-                      // Auto-fill subject based on type
+                      // Auto-fill with enhanced templates
                       if (type === "new") {
                         setEmailSubject(
-                          `Nieuw contract: ${emailContract.title}`
+                          `📄 Nieuw Contract: ${emailContract.title}`
                         );
-                        setEmailMessage(
-                          `Beste ${
-                            emailContract.user.name
-                          },\n\nHierbij ontvangt u uw nieuwe arbeidscontract ter ondertekening.\n\nContract details:\n- Titel: ${
-                            emailContract.title
-                          }\n- Type: ${
-                            contractTypeLabels[emailContract.contractType]
-                          }\n- Startdatum: ${format(
-                            new Date(emailContract.startDate),
-                            "dd MMMM yyyy",
-                            { locale: nl }
-                          )}\n\nGelieve het contract te controleren en te ondertekenen.\n\nMet vriendelijke groet,\nHR Team`
-                        );
+                        setEmailMessage(`Beste ${emailContract.user.name},
+
+Hierbij ontvangt u uw nieuwe arbeidscontract ter ondertekening.
+
+📋 **Contract Details:**
+• Titel: ${emailContract.title}
+• Type: ${contractTypeLabels[emailContract.contractType]}
+• Startdatum: ${format(new Date(emailContract.startDate), "dd MMMM yyyy", {
+                          locale: nl,
+                        })}
+
+📎 **Bijlage:** Het volledige contract als PDF
+
+🔍 **Volgende stappen:**
+1. Download en bekijk het bijgevoegde contract
+2. Controleer alle gegevens zorgvuldig
+3. Onderteken het contract en stuur het terug
+
+Bij vragen kunt u altijd contact met ons opnemen.
+
+Met vriendelijke groet,
+HR Team - Broers Verhuur`);
                       } else if (type === "reminder") {
                         setEmailSubject(
-                          `Herinnering: Contract ondertekening - ${emailContract.title}`
+                          `⏰ Herinnering: Contract Ondertekening - ${emailContract.title}`
                         );
-                        setEmailMessage(
-                          `Beste ${emailContract.user.name},\n\nDit is een vriendelijke herinnering voor de ondertekening van uw contract.\n\nContract: ${emailContract.title}\n\nWij verzoeken u vriendelijk om het contract zo spoedig mogelijk te ondertekenen.\n\nMet vriendelijke groet,\nHR Team`
-                        );
+                        setEmailMessage(`Beste ${emailContract.user.name},
+
+Dit is een vriendelijke herinnering voor de ondertekening van uw contract.
+
+📋 **Contract:** ${emailContract.title}
+
+We hebben nog geen ondertekend exemplaar van u ontvangen. Om de arbeidsrelatie te kunnen starten, verzoeken wij u vriendelijk het contract zo spoedig mogelijk te ondertekenen en terug te sturen.
+
+📎 Het contract vindt u bijgevoegd bij deze email.
+
+Heeft u vragen of onduidelijkheden? Neem dan contact met ons op.
+
+Met vriendelijke groet,
+HR Team - Broers Verhuur`);
                       } else if (type === "signed") {
                         setEmailSubject(
-                          `Bevestiging: Contract ondertekend - ${emailContract.title}`
+                          `✅ Bevestiging: Contract Ondertekend - ${emailContract.title}`
                         );
-                        setEmailMessage(
-                          `Beste ${emailContract.user.name},\n\nHierbij bevestigen wij de ontvangst van uw ondertekende contract.\n\nContract: ${emailContract.title}\n\nUw contract is nu actief en geldig.\n\nMet vriendelijke groet,\nHR Team`
-                        );
+                        setEmailMessage(`Beste ${emailContract.user.name},
+
+Hartelijk dank voor de ondertekening van uw contract!
+
+📋 **Contract:** ${emailContract.title}
+✅ **Status:** Ondertekend en actief
+
+Hierbij bevestigen wij de ontvangst van uw ondertekende contract. Uw arbeidsrelatie met Broers Verhuur is nu officieel van start gegaan.
+
+📎 Ter bevestiging ontvangt u nogmaals een kopie van het ondertekende contract.
+
+Welkom bij het team! We kijken ernaar uit om met u samen te werken.
+
+Met vriendelijke groet,
+HR Team - Broers Verhuur`);
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base"
                   >
                     <option value="new">
                       📄 Nieuw contract (voor ondertekening)
@@ -1317,37 +1388,151 @@ export default function ContractsPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Onderwerp
+                {/* Enhanced Subject Field */}
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    📝 Email Onderwerp
                   </label>
                   <input
                     type="text"
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Email onderwerp..."
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base"
+                    placeholder="Voer het email onderwerp in..."
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Bericht
-                  </label>
-                  <textarea
-                    value={emailMessage}
-                    onChange={(e) => setEmailMessage(e.target.value)}
-                    rows={8}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Typ hier uw email bericht..."
-                    required
-                  />
+                {/* Rich Text Editor Container */}
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                  {/* Formatting Toolbar */}
+                  <div className="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-750">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">
+                        ✨ Formatting:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector(
+                            'textarea[placeholder*="email bericht"]'
+                          ) as HTMLTextAreaElement;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const selectedText = textarea.value.substring(
+                              start,
+                              end
+                            );
+                            const newText =
+                              textarea.value.substring(0, start) +
+                              `**${selectedText}**` +
+                              textarea.value.substring(end);
+                            setEmailMessage(newText);
+                            setTimeout(() => {
+                              textarea.focus();
+                              textarea.setSelectionRange(start + 2, end + 2);
+                            }, 0);
+                          }
+                        }}
+                        className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <strong>B</strong>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector(
+                            'textarea[placeholder*="email bericht"]'
+                          ) as HTMLTextAreaElement;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const selectedText = textarea.value.substring(
+                              start,
+                              end
+                            );
+                            const newText =
+                              textarea.value.substring(0, start) +
+                              `*${selectedText}*` +
+                              textarea.value.substring(end);
+                            setEmailMessage(newText);
+                            setTimeout(() => {
+                              textarea.focus();
+                              textarea.setSelectionRange(start + 1, end + 1);
+                            }, 0);
+                          }
+                        }}
+                        className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors italic"
+                      >
+                        I
+                      </button>
+                      <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmailMessage((prev) => prev + "\n• ");
+                        }}
+                        className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        • List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmailMessage(
+                            (prev) => prev + "\n📋 **Belangrijk:** "
+                          );
+                        }}
+                        className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        💡 Note
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmailMessage((prev) => prev + "\n\n---\n\n");
+                        }}
+                        className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        ─ Divider
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Enhanced Text Area */}
+                  <div className="p-6">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      💬 Email Bericht
+                    </label>
+                    <textarea
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      rows={12}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base resize-y min-h-[300px]"
+                      placeholder="Typ hier uw professionele email bericht...
+
+💡 Tips:
+• Gebruik **tekst** voor vetgedrukte tekst
+• Gebruik *tekst* voor schuingedrukte tekst  
+• Gebruik • voor bullet points
+• Gebruik emojis om uw bericht vriendelijker te maken
+
+Het contract PDF wordt automatisch bijgevoegd."
+                      required
+                    />
+                    <div className="mt-3 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>📄 Contract PDF wordt automatisch bijgevoegd</span>
+                      <span>{emailMessage.length} karakters</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {/* Enhanced Action Buttons */}
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <Button
                     variant="outline"
+                    size="lg"
                     onClick={() => {
                       setShowEmailModal(false);
                       setEmailContract(null);
@@ -1355,14 +1540,15 @@ export default function ContractsPage() {
                       setEmailMessage("");
                     }}
                   >
-                    Annuleren
+                    ❌ Annuleren
                   </Button>
                   <Button
                     variant="primary"
+                    size="lg"
                     loading={sendingEmail === emailContract.id}
                     onClick={async () => {
                       if (!emailSubject.trim() || !emailMessage.trim()) {
-                        alert("Vul zowel onderwerp als bericht in.");
+                        alert("❌ Vul zowel onderwerp als bericht in.");
                         return;
                       }
 
@@ -1405,11 +1591,11 @@ export default function ContractsPage() {
                         setSendingEmail(null);
                       }
                     }}
-                    leftIcon={<EnvelopeIcon className="h-4 w-4" />}
+                    leftIcon={<EnvelopeIcon className="h-5 w-5" />}
                   >
                     {sendingEmail === emailContract.id
-                      ? "Verzenden..."
-                      : "📧 Email Versturen"}
+                      ? "📤 Verzenden..."
+                      : "📧 Professional Email Versturen"}
                   </Button>
                 </div>
               </div>
