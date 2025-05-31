@@ -5,15 +5,19 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   Cog6ToothIcon,
+  ServerIcon,
+  ShieldCheckIcon,
   EnvelopeIcon,
   MapPinIcon,
   WrenchScrewdriverIcon,
-  ShieldCheckIcon,
+  ChartBarIcon,
+  UserGroupIcon,
   ClockIcon,
-  BuildingOfficeIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
-import Button from "@/components/ui/Button";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import Button from "@/components/ui/Button";
+import PermissionGuard from "@/components/ui/PermissionGuard";
 
 const settingsCategories = [
   {
@@ -54,37 +58,23 @@ const settingsCategories = [
   {
     title: "Bedrijfsinstellingen",
     description: "Algemene bedrijfsinformatie en configuratie",
-    icon: BuildingOfficeIcon,
+    icon: ServerIcon,
     href: "/dashboard/admin/company-settings",
     color: "bg-indigo-500",
   },
 ];
 
 export default function SystemSettings() {
+  return (
+    <PermissionGuard permission="canManageSystemSettings">
+      <SystemSettingsContent />
+    </PermissionGuard>
+  );
+}
+
+function SystemSettingsContent() {
   const { data: session } = useSession();
   const router = useRouter();
-
-  // Check if user has admin access
-  useEffect(() => {
-    if (session && session.user?.role !== "ADMIN") {
-      router.push("/dashboard");
-    }
-  }, [session, router]);
-
-  if (!session || session.user?.role !== "ADMIN") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Geen toegang
-          </h1>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">
-            Je hebt geen rechten om deze pagina te bekijken.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -106,6 +96,11 @@ export default function SystemSettings() {
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Configureer en beheer alle systeemwijde instellingen
           </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium">
+            Admin Toegang
+          </div>
         </div>
       </div>
 

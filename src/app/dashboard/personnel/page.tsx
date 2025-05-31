@@ -33,6 +33,7 @@ import AdvancedFilters, {
   FilterCriteria,
 } from "@/components/ui/AdvancedFilters";
 import ContractViewer from "@/components/ui/ContractViewer";
+import PermissionGuard from "@/components/ui/PermissionGuard";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -91,6 +92,14 @@ const defaultFilters: FilterCriteria = {
 };
 
 export default function Personnel() {
+  return (
+    <PermissionGuard permission="canViewAllUsers">
+      <PersonnelContent />
+    </PermissionGuard>
+  );
+}
+
+function PersonnelContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
