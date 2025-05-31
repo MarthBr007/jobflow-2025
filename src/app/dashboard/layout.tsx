@@ -19,6 +19,7 @@ import {
   XMarkIcon,
   CalendarDaysIcon,
   HomeIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import Header from "@/components/Header";
 import { motion, AnimatePresence } from "framer-motion";
@@ -90,7 +91,9 @@ const adminNavigation = [
 ];
 
 const userNavigation = [
-  ...baseNavigation.slice(0, 5),
+  ...baseNavigation.slice(0, 1),
+  { name: "Mijn Profiel", href: "/dashboard/profile", icon: UserIcon },
+  ...baseNavigation.slice(1, 5),
   { name: "Collega's", href: "/dashboard/colleagues", icon: UserGroupIcon },
   ...baseNavigation.slice(5),
 ];
