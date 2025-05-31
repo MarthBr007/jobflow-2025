@@ -32,7 +32,6 @@ import ExcelImport from "@/components/ui/ExcelImport";
 import AdvancedFilters, {
   FilterCriteria,
 } from "@/components/ui/AdvancedFilters";
-import ContractViewer from "@/components/ui/ContractViewer";
 import PermissionGuard from "@/components/ui/PermissionGuard";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -453,6 +452,16 @@ function PersonnelContent() {
             <span className="hidden sm:inline">Excel Import</span>
           </Button>
           <Button
+            onClick={() => router.push("/dashboard/contracts")}
+            leftIcon={<DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+            variant="outline"
+            size="md"
+            className="w-full sm:w-auto touch-manipulation text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+          >
+            <span className="sm:hidden">Contracten</span>
+            <span className="hidden sm:inline">Alle Contracten</span>
+          </Button>
+          <Button
             onClick={() => setShowAddModal(true)}
             leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
             variant="primary"
@@ -666,6 +675,27 @@ function PersonnelContent() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/contracts?userId=${
+                                      employee.id
+                                    }&userName=${encodeURIComponent(
+                                      employee.name
+                                    )}&userEmail=${encodeURIComponent(
+                                      employee.email
+                                    )}`
+                                  )
+                                }
+                                leftIcon={
+                                  <DocumentTextIcon className="h-4 w-4" />
+                                }
+                                className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                              >
+                                Contracten
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1628,21 +1658,6 @@ function PersonnelContent() {
           </div>
         </div>
       </Modal>
-
-      {/* Contract Management Modal */}
-      {employeeForContract && (
-        <ContractViewer
-          userId={employeeForContract.id}
-          userName={employeeForContract.name}
-          isOpen={showContractModal}
-          onClose={() => {
-            setShowContractModal(false);
-            setEmployeeForContract(null);
-            // Refresh employees to get updated contract status
-            fetchEmployees();
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -108,14 +108,6 @@ export default function EditEmployeeTabs() {
   const [customEndTime, setCustomEndTime] = useState<string>("");
   const [useCustomTimes, setUseCustomTimes] = useState<boolean>(false);
   const [assignmentNotes, setAssignmentNotes] = useState<string>("");
-  const [showContractManagement, setShowContractManagement] = useState(false);
-  const [showFreelanceContractGenerator, setShowFreelanceContractGenerator] =
-    useState(false);
-  const [showEmployeeContractGenerator, setShowEmployeeContractGenerator] =
-    useState(false);
-  const [showQuickContractGenerator, setShowQuickContractGenerator] =
-    useState(false);
-  const [showContractViewer, setShowContractViewer] = useState(false);
 
   useEffect(() => {
     if (params?.id) {
@@ -1086,7 +1078,9 @@ export default function EditEmployeeTabs() {
                                     <DocumentTextIcon className="h-4 w-4" />
                                   }
                                   onClick={() =>
-                                    setShowFreelanceContractGenerator(true)
+                                    router.push(
+                                      "/dashboard/contracts/freelance"
+                                    )
                                   }
                                 >
                                   Uitgebreid Contract
@@ -1099,7 +1093,7 @@ export default function EditEmployeeTabs() {
                                     <DocumentTextIcon className="h-4 w-4" />
                                   }
                                   onClick={() =>
-                                    setShowQuickContractGenerator(true)
+                                    router.push("/dashboard/contracts/quick")
                                   }
                                 >
                                   Basis Template
@@ -1154,7 +1148,7 @@ export default function EditEmployeeTabs() {
                                   <DocumentTextIcon className="h-4 w-4" />
                                 }
                                 onClick={() =>
-                                  setShowEmployeeContractGenerator(true)
+                                  router.push("/dashboard/contracts/employee")
                                 }
                               >
                                 {employee.employeeType === "FLEX_WORKER"
@@ -1169,7 +1163,7 @@ export default function EditEmployeeTabs() {
                                   <DocumentTextIcon className="h-4 w-4" />
                                 }
                                 onClick={() =>
-                                  setShowQuickContractGenerator(true)
+                                  router.push("/dashboard/contracts/quick")
                                 }
                               >
                                 Basis Template
@@ -1241,7 +1235,7 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                setShowQuickContractGenerator(true)
+                                router.push("/dashboard/contracts/quick")
                               }
                               className="w-full"
                             >
@@ -1255,7 +1249,7 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                setShowFreelanceContractGenerator(true)
+                                router.push("/dashboard/contracts/freelance")
                               }
                               className="w-full"
                             >
@@ -1281,7 +1275,7 @@ export default function EditEmployeeTabs() {
                             variant="outline"
                             size="md"
                             leftIcon={<DocumentTextIcon className="h-4 w-4" />}
-                            onClick={() => setShowContractViewer(true)}
+                            onClick={() => router.push("/dashboard/contracts")}
                             className="w-full"
                           >
                             Contracten Beheren
@@ -1384,7 +1378,7 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                setShowQuickContractGenerator(true)
+                                router.push("/dashboard/contracts/quick")
                               }
                               className="w-full"
                             >
@@ -1398,7 +1392,7 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                setShowEmployeeContractGenerator(true)
+                                router.push("/dashboard/contracts/employee")
                               }
                               className="w-full"
                             >
@@ -1426,7 +1420,7 @@ export default function EditEmployeeTabs() {
                             variant="outline"
                             size="md"
                             leftIcon={<DocumentTextIcon className="h-4 w-4" />}
-                            onClick={() => setShowContractViewer(true)}
+                            onClick={() => router.push("/dashboard/contracts")}
                             className="w-full"
                           >
                             Contracten Beheren
@@ -1481,79 +1475,6 @@ export default function EditEmployeeTabs() {
           </Button>
         </div>
       </form>
-
-      {/* Contract Management Modal */}
-      {employee && (
-        <ContractViewer
-          userId={employee.id}
-          userName={employee.name}
-          isOpen={showContractViewer}
-          onClose={() => setShowContractViewer(false)}
-        />
-      )}
-
-      {/* Freelance Contract Generator Modal */}
-      {employee && employee.employeeType === "FREELANCER" && (
-        <FreelanceContractGenerator
-          isOpen={showFreelanceContractGenerator}
-          onClose={() => setShowFreelanceContractGenerator(false)}
-          employeeData={{
-            name: employee.name,
-            email: employee.email,
-            kvkNumber: employee.kvkNumber,
-            btwNumber: employee.btwNumber,
-            address: employee.address,
-          }}
-          onContractGenerated={(contractData) => {
-            console.log("Contract generated:", contractData);
-            // Here you could save the contract data to your database
-          }}
-        />
-      )}
-
-      {/* Employee Contract Generator Modal */}
-      {employee &&
-        (employee.employeeType === "PERMANENT" ||
-          employee.employeeType === "FLEX_WORKER") && (
-          <EmployeeContractGenerator
-            isOpen={showEmployeeContractGenerator}
-            onClose={() => setShowEmployeeContractGenerator(false)}
-            employeeData={{
-              name: employee.name,
-              email: employee.email,
-              address: employee.address,
-              monthlySalary: employee.monthlySalary,
-              hourlyWage: employee.hourlyWage,
-              employeeType: employee.employeeType,
-            }}
-            onContractGenerated={(contractData) => {
-              console.log("Contract generated:", contractData);
-              // Here you could save the contract data to your database
-            }}
-          />
-        )}
-
-      {/* Quick Contract Generator Modal */}
-      {employee && (
-        <QuickContractGenerator
-          isOpen={showQuickContractGenerator}
-          onClose={() => setShowQuickContractGenerator(false)}
-          employeeData={{
-            name: employee.name,
-            email: employee.email,
-            address: employee.address,
-            employeeType: employee.employeeType,
-            monthlySalary: employee.monthlySalary,
-            hourlyWage: employee.hourlyWage,
-            kvkNumber: employee.kvkNumber,
-            btwNumber: employee.btwNumber,
-          }}
-          onContractGenerated={(contractData) => {
-            console.log("Quick contract generated:", contractData);
-            // Here you could save the contract data to your database
-          }}
-        />
-      )}
 
       {/* Schedule Assignment Modal */}
       <Modal
