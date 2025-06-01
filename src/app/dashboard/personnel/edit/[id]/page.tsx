@@ -786,8 +786,7 @@ export default function EditEmployeeTabs() {
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                       Werkrooster
                     </h3>
-                    {(employee.employeeType === "PERMANENT" ||
-                      employee.employeeType === "FLEX_WORKER") && (
+                    {employee.employeeType === "FLEX_WORKER" && (
                       <Button
                         type="button"
                         variant="outline"
@@ -815,16 +814,151 @@ export default function EditEmployeeTabs() {
                         </div>
                       </div>
                     </div>
+                  ) : employee.employeeType === "PERMANENT" ? (
+                    <div className="space-y-4">
+                      {/* Smart info for permanent employees */}
+                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-green-900 dark:text-green-100 mb-2">
+                              🚀 Automatisch Rooster voor Vaste Medewerkers
+                            </h4>
+                            <p className="text-sm text-green-800 dark:text-green-200 mb-3">
+                              Deze medewerker heeft een vast contract en
+                              verschijnt <strong>automatisch</strong> op het
+                              dagelijkse rooster op basis van hun beschikbare
+                              dagen en standaard werktijden.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
+                                ✓ Automatisch ingepland
+                              </span>
+                              <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
+                                ✓ Geen handmatige toekenning
+                              </span>
+                              <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
+                                ✓ Efficiënte workflow
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Show current schedule assignments if any exist */}
+                      {scheduleAssignments.length > 0 && (
+                        <div>
+                          <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">
+                            Specifieke Rooster Toewijzingen
+                          </h4>
+                          <div className="space-y-3">
+                            {scheduleAssignments.map((assignment) => (
+                              <div
+                                key={assignment.id}
+                                className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex-shrink-0">
+                                      <CalendarDaysIcon className="h-5 w-5 text-blue-500" />
+                                    </div>
+                                    <div>
+                                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {assignment.template.name}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {getDayName(assignment.dayOfWeek)} -{" "}
+                                        {assignment.template.category}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span
+                                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                        assignment.isActive
+                                          ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                                          : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                      }`}
+                                    >
+                                      {assignment.isActive
+                                        ? "Actief"
+                                        : "Inactief"}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleRemoveScheduleAssignment(
+                                          assignment.id
+                                        )
+                                      }
+                                      leftIcon={
+                                        <TrashIcon className="h-3 w-3" />
+                                      }
+                                    >
+                                      Verwijderen
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {assignment.template.description && (
+                                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                    {assignment.template.description}
+                                  </p>
+                                )}
+
+                                <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">
+                                      Starttijd:
+                                    </span>
+                                    <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                                      {assignment.customStartTime ||
+                                        assignment.template.shifts[0]
+                                          ?.startTime ||
+                                        "Niet ingesteld"}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">
+                                      Eindtijd:
+                                    </span>
+                                    <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                                      {assignment.customEndTime ||
+                                        assignment.template.shifts[0]
+                                          ?.endTime ||
+                                        "Niet ingesteld"}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {assignment.notes && (
+                                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-600 rounded-md">
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                                      <strong>Notities:</strong>{" "}
+                                      {assignment.notes}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : scheduleAssignments.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
                       <CalendarDaysIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        Geen werkrooster toegekend
+                        Geen vaste rooster toewijzingen
                       </h4>
                       <p className="text-gray-500 dark:text-gray-400 mb-4">
-                        {employee.employeeType === "FLEX_WORKER"
-                          ? "Voor oproepkrachten wordt het rooster bepaald op basis van beschikbaarheid wanneer er geen vast rooster is toegekend."
-                          : "Ken een werkrooster toe om de werkdagen en tijden vast te leggen."}
+                        Voor oproepkrachten kun je specifieke roosters toekennen
+                        wanneer ze vaste werkdagen hebben. Anders worden ze
+                        opgeroepen op basis van beschikbaarheid.
                       </p>
                       <Button
                         type="button"
@@ -832,7 +966,7 @@ export default function EditEmployeeTabs() {
                         onClick={() => setShowAssignmentModal(true)}
                         leftIcon={<PlusIcon className="h-4 w-4" />}
                       >
-                        Eerste Rooster Toekennen
+                        Vast Rooster Toekennen
                       </Button>
                     </div>
                   ) : (
@@ -919,6 +1053,18 @@ export default function EditEmployeeTabs() {
                           )}
                         </div>
                       ))}
+
+                      {/* Add more button for flex workers */}
+                      <div className="text-center pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowAssignmentModal(true)}
+                          leftIcon={<PlusIcon className="h-4 w-4" />}
+                        >
+                          Extra Rooster Toekennen
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1564,8 +1710,16 @@ export default function EditEmployeeTabs() {
           setUseCustomTimes(false);
           setAssignmentNotes("");
         }}
-        title="Werkrooster Toekennen"
-        description="Ken een werkrooster template toe aan deze medewerker"
+        title={
+          employee?.employeeType === "FLEX_WORKER"
+            ? "🗓️ Vast Rooster Toekennen aan Oproepkracht"
+            : "📅 Specifiek Rooster Toekennen"
+        }
+        description={
+          employee?.employeeType === "FLEX_WORKER"
+            ? `Ken een vast werkrooster toe aan ${employee?.name} voor specifieke dagen wanneer ze een vast patroon hebben`
+            : `Ken een specifiek rooster template toe aan ${employee?.name} voor bijzondere situaties`
+        }
         size="lg"
       >
         <form
@@ -1620,6 +1774,49 @@ export default function EditEmployeeTabs() {
           }}
           className="space-y-6"
         >
+          {/* Smart info for flex workers */}
+          {employee?.employeeType === "FLEX_WORKER" && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mt-0.5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-2">
+                    💡 Voor Oproepkrachten met Vaste Dagen
+                  </h4>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    Gebruik dit alleen wanneer deze oproepkracht vaste werkdagen
+                    heeft. Voor flexibele oproepen op basis van beschikbaarheid
+                    is dit <strong>niet nodig</strong> - dat gebeurt automatisch
+                    via de planning.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {employee?.employeeType === "PERMANENT" && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <CalendarDaysIcon className="h-5 w-5 text-blue-600 mt-0.5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    📅 Specifieke Rooster Toewijzing
+                  </h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Deze vaste medewerker verschijnt al automatisch op het
+                    rooster. Gebruik dit alleen voor{" "}
+                    <strong>bijzondere situaties</strong> of specifieke
+                    projecten.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Rooster Template
