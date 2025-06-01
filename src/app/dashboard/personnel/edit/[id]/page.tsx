@@ -485,10 +485,12 @@ export default function EditEmployeeTabs() {
                           className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                           required
                         >
-                          <option value="ADMIN">Administrator</option>
-                          <option value="MANAGER">Manager</option>
-                          <option value="EMPLOYEE">Medewerker</option>
-                          <option value="FREELANCER">Freelancer</option>
+                          <option value="ADMIN">👑 Administrator</option>
+                          <option value="MANAGER">👨‍💼 Manager</option>
+                          <option value="HR_MANAGER">👥 HR Manager</option>
+                          <option value="PLANNER">📅 Planner</option>
+                          <option value="EMPLOYEE">👨‍💻 Medewerker</option>
+                          <option value="FREELANCER">🎯 Freelancer</option>
                         </select>
                       </div>
                       <div>

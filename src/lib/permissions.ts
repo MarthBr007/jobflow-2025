@@ -4,11 +4,13 @@
  * Role Hierarchy (from highest to lowest):
  * 1. ADMIN - Full system access, can modify system settings
  * 2. MANAGER - Can manage personnel, projects, schedules, and view all data within company
- * 3. EMPLOYEE - Fixed employee, can view projects, register time, set availability
- * 4. FREELANCER - Contract worker, similar to employee but may have restricted access to some features
+ * 3. HR_MANAGER - Specialized HR role: personnel management, contracts, but limited project/schedule access
+ * 4. PLANNER - Specialized planning role: schedule/project management, but limited personnel access
+ * 5. EMPLOYEE - Fixed employee, can view projects, register time, set availability
+ * 6. FREELANCER - Contract worker, similar to employee but may have restricted access to some features
  */
 
-export type UserRole = 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'FREELANCER';
+export type UserRole = 'ADMIN' | 'MANAGER' | 'HR_MANAGER' | 'PLANNER' | 'EMPLOYEE' | 'FREELANCER';
 
 export interface PermissionLevel {
     // System Administration
@@ -25,6 +27,14 @@ export interface PermissionLevel {
     canChangeUserRoles: boolean;
     canResetPasswords: boolean;
 
+    // HR-specific permissions
+    canManageContracts: boolean;
+    canViewSalaryInfo: boolean;
+    canManageLeaveRequests: boolean;
+    canManageEmployeeTypes: boolean;
+    canAccessHRReports: boolean;
+    canManagePersonalData: boolean;
+
     // Project Management
     canViewAllProjects: boolean;
     canCreateProjects: boolean;
@@ -39,16 +49,25 @@ export interface PermissionLevel {
     canEditSchedules: boolean;
     canDeleteSchedules: boolean;
     canManageShifts: boolean;
+    canManageScheduleTemplates: boolean;
+    canAutoGenerateSchedules: boolean;
 
     // Time Management
     canViewAllTimeEntries: boolean;
     canApproveTimeEntries: boolean;
     canManageClockStatus: boolean;
+    canAccessTimeReports: boolean;
 
     // Data Access
     canViewCompanyWideData: boolean;
     canViewAllAvailability: boolean;
     canExportData: boolean;
+    canAccessAnalytics: boolean;
+
+    // Planning-specific permissions
+    canManageWorkflowOptimization: boolean;
+    canViewResourcePlanning: boolean;
+    canManageCapacityPlanning: boolean;
 
     // Personal Features
     canRegisterTime: boolean;
@@ -73,6 +92,14 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canChangeUserRoles: true,
         canResetPasswords: true,
 
+        // HR-specific permissions - ADMIN ONLY
+        canManageContracts: true,
+        canViewSalaryInfo: true,
+        canManageLeaveRequests: true,
+        canManageEmployeeTypes: true,
+        canAccessHRReports: true,
+        canManagePersonalData: true,
+
         // Project Management - ADMIN + MANAGER
         canViewAllProjects: true,
         canCreateProjects: true,
@@ -87,16 +114,25 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canEditSchedules: true,
         canDeleteSchedules: true,
         canManageShifts: true,
+        canManageScheduleTemplates: true,
+        canAutoGenerateSchedules: true,
 
         // Time Management - ADMIN + MANAGER
         canViewAllTimeEntries: true,
         canApproveTimeEntries: true,
         canManageClockStatus: true,
+        canAccessTimeReports: true,
 
         // Data Access - ADMIN + MANAGER
         canViewCompanyWideData: true,
         canViewAllAvailability: true,
         canExportData: true,
+        canAccessAnalytics: true,
+
+        // Planning-specific permissions
+        canManageWorkflowOptimization: true,
+        canViewResourcePlanning: true,
+        canManageCapacityPlanning: true,
 
         // Personal Features - ALL ROLES
         canRegisterTime: true,
@@ -120,6 +156,14 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canChangeUserRoles: false,
         canResetPasswords: true,
 
+        // HR-specific permissions - ADMIN ONLY
+        canManageContracts: true,
+        canViewSalaryInfo: true,
+        canManageLeaveRequests: true,
+        canManageEmployeeTypes: true,
+        canAccessHRReports: true,
+        canManagePersonalData: true,
+
         // Project Management - ADMIN + MANAGER
         canViewAllProjects: true,
         canCreateProjects: true,
@@ -134,16 +178,153 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canEditSchedules: true,
         canDeleteSchedules: true,
         canManageShifts: true,
+        canManageScheduleTemplates: true,
+        canAutoGenerateSchedules: true,
 
         // Time Management - ADMIN + MANAGER
         canViewAllTimeEntries: true,
         canApproveTimeEntries: true,
         canManageClockStatus: true,
+        canAccessTimeReports: true,
 
         // Data Access - ADMIN + MANAGER
         canViewCompanyWideData: true,
         canViewAllAvailability: true,
         canExportData: true,
+        canAccessAnalytics: true,
+
+        // Planning-specific permissions
+        canManageWorkflowOptimization: true,
+        canViewResourcePlanning: true,
+        canManageCapacityPlanning: true,
+
+        // Personal Features - ALL ROLES
+        canRegisterTime: true,
+        canSetAvailability: true,
+        canViewOwnProjects: true,
+        canExpressProjectInterest: true,
+    },
+
+    HR_MANAGER: {
+        // System Administration - ADMIN ONLY
+        canManageSystemSettings: false,
+        canManageEmailSettings: false,
+        canManageWorkLocations: false,
+        canManageWorkTypes: false,
+
+        // User Management - ADMIN ONLY
+        canViewAllUsers: false,
+        canCreateUsers: false,
+        canEditUsers: false,
+        canDeleteUsers: false,
+        canChangeUserRoles: false,
+        canResetPasswords: false,
+
+        // HR-specific permissions - ADMIN ONLY
+        canManageContracts: true,
+        canViewSalaryInfo: true,
+        canManageLeaveRequests: true,
+        canManageEmployeeTypes: true,
+        canAccessHRReports: true,
+        canManagePersonalData: true,
+
+        // Project Management - Limited access
+        canViewAllProjects: false, // Only assigned projects
+        canCreateProjects: false,
+        canEditProjects: false,
+        canDeleteProjects: false,
+        canAssignProjectMembers: false,
+        canViewProjectInterests: false,
+
+        // Schedule Management - View only
+        canViewAllSchedules: false, // Only own schedule
+        canCreateSchedules: false,
+        canEditSchedules: false,
+        canDeleteSchedules: false,
+        canManageShifts: false,
+        canManageScheduleTemplates: false,
+        canAutoGenerateSchedules: false,
+
+        // Time Management - Own data only
+        canViewAllTimeEntries: false,
+        canApproveTimeEntries: false,
+        canManageClockStatus: false,
+        canAccessTimeReports: false,
+
+        // Data Access - Limited
+        canViewCompanyWideData: false,
+        canViewAllAvailability: false,
+        canExportData: false,
+        canAccessAnalytics: false,
+
+        // Planning-specific permissions
+        canManageWorkflowOptimization: false,
+        canViewResourcePlanning: true,
+        canManageCapacityPlanning: false,
+
+        // Personal Features - ALL ROLES
+        canRegisterTime: true,
+        canSetAvailability: true,
+        canViewOwnProjects: true,
+        canExpressProjectInterest: true,
+    },
+
+    PLANNER: {
+        // System Administration - ADMIN ONLY
+        canManageSystemSettings: false,
+        canManageEmailSettings: false,
+        canManageWorkLocations: false,
+        canManageWorkTypes: false,
+
+        // User Management - ADMIN ONLY
+        canViewAllUsers: false,
+        canCreateUsers: false,
+        canEditUsers: false,
+        canDeleteUsers: false,
+        canChangeUserRoles: false,
+        canResetPasswords: false,
+
+        // HR-specific permissions - ADMIN ONLY
+        canManageContracts: true,
+        canViewSalaryInfo: true,
+        canManageLeaveRequests: true,
+        canManageEmployeeTypes: true,
+        canAccessHRReports: true,
+        canManagePersonalData: true,
+
+        // Project Management - Limited access
+        canViewAllProjects: false, // Only assigned projects
+        canCreateProjects: false,
+        canEditProjects: false,
+        canDeleteProjects: false,
+        canAssignProjectMembers: false,
+        canViewProjectInterests: false,
+
+        // Schedule Management - Limited access
+        canViewAllSchedules: false, // Only assigned schedules
+        canCreateSchedules: false,
+        canEditSchedules: false,
+        canDeleteSchedules: false,
+        canManageShifts: false,
+        canManageScheduleTemplates: false,
+        canAutoGenerateSchedules: false,
+
+        // Time Management - Own data only
+        canViewAllTimeEntries: false,
+        canApproveTimeEntries: false,
+        canManageClockStatus: false,
+        canAccessTimeReports: false,
+
+        // Data Access - Limited
+        canViewCompanyWideData: false,
+        canViewAllAvailability: false,
+        canExportData: false,
+        canAccessAnalytics: false,
+
+        // Planning-specific permissions
+        canManageWorkflowOptimization: true,
+        canViewResourcePlanning: true,
+        canManageCapacityPlanning: true,
 
         // Personal Features - ALL ROLES
         canRegisterTime: true,
@@ -167,6 +348,14 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canChangeUserRoles: false,
         canResetPasswords: false,
 
+        // HR-specific permissions - ADMIN ONLY
+        canManageContracts: true,
+        canViewSalaryInfo: true,
+        canManageLeaveRequests: true,
+        canManageEmployeeTypes: true,
+        canAccessHRReports: true,
+        canManagePersonalData: true,
+
         // Project Management - Limited access
         canViewAllProjects: false, // Only assigned projects
         canCreateProjects: false,
@@ -181,16 +370,25 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canEditSchedules: false,
         canDeleteSchedules: false,
         canManageShifts: false,
+        canManageScheduleTemplates: false,
+        canAutoGenerateSchedules: false,
 
         // Time Management - Own data only
         canViewAllTimeEntries: false,
         canApproveTimeEntries: false,
         canManageClockStatus: false,
+        canAccessTimeReports: false,
 
         // Data Access - Limited
         canViewCompanyWideData: false,
         canViewAllAvailability: false,
         canExportData: false,
+        canAccessAnalytics: false,
+
+        // Planning-specific permissions
+        canManageWorkflowOptimization: false,
+        canViewResourcePlanning: false,
+        canManageCapacityPlanning: false,
 
         // Personal Features - ALL ROLES
         canRegisterTime: true,
@@ -214,6 +412,14 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canChangeUserRoles: false,
         canResetPasswords: false,
 
+        // HR-specific permissions - ADMIN ONLY
+        canManageContracts: true,
+        canViewSalaryInfo: true,
+        canManageLeaveRequests: true,
+        canManageEmployeeTypes: true,
+        canAccessHRReports: true,
+        canManagePersonalData: true,
+
         // Project Management - Limited access
         canViewAllProjects: false, // Only assigned projects
         canCreateProjects: false,
@@ -228,16 +434,25 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionLevel> = {
         canEditSchedules: false,
         canDeleteSchedules: false,
         canManageShifts: false,
+        canManageScheduleTemplates: false,
+        canAutoGenerateSchedules: false,
 
         // Time Management - Own data only
         canViewAllTimeEntries: false,
         canApproveTimeEntries: false,
         canManageClockStatus: false,
+        canAccessTimeReports: false,
 
         // Data Access - Limited
         canViewCompanyWideData: false,
         canViewAllAvailability: false,
         canExportData: false,
+        canAccessAnalytics: false,
+
+        // Planning-specific permissions
+        canManageWorkflowOptimization: false,
+        canViewResourcePlanning: false,
+        canManageCapacityPlanning: false,
 
         // Personal Features - ALL ROLES
         canRegisterTime: true,
@@ -276,6 +491,27 @@ export function isAdminOrManager(role: UserRole): boolean {
 }
 
 /**
+ * Check if user has HR management access (Admin, Manager, or HR_Manager)
+ */
+export function hasHRAccess(role: UserRole): boolean {
+    return role === 'ADMIN' || role === 'MANAGER' || role === 'HR_MANAGER';
+}
+
+/**
+ * Check if user has planning access (Admin, Manager, or Planner)
+ */
+export function hasPlanningAccess(role: UserRole): boolean {
+    return role === 'ADMIN' || role === 'MANAGER' || role === 'PLANNER';
+}
+
+/**
+ * Check if user is a specialized role (HR_Manager or Planner)
+ */
+export function isSpecializedRole(role: UserRole): boolean {
+    return role === 'HR_MANAGER' || role === 'PLANNER';
+}
+
+/**
  * Check if user can manage personnel (view/edit users)
  */
 export function canManagePersonnel(role: UserRole): boolean {
@@ -301,8 +537,10 @@ export function canManageSystem(role: UserRole): boolean {
  */
 export function getRoleLevel(role: UserRole): number {
     switch (role) {
-        case 'ADMIN': return 4;
-        case 'MANAGER': return 3;
+        case 'ADMIN': return 6;
+        case 'MANAGER': return 5;
+        case 'HR_MANAGER': return 4;
+        case 'PLANNER': return 3;
         case 'EMPLOYEE': return 2;
         case 'FREELANCER': return 1;
         default: return 0;
@@ -314,4 +552,54 @@ export function getRoleLevel(role: UserRole): number {
  */
 export function hasHigherOrEqualRole(roleA: UserRole, roleB: UserRole): boolean {
     return getRoleLevel(roleA) >= getRoleLevel(roleB);
+}
+
+/**
+ * Get user-friendly role name and description
+ */
+export function getRoleDisplayInfo(role: UserRole): { name: string; description: string; emoji: string } {
+    switch (role) {
+        case 'ADMIN':
+            return {
+                name: 'Administrator',
+                description: 'Volledige systeemtoegang en alle rechten',
+                emoji: '👑'
+            };
+        case 'MANAGER':
+            return {
+                name: 'Manager',
+                description: 'Operationeel beheer van personeel, projecten en roosters',
+                emoji: '👨‍💼'
+            };
+        case 'HR_MANAGER':
+            return {
+                name: 'HR Manager',
+                description: 'Specialistrol voor personeelszaken en contractbeheer',
+                emoji: '👥'
+            };
+        case 'PLANNER':
+            return {
+                name: 'Planner',
+                description: 'Specialistrol voor roosters, projecten en resource planning',
+                emoji: '📅'
+            };
+        case 'EMPLOYEE':
+            return {
+                name: 'Medewerker',
+                description: 'Vaste medewerker met basis functionaliteiten',
+                emoji: '👨‍💻'
+            };
+        case 'FREELANCER':
+            return {
+                name: 'Freelancer',
+                description: 'Contractmedewerker met beperkte toegang',
+                emoji: '🎯'
+            };
+        default:
+            return {
+                name: 'Onbekend',
+                description: 'Onbekende rol',
+                emoji: '❓'
+            };
+    }
 } 
