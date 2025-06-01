@@ -57,6 +57,7 @@ interface ChatInterfaceProps {
   currentRoom: ChatRoom | null;
   messages: ChatMessage[];
   onSendMessage: (content: string, attachments?: File[]) => void;
+  onNewMessage?: (message: ChatMessage) => void;
   onRoomChange?: (room: ChatRoom) => void;
   loading?: boolean;
   className?: string;
@@ -67,6 +68,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   currentRoom,
   messages,
   onSendMessage,
+  onNewMessage,
   loading = false,
   className = "",
 }) => {
@@ -77,7 +79,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isConnected, sendChatMessage } = useWebSocket();
+  const { isConnected, sendChatMessage, on, off } = useWebSocket();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -99,7 +101,70 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return () => clearTimeout(timer);
   }, [messageInput, isTyping]);
 
-  const handleSendMessage = () => {
+  // Listen for real-time chat messages
+  useEffect(() => {
+    const handleChatMessage = (data: any) => {
+      console.log("Received chat message:", data);
+
+      // Add the new message to the current room if it matches
+      if (currentRoom && data.roomId === currentRoom.id && onNewMessage) {
+        const newMessage: ChatMessage = {
+          id: data.id || `msg-${Date.now()}`,
+          content: data.message || data.content,
+          senderId: data.senderId,
+          senderName: data.senderName,
+          timestamp: data.timestamp,
+          type: "text",
+          attachments: data.attachments,
+        };
+
+        onNewMessage(newMessage);
+      }
+    };
+
+    const handleNewChatMessage = (data: any) => {
+      console.log("Received new chat message:", data);
+      handleChatMessage(data);
+    };
+
+    if (isConnected) {
+      // WebSocket mode
+      on("chatMessage", handleChatMessage);
+      on("newChatMessage", handleNewChatMessage);
+
+      return () => {
+        off("chatMessage", handleChatMessage);
+        off("newChatMessage", handleNewChatMessage);
+      };
+    } else {
+      // Polling mode - poll for new messages every 5 seconds
+      const pollInterval = setInterval(async () => {
+        if (currentRoom && onNewMessage) {
+          try {
+            const response = await fetch(
+              `/api/realtime/poll?lastPoll=${new Date().toISOString()}`
+            );
+            if (response.ok) {
+              const data = await response.json();
+              if (data.messages?.length > 0) {
+                data.messages.forEach((msg: any) => {
+                  if (msg.room?.id === currentRoom.id) {
+                    handleChatMessage(msg);
+                  }
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Polling error:", error);
+          }
+        }
+      }, 5000);
+
+      return () => clearInterval(pollInterval);
+    }
+  }, [isConnected, currentRoom, on, off, onNewMessage]);
+
+  const handleSendMessage = async () => {
     if (!messageInput.trim() && attachments.length === 0) return;
     if (!currentRoom) return;
 
@@ -109,6 +174,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Send via WebSocket for real-time delivery
     if (isConnected && currentRoom) {
       sendChatMessage(currentRoom.id, messageInput.trim(), attachments);
+    } else {
+      // Fallback: send via HTTP API
+      try {
+        await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": currentUserId,
+          },
+          body: JSON.stringify({
+            roomId: currentRoom.id,
+            content: messageInput.trim(),
+            attachments: attachments?.map((file) => ({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+            })),
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to send message via API:", error);
+      }
     }
 
     setMessageInput("");

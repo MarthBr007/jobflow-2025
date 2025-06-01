@@ -18,6 +18,7 @@ import {
   PlusIcon,
   TrashIcon,
   ExclamationTriangleIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
@@ -27,6 +28,7 @@ import ContractViewer from "@/components/ui/ContractViewer";
 import FreelanceContractGenerator from "@/components/ui/FreelanceContractGenerator";
 import EmployeeContractGenerator from "@/components/ui/EmployeeContractGenerator";
 import QuickContractGenerator from "@/components/ui/QuickContractGenerator";
+import PersonnelContractManagement from "@/components/ui/PersonnelContractManagement";
 
 interface Employee {
   id: string;
@@ -38,6 +40,7 @@ interface Employee {
   company: string;
   phone?: string;
   address?: string;
+  bsnNumber?: string;
   hourlyRate?: string;
   monthlySalary?: string;
   hourlyWage?: string;
@@ -108,6 +111,8 @@ export default function EditEmployeeTabs() {
   const [customEndTime, setCustomEndTime] = useState<string>("");
   const [useCustomTimes, setUseCustomTimes] = useState<boolean>(false);
   const [assignmentNotes, setAssignmentNotes] = useState<string>("");
+  const [showPersonnelContractManagement, setShowPersonnelContractManagement] =
+    useState(false);
 
   useEffect(() => {
     if (params?.id) {
@@ -1149,6 +1154,25 @@ export default function EditEmployeeTabs() {
                         placeholder="NL91ABNA0417164300"
                         helperText="Bankrekeningnummer voor uitbetalingen"
                       />
+
+                      {/* BSN nummer voor vaste medewerkers, parttimers en oproepkrachten */}
+                      {employee.employeeType !== "FREELANCER" && (
+                        <Input
+                          label="BSN Nummer"
+                          value={employee.bsnNumber || ""}
+                          onChange={(e) =>
+                            setEmployee({
+                              ...employee,
+                              bsnNumber: e.target.value,
+                            })
+                          }
+                          leftIcon={<UserIcon className="h-5 w-5" />}
+                          variant="outlined"
+                          inputSize="md"
+                          placeholder="123456789"
+                          helperText="Burgerservicenummer (verplicht voor werknemers)"
+                        />
+                      )}
                     </div>
 
                     {/* Bedrijfsgegevens voor freelancers */}
@@ -1452,27 +1476,19 @@ export default function EditEmployeeTabs() {
                         <div className="text-center">
                           <CheckCircleIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                            Contractbeheer
+                            Contractbeheer voor {employee.name}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Beheer bestaande contracten, upload documenten en
-                            track handtekeningen
+                            Beheer alle contracten voor deze medewerker, upload
+                            documenten en track handtekeningen
                           </p>
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="primary"
                             size="md"
                             leftIcon={<DocumentTextIcon className="h-4 w-4" />}
                             onClick={() =>
-                              router.push(
-                                `/dashboard/contracts?userId=${
-                                  employee.id
-                                }&userName=${encodeURIComponent(
-                                  employee.name
-                                )}&userEmail=${encodeURIComponent(
-                                  employee.email
-                                )}`
-                              )
+                              setShowPersonnelContractManagement(true)
                             }
                             className="w-full"
                           >
@@ -1623,27 +1639,19 @@ export default function EditEmployeeTabs() {
                         <div className="text-center">
                           <CheckCircleIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                            Contractbeheer
+                            Contractbeheer voor {employee.name}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Beheer bestaande contracten, upload documenten en
-                            track handtekeningen
+                            Beheer alle contracten voor deze medewerker, upload
+                            documenten en track handtekeningen
                           </p>
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="primary"
                             size="md"
                             leftIcon={<DocumentTextIcon className="h-4 w-4" />}
                             onClick={() =>
-                              router.push(
-                                `/dashboard/contracts?userId=${
-                                  employee.id
-                                }&userName=${encodeURIComponent(
-                                  employee.name
-                                )}&userEmail=${encodeURIComponent(
-                                  employee.email
-                                )}`
-                              )
+                              setShowPersonnelContractManagement(true)
                             }
                             className="w-full"
                           >
@@ -1958,6 +1966,17 @@ export default function EditEmployeeTabs() {
           </div>
         </form>
       </Modal>
+
+      {/* Personnel Contract Management Modal */}
+      {employee && (
+        <PersonnelContractManagement
+          userId={employee.id}
+          userName={employee.name}
+          userEmail={employee.email}
+          isOpen={showPersonnelContractManagement}
+          onClose={() => setShowPersonnelContractManagement(false)}
+        />
+      )}
     </div>
   );
 }

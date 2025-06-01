@@ -26,6 +26,7 @@ model User {
   lastClockIn            DateTime?
   lastClockOut           DateTime?
   address                String?
+  bsnNumber              String? // Burgerservicenummer (Dutch social security number)
   btwNumber              String?
   hasContract            Boolean                  @default(false)
   contractType           ContractType?
@@ -67,7 +68,8 @@ model User {
   SecurityLog            SecurityLog[]
   sentNotifications      SystemNotification[]     @relation("SentNotifications")
   receivedNotifications  SystemNotification[]     @relation("UserNotifications")
-  timeEntries            TimeEntry[]
+  timeEntries            TimeEntry[]              @relation("UserTimeEntries")
+  approvedTimeEntries    TimeEntry[]              @relation("ApprovedTimeEntries")
   TrustedDevice          TrustedDevice[]
   UserSession            UserSession[]
   UserWorkType           UserWorkType[]
@@ -90,6 +92,16 @@ model User {
   @@index([archived])
   @@index([contractEndDate])
   @@index([contractStatus])
+  @@index([employeeType])
+  @@index([status])
+  @@index([hasContract])
+  @@index([lastLoginAt])
+  @@index([createdAt])
+  @@index([firstName, lastName])
+  @@index([company, role])
+  @@index([archived, company])
+  @@index([role, employeeType])
+  @@index([contractStartDate, contractEndDate])
 }
 
 model UserWorkType {
@@ -133,6 +145,15 @@ model Project {
   ScheduleShift         ScheduleShift[]
   timeEntries           TimeEntry[]
   ScheduleTemplateShift ScheduleTemplateShift[]
+
+  @@index([company])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([createdAt])
+  @@index([company, status])
+  @@index([startDate, endDate])
+  @@index([projectNumber])
 }
 
 model ProjectMember {
@@ -161,11 +182,36 @@ model TimeEntry {
   endTime     DateTime?
   startTime   DateTime
   isWarehouse Boolean   @default(false)
-  project     Project?  @relation(fields: [projectId], references: [id])
-  user        User      @relation(fields: [userId], references: [id])
+
+  // Enhanced time tracking fields
+  breakStart         DateTime?
+  breakEnd           DateTime?
+  totalBreakMinutes  Int?          @default(0)
+  hoursWorked        Float?
+  workType           TimeEntryType @default(REGULAR)
+  location           String?
+  notes              String?
+  approvedBy         String?
+  approvedAt         DateTime?
+  compensationEarned Float?        @default(0)
+  isCompensationUsed Boolean       @default(false)
+
+  project  Project? @relation(fields: [projectId], references: [id])
+  user     User     @relation("UserTimeEntries", fields: [userId], references: [id])
+  approver User?    @relation("ApprovedTimeEntries", fields: [approvedBy], references: [id])
 
   @@index([projectId])
   @@index([userId])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([approved])
+  @@index([isWarehouse])
+  @@index([workType])
+  @@index([userId, startTime])
+  @@index([projectId, startTime])
+  @@index([approved, startTime])
+  @@index([workType, startTime])
+  @@index([isCompensationUsed])
 }
 
 model Availability {
@@ -326,6 +372,13 @@ model ScheduleShift {
   @@index([userId])
   @@index([projectId])
   @@index([workLocationId])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([status])
+  @@index([userId, startTime])
+  @@index([projectId, startTime])
+  @@index([scheduleId, userId])
+  @@index([status, startTime])
 }
 
 model WorkType {
@@ -443,6 +496,9 @@ model ChatMessage {
   @@index([roomId])
   @@index([replyToId])
   @@index([createdAt])
+  @@index([type])
+  @@index([roomId, createdAt])
+  @@index([senderId, createdAt])
 }
 
 model ChatMessageReaction {
@@ -492,6 +548,10 @@ model SystemNotification {
   @@index([priority])
   @@index([read])
   @@index([createdAt])
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@index([priority, read])
 }
 
 model PushSubscription {
@@ -526,6 +586,8 @@ model ActivityFeed {
   @@index([type])
   @@index([createdAt])
   @@index([resourceId])
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
 }
 
 model SecurityLog {
@@ -599,6 +661,11 @@ model LeaveRequest {
   @@index([status])
   @@index([startDate])
   @@index([endDate])
+  @@index([type])
+  @@index([approvedBy])
+  @@index([userId, status])
+  @@index([status, startDate])
+  @@index([userId, startDate, endDate])
 }
 
 // Rooster Templates voor herbruikbare roosters
@@ -715,6 +782,12 @@ model Contract {
   @@index([status])
   @@index([endDate])
   @@index([isActive])
+  @@index([startDate])
+  @@index([signedDate])
+  @@index([userId, status])
+  @@index([userId, isActive])
+  @@index([contractType, status])
+  @@index([startDate, endDate])
 }
 
 enum UserStatus {
@@ -896,4 +969,13 @@ enum ContractStatus {
   EXPIRED // Verlopen
   TERMINATED // Beëindigd
   SUSPENDED // Opgeschort
+}
+
+enum TimeEntryType {
+  REGULAR
+  OVERTIME
+  COMPENSATION_USED
+  SICK
+  VACATION
+  BREAK
 }

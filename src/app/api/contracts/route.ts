@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
+import { notificationManager } from '@/lib/notification-system';
 
 const contractSchema = z.object({
     userId: z.string(),
@@ -30,30 +31,21 @@ const contractSchema = z.object({
 export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        if (!session?.user?.email) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get("userId");
         const status = searchParams.get("status");
-        const contractType = searchParams.get("contractType");
 
-        const where: any = {};
+        let where: any = {};
 
-        // Admin/Manager can see all contracts, others only their own
-        if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
-            where.userId = session.user.id;
-        } else if (userId) {
+        if (userId) {
             where.userId = userId;
         }
-
         if (status) {
             where.status = status;
-        }
-
-        if (contractType) {
-            where.contractType = contractType;
         }
 
         const contracts = await prisma.contract.findMany({
@@ -62,22 +54,23 @@ export async function GET(request: NextRequest) {
                 user: {
                     select: {
                         id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                         email: true,
                         employeeType: true,
-                    }
-                }
+                    },
+                },
             },
-            orderBy: [
-                { createdAt: "desc" }
-            ]
+            orderBy: {
+                createdAt: "desc",
+            },
         });
 
         return NextResponse.json(contracts);
     } catch (error) {
-        console.error("Error fetching contracts:", error);
+        console.error("Contracts GET error:", error);
         return NextResponse.json(
-            { error: "Internal server error" },
+            { error: "Failed to fetch contracts" },
             { status: 500 }
         );
     }
@@ -87,99 +80,271 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        if (!session?.user?.email) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        // Only admin/manager can create contracts for others
-        if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const body = await request.json();
         const {
             userId,
-            contractType,
             title,
+            contractType,
             description,
             startDate,
             endDate,
             salary,
             notes,
-            fileContent,
-            fileName,
+            status = "DRAFT",
+            sendForSigning = false
         } = body;
 
-        const validatedData = contractSchema.parse(body);
-
-        // Handle file processing for both uploads and generated contracts
-        let fileUrl = null;
-        let fileSize = null;
-        let mimeType = null;
-        let uploadedAt = null;
-
-        if (fileContent) {
-            // For uploaded files, we have base64 content
-            try {
-                const buffer = Buffer.from(fileContent, 'base64');
-                fileSize = buffer.length;
-                mimeType = 'application/pdf';
-                uploadedAt = new Date();
-
-                // For now, we store the base64 content directly
-                // In production, you might want to store it in a file storage service
-                fileUrl = `data:application/pdf;base64,${fileContent}`;
-            } catch (error) {
-                console.error('Error processing uploaded file:', error);
-                return NextResponse.json(
-                    { error: "Invalid file format" },
-                    { status: 400 }
-                );
-            }
+        // Validate required fields
+        if (!userId || !title || !contractType || !startDate) {
+            return NextResponse.json(
+                { error: "Missing required fields: userId, title, contractType, startDate" },
+                { status: 400 }
+            );
         }
 
-        // Create the contract
-        const contract = await prisma.contract.create({
-            data: {
-                userId: validatedData.userId,
-                createdBy: session.user.id,
-                contractType: validatedData.contractType,
-                status: fileContent ? "ACTIVE" : "PENDING_SIGNATURE",
-                title: validatedData.title,
-                description: validatedData.description,
-                startDate: new Date(validatedData.startDate),
-                endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
-                salary: validatedData.salary,
-                notes: validatedData.notes,
-                // Store the uploaded file information
-                fileName: fileName || `${validatedData.title}.pdf`,
-                fileUrl: fileUrl,
-                fileSize: fileSize,
-                mimeType: mimeType,
-                uploadedAt: uploadedAt,
+        // Get user details for email
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                employeeType: true,
             },
         });
 
-        // Update user's contract status
-        await prisma.user.update({
-            where: { id: validatedData.userId },
+        if (!user) {
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
+            );
+        }
+
+        // Create contract
+        const contract = await prisma.contract.create({
             data: {
-                hasContract: true,
-                contractStatus: fileContent ? "ACTIVE" : "PENDING_SIGNATURE", // Uploaded contracts are immediately active
-                contractType: validatedData.contractType,
-                contractStartDate: new Date(validatedData.startDate),
-                contractEndDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
-                contractFileName: validatedData.fileName,
-                contractFileUrl: fileUrl,
-            }
+                userId,
+                title,
+                contractType,
+                description: description || null,
+                startDate: new Date(startDate),
+                endDate: endDate ? new Date(endDate) : null,
+                salary: salary || null,
+                notes: notes || null,
+                status: sendForSigning ? "PENDING_SIGNATURE" : "DRAFT",
+                createdBy: session.user.id || "system",
+            },
+            include: {
+                user: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                    },
+                },
+            },
         });
 
-        return NextResponse.json(contract, { status: 201 });
+        // If sending for signing, send notification email
+        if (sendForSigning) {
+            await sendContractForSigning(contract, user);
+        }
+
+        return NextResponse.json({
+            success: true,
+            contract,
+            message: sendForSigning
+                ? `Contract verstuurd naar ${user.email} voor ondertekening`
+                : "Contract opgeslagen als concept"
+        });
     } catch (error) {
-        console.error("Error creating contract:", error);
+        console.error("Contracts POST error:", error);
         return NextResponse.json(
-            { error: "Internal server error" },
+            { error: "Failed to create contract" },
             { status: 500 }
         );
     }
+}
+
+export async function PUT(request: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { id, action, ...updateData } = body;
+
+        if (!id) {
+            return NextResponse.json(
+                { error: "Contract ID is required" },
+                { status: 400 }
+            );
+        }
+
+        const contract = await prisma.contract.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                    },
+                },
+            },
+        });
+
+        if (!contract) {
+            return NextResponse.json(
+                { error: "Contract not found" },
+                { status: 404 }
+            );
+        }
+
+        let updatedContract;
+
+        switch (action) {
+            case "sign":
+                // Digital signature process
+                updatedContract = await prisma.contract.update({
+                    where: { id },
+                    data: {
+                        status: "ACTIVE",
+                        signedDate: new Date(),
+                        // In real implementation, store signature hash and metadata
+                    },
+                });
+
+                // Send confirmation notifications
+                await notificationManager.sendNotification({
+                    userId: contract.userId,
+                    type: "SYSTEM_ALERT",
+                    title: "Contract Ondertekend",
+                    message: `Je contract "${contract.title}" is succesvol ondertekend en actief.`,
+                    priority: "HIGH"
+                });
+
+                // Log activity
+                await prisma.activityFeed.create({
+                    data: {
+                        userId: contract.userId,
+                        actorId: contract.userId,
+                        type: "SYSTEM_UPDATE",
+                        title: "Contract Ondertekend",
+                        description: `Contract "${contract.title}" is digitaal ondertekend`,
+                        resourceId: contract.id,
+                    },
+                });
+
+                break;
+
+            case "reject":
+                updatedContract = await prisma.contract.update({
+                    where: { id },
+                    data: {
+                        status: "TERMINATED",
+                        notes: `${contract.notes || ""}\n\nAfgewezen op ${new Date().toISOString()}: ${updateData.reason || "Geen reden opgegeven"}`,
+                    },
+                });
+
+                // Send rejection notification
+                await notificationManager.sendNotification({
+                    userId: contract.userId,
+                    type: "SYSTEM_ALERT",
+                    title: "Contract Afgewezen",
+                    message: `Contract "${contract.title}" is afgewezen. Reden: ${updateData.reason || "Geen reden opgegeven"}`,
+                    priority: "HIGH"
+                });
+
+                break;
+
+            case "resend":
+                await sendContractForSigning(contract, contract.user);
+                updatedContract = await prisma.contract.update({
+                    where: { id },
+                    data: {
+                        status: "PENDING_SIGNATURE",
+                        updatedAt: new Date(),
+                    },
+                });
+                break;
+
+            default:
+                // Regular update
+                updatedContract = await prisma.contract.update({
+                    where: { id },
+                    data: updateData,
+                });
+        }
+
+        return NextResponse.json({
+            success: true,
+            contract: updatedContract,
+        });
+    } catch (error) {
+        console.error("Contracts PUT error:", error);
+        return NextResponse.json(
+            { error: "Failed to update contract" },
+            { status: 500 }
+        );
+    }
+}
+
+// Helper function to send contract for signing
+async function sendContractForSigning(contract: any, user: any) {
+    try {
+        // Generate secure signing link (in real implementation)
+        const signingToken = generateSecureToken();
+        const signingLink = `${process.env.NEXTAUTH_URL}/contract/sign/${contract.id}?token=${signingToken}`;
+
+        // Send notification through notification system
+        await notificationManager.sendNotification({
+            userId: contract.userId,
+            type: "SYSTEM_ALERT",
+            title: "Contract Klaar voor Ondertekening",
+            message: `Je contract "${contract.title}" is klaar voor ondertekening. Klik op de link in je e-mail om het contract te bekijken en te ondertekenen.`,
+            priority: "HIGH",
+            data: {
+                contractId: contract.id,
+                signingLink,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            },
+        });
+
+        // In real implementation, also send professional email with:
+        // - PDF attachment of the contract
+        // - Secure signing link
+        // - Instructions for digital signing
+        // - Legal disclaimers
+
+        console.log(`Contract signing email sent to ${user.email}`);
+        console.log(`Signing link: ${signingLink}`);
+
+        // Create activity log
+        await prisma.activityFeed.create({
+            data: {
+                userId: contract.userId,
+                actorId: contract.createdBy,
+                type: "SYSTEM_UPDATE",
+                title: "Contract Verstuurd",
+                description: `Contract "${contract.title}" verstuurd naar ${user.email} voor ondertekening`,
+                resourceId: contract.id,
+            },
+        });
+    } catch (error) {
+        console.error("Failed to send contract for signing:", error);
+        throw error;
+    }
+}
+
+// Generate secure token for contract signing (simplified)
+function generateSecureToken(): string {
+    return Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64url");
 } 

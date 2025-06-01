@@ -202,8 +202,8 @@ export default function FreelanceContractGenerator({
         {/* Step 1: Freelancer Info */}
         {currentStep === 1 && (
           <div className="space-y-6">
-            <div className="flex items-center space-x-2 mb-4">
-              <UserIcon className="h-5 w-5 text-blue-600" />
+            <div className="flex items-center mb-4 space-x-2">
+              <UserIcon className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 Freelancer Gegevens
               </h3>
@@ -262,8 +262,8 @@ export default function FreelanceContractGenerator({
         {/* Step 2: Project Info */}
         {currentStep === 2 && (
           <div className="space-y-6">
-            <div className="flex items-center space-x-2 mb-4">
-              <BuildingOfficeIcon className="h-5 w-5 text-blue-600" />
+            <div className="flex items-center mb-4 space-x-2">
+              <BuildingOfficeIcon className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 Project Details
               </h3>
@@ -280,7 +280,7 @@ export default function FreelanceContractGenerator({
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Project Beschrijving
               </label>
               <textarea
@@ -289,14 +289,14 @@ export default function FreelanceContractGenerator({
                   handleInputChange("projectDescription", e.target.value)
                 }
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:bg-gray-700 dark:text-white"
                 placeholder="Gedetailleerde beschrijving van het project..."
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Te Leveren Prestaties (Wet DBA Vereist)
               </label>
               <textarea
@@ -305,7 +305,7 @@ export default function FreelanceContractGenerator({
                   handleInputChange("deliverables", e.target.value)
                 }
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:bg-gray-700 dark:text-white"
                 placeholder="Specifieke deliverables en resultaten..."
                 required
               />
@@ -336,7 +336,7 @@ export default function FreelanceContractGenerator({
                 onChange={(e) =>
                   handleInputChange("projectValue", e.target.value)
                 }
-                leftIcon={<CurrencyEuroIcon className="h-5 w-5" />}
+                leftIcon={<CurrencyEuroIcon className="w-5 h-5" />}
                 placeholder="2500"
                 required
               />
@@ -355,15 +355,15 @@ export default function FreelanceContractGenerator({
         {/* Step 3: Wet DBA Compliance */}
         {currentStep === 3 && (
           <div className="space-y-6">
-            <div className="flex items-center space-x-2 mb-4">
-              <CheckCircleIcon className="h-5 w-5 text-green-600" />
+            <div className="flex items-center mb-4 space-x-2">
+              <CheckCircleIcon className="w-5 h-5 text-green-600" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 Wet DBA Compliance Check
               </h3>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
-              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+            <div className="p-4 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700">
+              <h4 className="mb-2 text-sm font-medium text-blue-900 dark:text-blue-100">
                 📋 Wat is de Wet DBA?
               </h4>
               <p className="text-sm text-blue-800 dark:text-blue-200">
@@ -374,7 +374,7 @@ export default function FreelanceContractGenerator({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Specifieke Werkzaamheden (Verplicht)
               </label>
               <textarea
@@ -383,14 +383,14 @@ export default function FreelanceContractGenerator({
                   handleInputChange("specificScope", e.target.value)
                 }
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:bg-gray-700 dark:text-white"
                 placeholder="Definieer exacte taken en verantwoordelijkheden. Vermijd algemene omschrijvingen zoals 'algemene werkzaamheden'."
                 required
               />
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-md font-medium text-gray-900 dark:text-white">
+              <h4 className="font-medium text-gray-900 text-md dark:text-white">
                 Wet DBA Vereisten (Alle moeten geaccepteerd worden)
               </h4>
 
@@ -433,13 +433,13 @@ export default function FreelanceContractGenerator({
                         e.target.checked
                       )
                     }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded mt-1"
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600"
                   />
                   <div>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {item.label}
                     </span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {item.description}
                     </p>
                   </div>
@@ -457,9 +457,9 @@ export default function FreelanceContractGenerator({
             >
               <div className="flex items-center space-x-2">
                 {isCompliant ? (
-                  <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                  <CheckCircleIcon className="w-5 h-5 text-green-600" />
                 ) : (
-                  <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
                 )}
                 <h4
                   className={`text-sm font-medium ${
@@ -529,7 +529,7 @@ export default function FreelanceContractGenerator({
                 onClick={generateContract}
                 disabled={!isCompliant || generating}
                 loading={generating}
-                leftIcon={<DocumentTextIcon className="h-5 w-5" />}
+                leftIcon={<DocumentTextIcon className="w-5 h-5" />}
               >
                 {generating ? "Contract Genereren..." : "Contract Genereren"}
               </Button>

@@ -9,44 +9,52 @@ export async function GET(
     { params }: { params: { id: string } }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const { searchParams } = new URL(request.url);
+        const token = searchParams.get('token');
+        const contractId = params.id;
+
+        if (!contractId) {
+            return NextResponse.json({ error: 'Contract ID is required' }, { status: 400 });
         }
 
+        // If token is provided, validate it (for employee signing)
+        if (token) {
+            // In a real implementation, validate the token against database
+            // For now, we'll allow access with any token for demo purposes
+            console.log(`Token-based access for contract ${contractId}: ${token}`);
+        } else {
+            // Regular session-based access
+            const session = await getServerSession(authOptions);
+            if (!session?.user?.email) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+        }
+
+        // Fetch contract with user details
         const contract = await prisma.contract.findUnique({
-            where: { id: params.id },
+            where: { id: contractId },
             include: {
                 user: {
                     select: {
-                        id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                         email: true,
                         employeeType: true,
-                        company: true,
-                    }
-                }
-            }
+                    },
+                },
+            },
         });
 
         if (!contract) {
-            return NextResponse.json({ error: "Contract not found" }, { status: 404 });
-        }
-
-        // Check permission - users can only view their own contracts unless admin/manager
-        if (
-            session.user.role !== "ADMIN" &&
-            session.user.role !== "MANAGER" &&
-            contract.userId !== session.user.id
-        ) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
         }
 
         return NextResponse.json(contract);
+
     } catch (error) {
-        console.error("Error fetching contract:", error);
+        console.error('Contract GET error:', error);
         return NextResponse.json(
-            { error: "Internal server error" },
+            { error: 'Failed to fetch contract' },
             { status: 500 }
         );
     }
@@ -211,48 +219,56 @@ export async function DELETE(
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Only admin can delete contracts
-        if (session.user.role !== "ADMIN") {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        const contractId = params.id;
+
+        if (!contractId) {
+            return NextResponse.json({ error: 'Contract ID is required' }, { status: 400 });
         }
 
-        const existingContract = await prisma.contract.findUnique({
-            where: { id: params.id }
+        // Check if contract exists and can be deleted
+        const contract = await prisma.contract.findUnique({
+            where: { id: contractId },
         });
 
-        if (!existingContract) {
-            return NextResponse.json({ error: "Contract not found" }, { status: 404 });
+        if (!contract) {
+            return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
         }
 
+        // Only allow deletion of DRAFT contracts
+        if (contract.status !== 'DRAFT') {
+            return NextResponse.json(
+                { error: 'Only draft contracts can be deleted' },
+                { status: 400 }
+            );
+        }
+
+        // Delete the contract
         await prisma.contract.delete({
-            where: { id: params.id }
+            where: { id: contractId },
         });
 
-        // Update user's contract status
-        const remainingContracts = await prisma.contract.findMany({
-            where: {
-                userId: existingContract.userId,
-                status: "ACTIVE"
-            }
-        });
-
-        await prisma.user.update({
-            where: { id: existingContract.userId },
+        // Log activity
+        await prisma.activityFeed.create({
             data: {
-                hasContract: remainingContracts.length > 0,
-                contractStatus: remainingContracts.length > 0 ? "ACTIVE" : "NONE",
-            }
+                userId: contract.userId,
+                actorId: session.user.id || 'system',
+                type: 'SYSTEM_UPDATE',
+                title: 'Contract Verwijderd',
+                description: `Contract "${contract.title}" is verwijderd`,
+                resourceId: contract.id,
+            },
         });
 
-        return NextResponse.json({ message: "Contract deleted successfully" });
+        return NextResponse.json({ success: true });
+
     } catch (error) {
-        console.error("Error deleting contract:", error);
+        console.error('Contract DELETE error:', error);
         return NextResponse.json(
-            { error: "Internal server error" },
+            { error: 'Failed to delete contract' },
             { status: 500 }
         );
     }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { createEmailService } from "@/lib/email-service";
+import { emailService } from "@/lib/email-service";
 
 export async function POST(
     request: NextRequest,
@@ -68,8 +68,8 @@ export async function POST(
             }
         }
 
-        // Create email service
-        const emailService = createEmailService();
+        // Create email service (already imported as singleton)
+        // const emailService = createEmailService(); // Remove this line
 
         let emailSent = false;
 
@@ -77,7 +77,7 @@ export async function POST(
             // Send custom email
             const pdfBuffer = Buffer.from(contract.fileUrl.split(',')[1], 'base64');
 
-            emailSent = await emailService.sendEmail({
+            const result = await emailService.sendEmail({
                 to: contract.user.email,
                 subject: subject,
                 text: content,
@@ -90,15 +90,18 @@ export async function POST(
                     },
                 ],
             });
+            emailSent = result.success;
         } else {
-            // Send template email
-            emailSent = await emailService.sendContractEmail(
+            // Send contract signing email with URL instead of attachment
+            const signingUrl = `${process.env.APP_URL || 'http://localhost:3000'}/contract/sign/${contractId}?token=demo-token`;
+
+            const result = await emailService.sendContractSigningEmail(
                 contract.user.email,
                 contract.user.name || "Medewerker",
                 contract.title,
-                contract.fileUrl,
-                emailType as 'new' | 'signed' | 'reminder'
+                signingUrl
             );
+            emailSent = result.success;
         }
 
         if (!emailSent) {

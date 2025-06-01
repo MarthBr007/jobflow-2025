@@ -32,128 +32,248 @@ export interface NotificationUpdate {
     read: boolean;
 }
 
+let globalClient: WebSocketClient | null = null;
+
+export function getWebSocketClient(): WebSocketClient {
+    if (!globalClient) {
+        globalClient = new WebSocketClient();
+    }
+    return globalClient;
+}
+
 class WebSocketClient {
     private socket: Socket | null = null;
+    private eventHandlers: Map<string, Function[]> = new Map();
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
-    private reconnectDelay = 1000;
-    private isInitialized = false;
-
-    // Event listeners
-    private listeners: Map<string, Set<Function>> = new Map();
+    private isConnecting = false;
+    private pollingInterval: NodeJS.Timeout | null = null;
+    private usePolling = false;
 
     constructor() {
-        // Only initialize on client side
         if (typeof window !== 'undefined') {
             this.connect();
         }
     }
 
     private connect() {
-        if (typeof window === 'undefined') return;
+        if (this.isConnecting || this.socket?.connected) return;
+
+        this.isConnecting = true;
 
         try {
-            this.socket = io(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001', {
-                transports: ['websocket', 'polling'],
-                timeout: 20000,
+            // Try WebSocket first, fallback to polling for Vercel
+            const socketUrl = process.env.NODE_ENV === 'production'
+                ? window.location.origin // Use same domain in production
+                : 'http://localhost:3001';
+
+            this.socket = io(socketUrl, {
+                auth: {
+                    userId: this.getUserId(),
+                },
+                transports: ['websocket', 'polling'], // Allow both transports
+                timeout: 5000,
                 forceNew: true,
             });
 
             this.socket.on('connect', () => {
                 console.log('✅ WebSocket connected');
+                this.isConnecting = false;
                 this.reconnectAttempts = 0;
-                this.isInitialized = true;
-                this.emit('connected', { timestamp: new Date().toISOString() });
+                this.usePolling = false;
+                this.emit('connected');
+
+                // Stop polling if WebSocket works
+                if (this.pollingInterval) {
+                    clearInterval(this.pollingInterval);
+                    this.pollingInterval = null;
+                }
             });
 
-            this.socket.on('disconnect', (reason: string) => {
-                console.log('❌ WebSocket disconnected:', reason);
-                this.emit('disconnected', { reason, timestamp: new Date().toISOString() });
-                this.handleReconnect();
+            this.socket.on('disconnect', () => {
+                console.log('❌ WebSocket disconnected');
+                this.emit('disconnected');
+                this.startPollingFallback();
             });
 
-            this.socket.on('connect_error', (error: Error) => {
-                console.error('🔴 WebSocket connection error:', error);
-                this.handleReconnect();
+            this.socket.on('connect_error', (error) => {
+                console.warn('WebSocket connection failed, falling back to polling:', error);
+                this.isConnecting = false;
+                this.startPollingFallback();
             });
 
-            // Real-time event handlers
-            this.socket.on('timeUpdate', (data: TimeTrackingUpdate) => {
-                this.emit('timeUpdate', data);
-            });
-
-            this.socket.on('userStatusUpdate', (data: UserStatusUpdate) => {
-                this.emit('userStatusUpdate', data);
-            });
-
-            this.socket.on('notification', (data: NotificationUpdate) => {
-                this.emit('notification', data);
-            });
-
-            this.socket.on('projectUpdate', (data: any) => {
-                this.emit('projectUpdate', data);
-            });
-
-            this.socket.on('chatMessage', (data: any) => {
-                this.emit('chatMessage', data);
-            });
+            // Set up event listeners
+            this.setupEventListeners();
 
         } catch (error) {
-            console.error('Failed to create WebSocket connection:', error);
-            this.handleReconnect();
+            console.error('WebSocket setup failed:', error);
+            this.isConnecting = false;
+            this.startPollingFallback();
         }
     }
 
-    private handleReconnect() {
-        if (typeof window === 'undefined') return;
+    private startPollingFallback() {
+        if (this.usePolling || this.pollingInterval) return;
 
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+        console.log('🔄 Starting polling fallback for real-time updates');
+        this.usePolling = true;
+        this.emit('disconnected');
 
-            console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
-
-            setTimeout(() => {
-                this.connect();
-            }, delay);
-        } else {
-            console.error('❌ Max reconnection attempts reached');
-            this.emit('maxReconnectAttemptsReached', {});
-        }
+        // Poll for updates every 5 seconds
+        this.pollingInterval = setInterval(async () => {
+            try {
+                await this.pollForUpdates();
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, 5000);
     }
 
-    // Event emitter methods
-    on(event: string, callback: Function) {
-        if (!this.listeners.has(event)) {
-            this.listeners.set(event, new Set());
-        }
-        this.listeners.get(event)!.add(callback);
-    }
-
-    off(event: string, callback: Function) {
-        const eventListeners = this.listeners.get(event);
-        if (eventListeners) {
-            eventListeners.delete(callback);
-        }
-    }
-
-    private emit(event: string, data: any) {
-        const eventListeners = this.listeners.get(event);
-        if (eventListeners) {
-            eventListeners.forEach(callback => callback(data));
-        }
-    }
-
-    // Public methods
-    sendMessage(type: WebSocketMessage['type'], data: any) {
-        if (this.socket?.connected) {
-            this.socket.emit('message', {
-                type,
-                data,
-                timestamp: new Date().toISOString(),
+    private async pollForUpdates() {
+        try {
+            // Poll for new messages, notifications, etc.
+            const response = await fetch('/api/realtime/poll', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                // Emit events for any updates
+                if (data.messages?.length > 0) {
+                    data.messages.forEach((message: any) => {
+                        this.emit('newChatMessage', message);
+                    });
+                }
+
+                if (data.notifications?.length > 0) {
+                    data.notifications.forEach((notification: any) => {
+                        this.emit('notification', notification);
+                    });
+                }
+
+                if (data.timeUpdates?.length > 0) {
+                    data.timeUpdates.forEach((update: any) => {
+                        this.emit('timeUpdate', update);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Polling failed:', error);
+        }
+    }
+
+    private setupEventListeners() {
+        if (!this.socket) return;
+
+        // Chat events
+        this.socket.on('newChatMessage', (data) => {
+            this.emit('newChatMessage', data);
+        });
+
+        this.socket.on('userTyping', (data) => {
+            this.emit('userTyping', data);
+        });
+
+        this.socket.on('userJoinedRoom', (data) => {
+            this.emit('userJoinedRoom', data);
+        });
+
+        this.socket.on('userLeftRoom', (data) => {
+            this.emit('userLeftRoom', data);
+        });
+
+        // Time tracking events
+        this.socket.on('timeUpdate', (data) => {
+            this.emit('timeUpdate', data);
+        });
+
+        // User status events
+        this.socket.on('userStatusUpdate', (data) => {
+            this.emit('userStatusUpdate', data);
+        });
+
+        this.socket.on('activeUsers', (data) => {
+            this.emit('activeUsers', data);
+        });
+
+        // Notification events
+        this.socket.on('notification', (data) => {
+            this.emit('notification', data);
+        });
+
+        // Error handling
+        this.socket.on('error', (error) => {
+            console.error('WebSocket error:', error);
+            this.emit('error', error);
+        });
+    }
+
+    private getUserId(): string {
+        // Get user ID from session storage or other source
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('userId') || 'anonymous';
+        }
+        return 'anonymous';
+    }
+
+    isConnected(): boolean {
+        return this.socket?.connected || false;
+    }
+
+    on(event: string, handler: Function) {
+        if (!this.eventHandlers.has(event)) {
+            this.eventHandlers.set(event, []);
+        }
+        this.eventHandlers.get(event)!.push(handler);
+    }
+
+    off(event: string, handler: Function) {
+        const handlers = this.eventHandlers.get(event);
+        if (handlers) {
+            const index = handlers.indexOf(handler);
+            if (index > -1) {
+                handlers.splice(index, 1);
+            }
+        }
+    }
+
+    emit(event: string, data?: any) {
+        const handlers = this.eventHandlers.get(event);
+        if (handlers) {
+            handlers.forEach(handler => handler(data));
+        }
+    }
+
+    sendMessage(type: string, data: any) {
+        const message: WebSocketMessage = {
+            type: type as any,
+            data,
+            timestamp: new Date().toISOString(),
+        };
+
+        if (this.socket?.connected) {
+            this.socket.emit('message', message);
         } else {
-            console.warn('WebSocket not connected, message not sent:', { type, data });
+            // Fallback: send via HTTP API
+            this.sendViaAPI(type, data);
+        }
+    }
+
+    private async sendViaAPI(type: string, data: any) {
+        try {
+            await fetch('/api/realtime/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ type, data }),
+            });
+        } catch (error) {
+            console.error('Failed to send via API:', error);
         }
     }
 
@@ -169,20 +289,16 @@ class WebSocketClient {
         }
     }
 
-    updateUserStatus(status: UserStatusUpdate['status'], projectId?: string) {
-        this.sendMessage('USER_STATUS', {
-            status,
-            projectId,
-            timestamp: new Date().toISOString(),
-        });
+    updateUserStatus(status: string, projectId?: string) {
+        if (this.socket?.connected) {
+            this.socket.emit('userStatusUpdate', { status, projectId });
+        }
     }
 
-    sendTimeUpdate(action: TimeTrackingUpdate['action'], projectId?: string) {
-        this.sendMessage('TIME_UPDATE', {
-            action,
-            projectId,
-            timestamp: new Date().toISOString(),
-        });
+    sendTimeUpdate(action: string, projectId?: string) {
+        if (this.socket?.connected) {
+            this.socket.emit('timeUpdate', { action, projectId });
+        }
     }
 
     sendChatMessage(roomId: string, message: string, attachments?: any[]) {
@@ -193,46 +309,44 @@ class WebSocketClient {
                 attachments,
                 timestamp: new Date().toISOString(),
             });
+        } else {
+            // Fallback: send via HTTP API
+            this.sendChatViaAPI(roomId, message, attachments);
         }
     }
 
-    isConnected(): boolean {
-        return this.socket?.connected || false;
+    private async sendChatViaAPI(roomId: string, message: string, attachments?: any[]) {
+        try {
+            await fetch('/api/chat/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    roomId,
+                    content: message,
+                    attachments,
+                }),
+            });
+        } catch (error) {
+            console.error('Failed to send chat message via API:', error);
+        }
     }
 
     disconnect() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+        }
+
         if (this.socket) {
             this.socket.disconnect();
             this.socket = null;
         }
-    }
-}
 
-// Create singleton instance
-let websocketClient: WebSocketClient | null = null;
-
-// Lazy initialization
-export function getWebSocketClient(): WebSocketClient {
-    if (typeof window === 'undefined') {
-        // Return a mock client for SSR
-        return {
-            on: () => { },
-            off: () => { },
-            sendMessage: () => { },
-            joinRoom: () => { },
-            leaveRoom: () => { },
-            updateUserStatus: () => { },
-            sendTimeUpdate: () => { },
-            sendChatMessage: () => { },
-            isConnected: () => false,
-            disconnect: () => { },
-        } as any;
+        this.usePolling = false;
+        this.emit('disconnected');
     }
-
-    if (!websocketClient) {
-        websocketClient = new WebSocketClient();
-    }
-    return websocketClient;
 }
 
 // React hook for easy WebSocket usage
@@ -269,6 +383,4 @@ export function useWebSocket() {
         sendTimeUpdate: client.sendTimeUpdate.bind(client),
         sendChatMessage: client.sendChatMessage.bind(client),
     };
-}
-
-export default getWebSocketClient(); 
+} 

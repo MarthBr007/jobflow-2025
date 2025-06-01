@@ -161,7 +161,7 @@ export class ContractPDFGenerator {
     }
 
     private addParties(contractData: ContractData): void {
-        this.addSectionHeader('👥 CONTRACTPARTIJEN');
+        this.addSectionHeader('CONTRACTPARTIJEN');
 
         // Two column layout for parties
         const leftColumnX = this.margin;
@@ -208,7 +208,7 @@ export class ContractPDFGenerator {
     }
 
     private addContractDetails(contractData: ContractData): void {
-        this.addSectionHeader('📋 CONTRACT DETAILS');
+        this.addSectionHeader('CONTRACT DETAILS');
 
         // Contract details in a structured format
         const details = [
@@ -260,7 +260,7 @@ export class ContractPDFGenerator {
 
     private addTermsAndConditions(contractData: ContractData, template?: string): void {
         this.checkPageBreak(60);
-        this.addSectionHeader('📜 ALGEMENE VOORWAARDEN');
+        this.addSectionHeader('ALGEMENE VOORWAARDEN');
 
         const terms = this.getEnhancedTermsAndConditions(contractData.contractType, template);
 
@@ -293,7 +293,7 @@ export class ContractPDFGenerator {
         // Special provisions (notes)
         if (contractData.notes) {
             this.checkPageBreak(40);
-            this.addSectionHeader('⚠️ BIJZONDERE BEPALINGEN');
+            this.addSectionHeader('BIJZONDERE BEPALINGEN');
 
             this.doc.setFont('helvetica', 'normal');
             this.doc.setFontSize(9);
@@ -306,7 +306,7 @@ export class ContractPDFGenerator {
 
     private addSignatureSection(): void {
         this.checkPageBreak(100);
-        this.addSectionHeader('✍️ ONDERTEKENING');
+        this.addSectionHeader('ONDERTEKENING');
 
         // Signature date
         this.doc.setFont('helvetica', 'normal');

@@ -1,123 +1,87 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { notificationManager } from '@/lib/notification-system';
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-
         if (!session?.user?.email) {
-            return NextResponse.json(
-                { error: "Niet geautoriseerd" },
-                { status: 401 }
-            );
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { type, message, targetRole } = await request.json();
+        const user = session.user as any;
+        const { searchParams } = new URL(request.url);
+        const limit = parseInt(searchParams.get('limit') || '20');
+        const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
-        // Bepaal welke gebruikers de notificatie moeten ontvangen
-        let targetUsers;
-
-        if (targetRole) {
-            // Specifieke rol
-            targetUsers = await prisma.user.findMany({
-                where: { role: targetRole }
-            });
-        } else {
-            // Standaard: alleen admins en managers
-            targetUsers = await prisma.user.findMany({
-                where: {
-                    OR: [
-                        { role: "ADMIN" },
-                        { role: "MANAGER" }
-                    ]
-                }
-            });
+        if (unreadOnly) {
+            const notifications = await notificationManager.getUnreadNotifications(user.id, limit);
+            return NextResponse.json(notifications);
         }
 
-        // Maak notificaties aan voor de doelgebruikers
-        await Promise.all(targetUsers.map((user: any) =>
-            prisma.notification.create({
-                data: {
-                    userId: user.id,
-                    type: type || "TIME_TRACKING",
-                    enabled: true
-                }
-            })
-        ));
+        // Get all notifications with stats
+        const [notifications, stats] = await Promise.all([
+            notificationManager.getUnreadNotifications(user.id, limit),
+            notificationManager.getNotificationStats(user.id)
+        ]);
 
         return NextResponse.json({
-            success: true,
-            message: `Notificatie verstuurd naar ${targetUsers.length} gebruiker(s)`
+            notifications,
+            stats
         });
+
     } catch (error) {
-        console.error("Error creating notification:", error);
+        console.error('Notifications API error:', error);
         return NextResponse.json(
-            { error: "Er is iets misgegaan bij het aanmaken van de notificatie" },
+            { error: 'Failed to fetch notifications' },
             { status: 500 }
         );
     }
 }
 
-export async function GET() {
+export async function POST(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-
         if (!session?.user?.email) {
-            return NextResponse.json(
-                { error: "Niet geautoriseerd" },
-                { status: 401 }
-            );
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const notifications = await prisma.notification.findMany({
-            where: {
-                userId: session.user.id,
-                enabled: true
-            },
-            orderBy: {
-                createdAt: "desc"
-            }
-        });
+        const body = await request.json();
+        const { action, notificationIds } = body;
+        const user = session.user as any;
 
-        return NextResponse.json(notifications);
-    } catch (error) {
-        console.error("Error fetching notifications:", error);
-        return NextResponse.json(
-            { error: "Er is iets misgegaan bij het ophalen van de notificaties" },
-            { status: 500 }
-        );
-    }
-}
+        switch (action) {
+            case 'markRead':
+                if (notificationIds && Array.isArray(notificationIds)) {
+                    const result = await notificationManager.markAsRead(notificationIds, user.id);
+                    return NextResponse.json({ success: true, count: result.count });
+                }
+                break;
 
-export async function PUT(request: Request) {
-    try {
-        const session = await getServerSession(authOptions);
+            case 'markAllRead':
+                const result = await notificationManager.markAllAsRead(user.id);
+                return NextResponse.json({ success: true, count: result.count });
 
-        if (!session?.user?.email) {
-            return NextResponse.json(
-                { error: "Niet geautoriseerd" },
-                { status: 401 }
-            );
+            case 'send':
+                // For sending custom notifications (admin only)
+                const notification = await notificationManager.sendNotification({
+                    userId: body.userId || user.id,
+                    type: body.type || 'SYSTEM_ALERT',
+                    title: body.title,
+                    message: body.message,
+                    priority: body.priority || 'NORMAL'
+                });
+                return NextResponse.json({ success: true, notification });
+
+            default:
+                return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }
 
-        const { notificationId } = await request.json();
-
-        await prisma.notification.update({
-            where: {
-                id: notificationId
-            },
-            data: {
-                enabled: false
-            }
-        });
-
-        return NextResponse.json({ success: true });
     } catch (error) {
-        console.error("Error updating notification:", error);
+        console.error('Notifications POST API error:', error);
         return NextResponse.json(
-            { error: "Er is iets misgegaan bij het bijwerken van de notificatie" },
+            { error: 'Failed to process notification action' },
             { status: 500 }
         );
     }

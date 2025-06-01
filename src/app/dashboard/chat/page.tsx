@@ -254,6 +254,35 @@ export default function ChatPage() {
     // Note: The local message won't be duplicated as our server will only broadcast to other users
   };
 
+  const handleNewMessage = (message: ChatMessage) => {
+    // Handle new messages received from WebSocket or polling
+    setMessages((prev) => {
+      // Check if message already exists to prevent duplicates
+      if (prev.some((msg) => msg.id === message.id)) {
+        return prev;
+      }
+      return [...prev, message];
+    });
+
+    // Update room's last message and unread count if not current room
+    setRooms((prev) =>
+      prev.map((room) => {
+        if (room.id === message.senderId && room.type === "direct") {
+          // For direct messages, find room by sender
+          return {
+            ...room,
+            lastMessage: message,
+            unreadCount: currentRoom?.id === room.id ? 0 : room.unreadCount + 1,
+          };
+        } else if (room.id === currentRoom?.id) {
+          // For current room, update last message but don't increment unread
+          return { ...room, lastMessage: message };
+        }
+        return room;
+      })
+    );
+  };
+
   const filteredRooms = rooms.filter((room) =>
     room.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -401,6 +430,7 @@ export default function ChatPage() {
               messages={messages}
               onSendMessage={handleSendMessage}
               loading={loading}
+              onNewMessage={handleNewMessage}
             />
           </div>
         </div>

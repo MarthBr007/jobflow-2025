@@ -1,266 +1,373 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
+import Mailgun from 'mailgun.js';
+import FormData from 'form-data';
+
+export type EmailProvider = 'sendgrid' | 'mailgun' | 'smtp';
 
 export interface EmailConfig {
+  provider: EmailProvider;
+  sendgrid?: {
+    apiKey: string;
+    fromEmail: string;
+    fromName: string;
+  };
+  mailgun?: {
+    apiKey: string;
+    domain: string;
+    fromEmail: string;
+    fromName: string;
+  };
+  smtp?: {
     host: string;
     port: number;
-    secure: boolean;
-    auth: {
-        user: string;
-        pass: string;
-    };
+    user: string;
+    pass: string;
+    fromEmail: string;
+    fromName: string;
+  };
 }
 
-export interface EmailOptions {
-    to: string | string[];
-    cc?: string | string[];
-    bcc?: string | string[];
-    subject: string;
-    html?: string;
-    text?: string;
-    attachments?: Array<{
-        filename: string;
-        content: string | Buffer;
-        contentType?: string;
-    }>;
+export interface EmailMessage {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType: string;
+  }>;
+  templateId?: string;
+  templateData?: Record<string, any>;
 }
 
-export class EmailService {
-    private transporter: nodemailer.Transporter;
-    private fromEmail: string;
-
-    constructor(config: EmailConfig, fromEmail: string) {
-        this.transporter = nodemailer.createTransport(config);
-        this.fromEmail = fromEmail;
-    }
-
-    async sendEmail(options: EmailOptions): Promise<boolean> {
-        try {
-            const info = await this.transporter.sendMail({
-                from: this.fromEmail,
-                to: options.to,
-                cc: options.cc,
-                bcc: options.bcc,
-                subject: options.subject,
-                text: options.text,
-                html: options.html,
-                attachments: options.attachments,
-            });
-
-            console.log('Email sent:', info.messageId);
-            return true;
-        } catch (error) {
-            console.error('Error sending email:', error);
-            return false;
-        }
-    }
-
-    async sendContractEmail(
-        recipientEmail: string,
-        employeeName: string,
-        contractTitle: string,
-        contractPdf: string,
-        contractType: 'new' | 'signed' | 'reminder'
-    ): Promise<boolean> {
-        const templates = this.getEmailTemplates();
-        const template = templates[contractType];
-
-        const html = template.html
-            .replace('{{employeeName}}', employeeName)
-            .replace('{{contractTitle}}', contractTitle)
-            .replace('{{companyName}}', 'Broers Verhuur'); // This could be configurable
-
-        const text = template.text
-            .replace('{{employeeName}}', employeeName)
-            .replace('{{contractTitle}}', contractTitle)
-            .replace('{{companyName}}', 'Broers Verhuur');
-
-        // Convert base64 PDF to buffer
-        const pdfBuffer = Buffer.from(contractPdf.split(',')[1], 'base64');
-
-        return this.sendEmail({
-            to: recipientEmail,
-            subject: template.subject.replace('{{contractTitle}}', contractTitle),
-            html,
-            text,
-            attachments: [
-                {
-                    filename: `${contractTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-                    content: pdfBuffer,
-                    contentType: 'application/pdf',
-                },
-            ],
-        });
-    }
-
-    private getEmailTemplates() {
-        return {
-            new: {
-                subject: 'Nieuw contract: {{contractTitle}}',
-                html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #3b82f6; color: white; padding: 20px; text-align: center;">
-              <h1 style="margin: 0;">📄 Nieuw Contract</h1>
-            </div>
-            
-            <div style="padding: 30px; background-color: #f8fafc;">
-              <h2 style="color: #1e293b;">Beste {{employeeName}},</h2>
-              
-              <p style="color: #475569; line-height: 1.6;">
-                Hierbij ontvang je jouw nieuwe arbeidscontract: <strong>{{contractTitle}}</strong>.
-              </p>
-              
-              <div style="background-color: white; border-left: 4px solid #3b82f6; padding: 20px; margin: 20px 0;">
-                <h3 style="color: #1e293b; margin-top: 0;">📋 Wat moet je doen?</h3>
-                <ul style="color: #475569;">
-                  <li>Lees het contract zorgvuldig door</li>
-                  <li>Print het contract uit (2 exemplaren)</li>
-                  <li>Onderteken beide exemplaren</li>
-                  <li>Stuur 1 exemplaar terug naar {{companyName}}</li>
-                  <li>Bewaar 1 exemplaar voor jezelf</li>
-                </ul>
-              </div>
-              
-              <p style="color: #475569; line-height: 1.6;">
-                Heb je vragen over het contract? Neem dan contact met ons op.
-              </p>
-              
-              <div style="text-align: center; margin-top: 30px;">
-                <div style="background-color: #3b82f6; color: white; padding: 15px; border-radius: 8px; display: inline-block;">
-                  <strong>📧 Vragen? Mail naar: info@broersverhuur.nl</strong>
-                </div>
-              </div>
-            </div>
-            
-            <div style="background-color: #e2e8f0; padding: 20px; text-align: center; color: #64748b; font-size: 14px;">
-              <p style="margin: 0;">Met vriendelijke groet,<br>{{companyName}}</p>
-            </div>
-          </div>
-        `,
-                text: `
-Beste {{employeeName}},
-
-Hierbij ontvang je jouw nieuwe arbeidscontract: {{contractTitle}}.
-
-Wat moet je doen?
-- Lees het contract zorgvuldig door
-- Print het contract uit (2 exemplaren)
-- Onderteken beide exemplaren
-- Stuur 1 exemplaar terug naar {{companyName}}
-- Bewaar 1 exemplaar voor jezelf
-
-Heb je vragen over het contract? Neem dan contact met ons op via info@broersverhuur.nl
-
-Met vriendelijke groet,
-{{companyName}}
-        `,
-            },
-            signed: {
-                subject: 'Contract ondertekend: {{contractTitle}}',
-                html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #10b981; color: white; padding: 20px; text-align: center;">
-              <h1 style="margin: 0;">✅ Contract Ondertekend</h1>
-            </div>
-            
-            <div style="padding: 30px; background-color: #f8fafc;">
-              <h2 style="color: #1e293b;">Beste {{employeeName}},</h2>
-              
-              <p style="color: #475569; line-height: 1.6;">
-                Geweldig! Jouw contract <strong>{{contractTitle}}</strong> is succesvol ondertekend en verwerkt.
-              </p>
-              
-              <div style="background-color: white; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0;">
-                <h3 style="color: #1e293b; margin-top: 0;">🎉 Welkom bij het team!</h3>
-                <p style="color: #475569; margin-bottom: 0;">
-                  Je bent nu officieel onderdeel van {{companyName}}. We kijken ernaar uit om met je samen te werken!
-                </p>
-              </div>
-              
-              <p style="color: #475569; line-height: 1.6;">
-                In de bijlage vind je een kopie van het ondertekende contract voor jouw administratie.
-              </p>
-            </div>
-            
-            <div style="background-color: #e2e8f0; padding: 20px; text-align: center; color: #64748b; font-size: 14px;">
-              <p style="margin: 0;">Met vriendelijke groet,<br>{{companyName}}</p>
-            </div>
-          </div>
-        `,
-                text: `
-Beste {{employeeName}},
-
-Geweldig! Jouw contract {{contractTitle}} is succesvol ondertekend en verwerkt.
-
-Welkom bij het team! Je bent nu officieel onderdeel van {{companyName}}. We kijken ernaar uit om met je samen te werken!
-
-In de bijlage vind je een kopie van het ondertekende contract voor jouw administratie.
-
-Met vriendelijke groet,
-{{companyName}}
-        `,
-            },
-            reminder: {
-                subject: 'Herinnering: Contract ondertekening - {{contractTitle}}',
-                html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #f59e0b; color: white; padding: 20px; text-align: center;">
-              <h1 style="margin: 0;">⏰ Herinnering</h1>
-            </div>
-            
-            <div style="padding: 30px; background-color: #f8fafc;">
-              <h2 style="color: #1e293b;">Beste {{employeeName}},</h2>
-              
-              <p style="color: #475569; line-height: 1.6;">
-                Dit is een vriendelijke herinnering voor het ondertekenen van jouw contract: <strong>{{contractTitle}}</strong>.
-              </p>
-              
-              <div style="background-color: white; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0;">
-                <h3 style="color: #1e293b; margin-top: 0;">⚡ Actie vereist</h3>
-                <p style="color: #475569; margin-bottom: 0;">
-                  Graag ontvangen we het ondertekende contract zo spoedig mogelijk retour.
-                </p>
-              </div>
-              
-              <p style="color: #475569; line-height: 1.6;">
-                Heb je vragen of heb je hulp nodig? Neem gerust contact met ons op.
-              </p>
-            </div>
-            
-            <div style="background-color: #e2e8f0; padding: 20px; text-align: center; color: #64748b; font-size: 14px;">
-              <p style="margin: 0;">Met vriendelijke groet,<br>{{companyName}}</p>
-            </div>
-          </div>
-        `,
-                text: `
-Beste {{employeeName}},
-
-Dit is een vriendelijke herinnering voor het ondertekenen van jouw contract: {{contractTitle}}.
-
-Graag ontvangen we het ondertekende contract zo spoedig mogelijk retour.
-
-Heb je vragen of heb je hulp nodig? Neem gerust contact met ons op via info@broersverhuur.nl
-
-Met vriendelijke groet,
-{{companyName}}
-        `,
-            },
-        };
-    }
+export interface EmailResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  provider: EmailProvider;
 }
 
-// Default email configuration (should be moved to environment variables)
-export function createEmailService(): EmailService {
-    const config: EmailConfig = {
-        host: process.env.SMTP_HOST || 'localhost',
+export class ProfessionalEmailService {
+  private config: EmailConfig;
+  private mailgunClient?: any;
+
+  constructor() {
+    this.config = this.loadConfig();
+    this.initializeProviders();
+  }
+
+  private loadConfig(): EmailConfig {
+    const provider = (process.env.EMAIL_PROVIDER as EmailProvider) || 'smtp';
+
+    return {
+      provider,
+      sendgrid: {
+        apiKey: process.env.SENDGRID_API_KEY || '',
+        fromEmail: process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_FROM || '',
+        fromName: process.env.SENDGRID_FROM_NAME || 'JobFlow System',
+      },
+      mailgun: {
+        apiKey: process.env.MAILGUN_API_KEY || '',
+        domain: process.env.MAILGUN_DOMAIN || '',
+        fromEmail: process.env.MAILGUN_FROM_EMAIL || process.env.SMTP_FROM || '',
+        fromName: process.env.MAILGUN_FROM_NAME || 'JobFlow System',
+      },
+      smtp: {
+        host: process.env.SMTP_HOST || '',
         port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-            user: process.env.SMTP_USER || '',
-            pass: process.env.SMTP_PASS || '',
-        },
+        user: process.env.SMTP_USER || '',
+        pass: process.env.SMTP_PASS || '',
+        fromEmail: process.env.SMTP_FROM || '',
+        fromName: 'JobFlow System',
+      }
+    };
+  }
+
+  private initializeProviders(): void {
+    // Initialize SendGrid
+    if (this.config.provider === 'sendgrid' && this.config.sendgrid?.apiKey) {
+      sgMail.setApiKey(this.config.sendgrid.apiKey);
+    }
+
+    // Initialize Mailgun
+    if (this.config.provider === 'mailgun' && this.config.mailgun?.apiKey) {
+      const mailgun = new Mailgun(FormData);
+      this.mailgunClient = mailgun.client({
+        username: 'api',
+        key: this.config.mailgun.apiKey,
+      });
+    }
+  }
+
+  /**
+   * Send email using configured provider
+   */
+  async sendEmail(message: EmailMessage): Promise<EmailResult> {
+    try {
+      switch (this.config.provider) {
+        case 'sendgrid':
+          return await this.sendWithSendGrid(message);
+        case 'mailgun':
+          return await this.sendWithMailgun(message);
+        case 'smtp':
+        default:
+          return await this.sendWithSMTP(message);
+      }
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        provider: this.config.provider,
+      };
+    }
+  }
+
+  /**
+   * Send email with SendGrid
+   */
+  private async sendWithSendGrid(message: EmailMessage): Promise<EmailResult> {
+    if (!this.config.sendgrid?.apiKey) {
+      throw new Error('SendGrid API key not configured');
+    }
+
+    const msg = {
+      to: Array.isArray(message.to) ? message.to : [message.to],
+      from: {
+        email: this.config.sendgrid.fromEmail,
+        name: this.config.sendgrid.fromName,
+      },
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+      attachments: message.attachments?.map(att => ({
+        filename: att.filename,
+        content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
+        type: att.contentType,
+        disposition: 'attachment',
+      })),
+      templateId: message.templateId,
+      dynamicTemplateData: message.templateData,
     };
 
-    const fromEmail = process.env.FROM_EMAIL || 'noreply@broersverhuur.nl';
+    const [response] = await sgMail.send(msg);
 
-    return new EmailService(config, fromEmail);
-} 
+    return {
+      success: true,
+      messageId: response.headers['x-message-id'],
+      provider: 'sendgrid',
+    };
+  }
+
+  /**
+   * Send email with Mailgun
+   */
+  private async sendWithMailgun(message: EmailMessage): Promise<EmailResult> {
+    if (!this.mailgunClient || !this.config.mailgun?.domain) {
+      throw new Error('Mailgun not properly configured');
+    }
+
+    const data = {
+      from: `${this.config.mailgun.fromName} <${this.config.mailgun.fromEmail}>`,
+      to: Array.isArray(message.to) ? message.to.join(', ') : message.to,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+    };
+
+    const response = await this.mailgunClient.messages.create(this.config.mailgun.domain, data);
+
+    return {
+      success: true,
+      messageId: response.id,
+      provider: 'mailgun',
+    };
+  }
+
+  /**
+   * Send email with SMTP (fallback)
+   */
+  private async sendWithSMTP(message: EmailMessage): Promise<EmailResult> {
+    // Use existing SMTP implementation
+    const nodemailer = require('nodemailer');
+
+    const transporter = nodemailer.createTransporter({
+      host: this.config.smtp?.host,
+      port: this.config.smtp?.port,
+      secure: this.config.smtp?.port === 465,
+      auth: {
+        user: this.config.smtp?.user,
+        pass: this.config.smtp?.pass,
+      },
+    });
+
+    const result = await transporter.sendMail({
+      from: `${this.config.smtp?.fromName} <${this.config.smtp?.fromEmail}>`,
+      to: message.to,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+      attachments: message.attachments,
+    });
+
+    return {
+      success: true,
+      messageId: result.messageId,
+      provider: 'smtp',
+    };
+  }
+
+  /**
+   * Send contract signing email with template
+   */
+  async sendContractSigningEmail(
+    recipientEmail: string,
+    recipientName: string,
+    contractTitle: string,
+    signingUrl: string
+  ): Promise<EmailResult> {
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Contract Ondertekening</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #3b82f6; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px 20px; }
+            .button { 
+                display: inline-block; 
+                background: #10b981; 
+                color: white; 
+                padding: 12px 30px; 
+                text-decoration: none; 
+                border-radius: 5px; 
+                margin: 20px 0;
+            }
+            .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 14px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>JobFlow Contract System</h1>
+            </div>
+            <div class="content">
+                <h2>Hallo ${recipientName},</h2>
+                <p>Je hebt een nieuw contract ontvangen voor ondertekening:</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+                    <h3 style="margin: 0 0 10px 0;">📄 ${contractTitle}</h3>
+                    <p style="margin: 0; color: #666;">Klik op de onderstaande knop om je contract te bekijken en te ondertekenen.</p>
+                </div>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${signingUrl}" class="button">Contract Bekijken & Ondertekenen</a>
+                </div>
+
+                <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h4 style="margin: 0 0 10px 0;">BELANGRIJK:</h4>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li>Deze link is 7 dagen geldig</li>
+                        <li>Lees het contract zorgvuldig door voordat je ondertekent</li>
+                        <li>Bij vragen kun je contact opnemen met HR</li>
+                        <li>Na ondertekening ontvang je automatisch een kopie</li>
+                    </ul>
+                </div>
+
+                <p style="margin-top: 30px;">
+                    Als je de bovenstaande knop niet kunt gebruiken, kopieer dan deze link naar je browser:<br>
+                    <small style="color: #666; word-break: break-all;">${signingUrl}</small>
+                </p>
+            </div>
+            <div class="footer">
+                <p>Dit is een geautomatiseerd bericht van het JobFlow systeem.<br>
+                Antwoord niet op deze e-mail.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    return await this.sendEmail({
+      to: recipientEmail,
+      subject: `Contract Ondertekening: ${contractTitle}`,
+      html,
+      text: `Hallo ${recipientName},\n\nJe hebt een nieuw contract ontvangen voor ondertekening: ${contractTitle}\n\nBekijk en onderteken hier: ${signingUrl}\n\nMet vriendelijke groet,\nJobFlow System`
+    });
+  }
+
+  /**
+   * Test email configuration
+   */
+  async testConfiguration(): Promise<{
+    provider: EmailProvider;
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      const testEmail = process.env.TEST_EMAIL || 'test@example.com';
+
+      const result = await this.sendEmail({
+        to: testEmail,
+        subject: 'JobFlow Email Service Test',
+        html: '<h1>Test Email</h1><p>If you receive this, your email service is working correctly!</p>',
+        text: 'Test Email - If you receive this, your email service is working correctly!'
+      });
+
+      return {
+        provider: this.config.provider,
+        success: result.success,
+        error: result.error,
+      };
+    } catch (error) {
+      return {
+        provider: this.config.provider,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get service status
+   */
+  getServiceStatus(): {
+    provider: EmailProvider;
+    configured: boolean;
+    features: string[];
+  } {
+    const features: string[] = [];
+
+    switch (this.config.provider) {
+      case 'sendgrid':
+        if (this.config.sendgrid?.apiKey) {
+          features.push('Templates', 'Analytics', 'High Deliverability', 'Webhooks');
+        }
+        break;
+      case 'mailgun':
+        if (this.config.mailgun?.apiKey && this.config.mailgun?.domain) {
+          features.push('EU/US Regions', 'Logs', 'Analytics', 'Webhooks');
+        }
+        break;
+      case 'smtp':
+        if (this.config.smtp?.host) {
+          features.push('Basic Email', 'Custom SMTP');
+        }
+        break;
+    }
+
+    return {
+      provider: this.config.provider,
+      configured: features.length > 0,
+      features,
+    };
+  }
+}
+
+// Export singleton instance
+export const emailService = new ProfessionalEmailService();
+export default emailService; 

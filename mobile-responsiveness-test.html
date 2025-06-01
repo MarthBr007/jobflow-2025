@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobFlow Mobile Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Test different screen sizes */
+        .screen-size-indicator {
+            position: fixed;
+            top: 0;
+            right: 0;
+            background: #000;
+            color: #fff;
+            padding: 4px 8px;
+            font-size: 12px;
+            z-index: 9999;
+        }
+        
+        @media (max-width: 640px) {
+            .screen-size-indicator::before { content: "📱 Mobile (< 640px)"; }
+        }
+        
+        @media (min-width: 641px) and (max-width: 768px) {
+            .screen-size-indicator::before { content: "📱 Large Mobile (641-768px)"; }
+        }
+        
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .screen-size-indicator::before { content: "💻 Tablet (769-1024px)"; }
+        }
+        
+        @media (min-width: 1025px) {
+            .screen-size-indicator::before { content: "🖥️ Desktop (> 1024px)"; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="screen-size-indicator"></div>
+    
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4">
+        <div class="container mx-auto">
+            <h1 class="text-xl md:text-2xl font-bold">JobFlow Contract System</h1>
+            <p class="text-sm md:text-base opacity-75">Mobile Responsiveness Test</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 max-w-4xl">
+        
+        <!-- Contract Creation Form (Mobile Optimized) -->
+        <section class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+            <h2 class="text-lg md:text-xl font-semibold mb-4">Contract Aanmaken</h2>
+            
+            <form class="space-y-4">
+                <!-- Employee Selection -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Medewerker *
+                        </label>
+                        <select class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Selecteer medewerker...</option>
+                            <option>Jan de Vries</option>
+                            <option>Marie Janssen</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Dienstverband *
+                        </label>
+                        <select class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>FULLTIME</option>
+                            <option>PARTTIME</option>
+                            <option>FREELANCE</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Contract Details -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Contract Titel *
+                    </label>
+                    <input type="text" 
+                           placeholder="Bijv: Arbeidscontract Frontend Developer"
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Beschrijving
+                    </label>
+                    <textarea rows="3" 
+                              placeholder="Optionele beschrijving van het contract..."
+                              class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                </div>
+                
+                <!-- Dates and Salary -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Startdatum *
+                        </label>
+                        <input type="date" 
+                               class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Einddatum
+                        </label>
+                        <input type="date" 
+                               class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Salaris (€/maand) *
+                        </label>
+                        <input type="number" 
+                               placeholder="3500"
+                               class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+                
+                <!-- Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Opmerkingen
+                    </label>
+                    <textarea rows="2" 
+                              placeholder="Bijv: Proeftijd van 2 maanden"
+                              class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                    <button type="button" 
+                            class="flex-1 bg-gray-500 text-white py-3 px-6 rounded-md hover:bg-gray-600 transition-colors">
+                        Annuleren
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition-colors">
+                        Contract Opslaan als Concept
+                    </button>
+                    <button type="button" 
+                            class="flex-1 bg-green-600 text-white py-3 px-6 rounded-md hover:bg-green-700 transition-colors">
+                        Opslaan & Versturen
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Contract Signing Interface (Mobile) -->
+        <section class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+            <h2 class="text-lg md:text-xl font-semibold mb-4">Contract Ondertekening</h2>
+            
+            <div class="space-y-4">
+                <!-- Contract Summary -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium mb-2">Arbeidscontract Frontend Developer</h3>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <p><strong>Medewerker:</strong> Jan de Vries</p>
+                        <p><strong>Periode:</strong> 15 juni 2025 - 15 juni 2026</p>
+                        <p><strong>Salaris:</strong> €3.500/maand</p>
+                        <p><strong>Type:</strong> Fulltime</p>
+                    </div>
+                </div>
+                
+                <!-- Legal Disclaimers -->
+                <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                    <h4 class="font-medium text-yellow-800 mb-2">⚠️ Belangrijke Informatie</h4>
+                    <ul class="text-sm text-yellow-700 space-y-1">
+                        <li>• Door te ondertekenen ga je akkoord met alle contractvoorwaarden</li>
+                        <li>• Dit contract is juridisch bindend</li>
+                        <li>• Je kunt dit contract binnen 24 uur na ondertekening nog intrekken</li>
+                        <li>• Een kopie wordt naar je e-mailadres gestuurd</li>
+                    </ul>
+                </div>
+                
+                <!-- Signature Section -->
+                <div class="border-2 border-dashed border-gray-300 p-6 text-center rounded-lg">
+                    <div class="mb-4">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 17.25L12 21m0 0l3.75 3.75M12 21h21"/>
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-medium mb-2">Digitale Handtekening</h4>
+                    <p class="text-gray-600 mb-4">Tik op de knop hieronder om dit contract digitaal te ondertekenen</p>
+                    
+                    <button class="w-full sm:w-auto bg-green-600 text-white py-3 px-8 rounded-md hover:bg-green-700 transition-colors text-lg font-medium">
+                        ✍️ Contract Ondertekenen
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mobile Navigation Test -->
+        <section class="bg-white rounded-lg shadow-md p-4 md:p-6">
+            <h2 class="text-lg md:text-xl font-semibold mb-4">Navigatie Test</h2>
+            
+            <!-- Mobile Menu -->
+            <div class="sm:hidden">
+                <button class="w-full bg-blue-600 text-white p-3 rounded-md mb-4">
+                    📱 Menu
+                </button>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <nav class="hidden sm:flex space-x-4 mb-4">
+                <a href="#" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Dashboard</a>
+                <a href="#" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Contracten</a>
+                <a href="#" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Medewerkers</a>
+                <a href="#" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Instellingen</a>
+            </nav>
+            
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-medium mb-2">Actieve Contracten</h3>
+                    <p class="text-2xl font-bold text-blue-600">24</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-medium mb-2">Ondertekend</h3>
+                    <p class="text-2xl font-bold text-green-600">18</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="font-medium mb-2">Wachtend</h3>
+                    <p class="text-2xl font-bold text-yellow-600">6</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white p-4 mt-8">
+        <div class="container mx-auto text-center">
+            <p class="text-sm">&copy; 2025 Broers Verhuur JobFlow - Mobile Responsive Test</p>
+        </div>
+    </footer>
+
+    <script>
+        // Test touch interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('button');
+            
+            buttons.forEach(button => {
+                button.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+                
+                button.addEventListener('touchend', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        });
+        
+        // Viewport size detection
+        function showViewportInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            console.log(`Viewport: ${width}x${height}px`);
+        }
+        
+        window.addEventListener('resize', showViewportInfo);
+        showViewportInfo();
+    </script>
+</body>
+</html> 

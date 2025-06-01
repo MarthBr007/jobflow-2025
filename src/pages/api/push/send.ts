@@ -84,10 +84,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     JSON.stringify(payload)
                 );
 
-                console.log(`✅ Push notification sent to ${subscription.user.name}`);
+                console.log(`SUCCESS: Push notification sent to ${subscription.user.name}`);
                 return { success: true, userId: subscription.userId };
             } catch (error: any) {
-                console.error(`❌ Failed to send push notification to ${subscription.user.name}:`, error);
+                console.error(`ERROR: Failed to send push notification to ${subscription.user.name}:`, error);
 
                 // If subscription is invalid, deactivate it
                 if (error?.statusCode === 410 || error?.statusCode === 404) {
