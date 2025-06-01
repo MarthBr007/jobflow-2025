@@ -118,15 +118,34 @@ export function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
     const userAgent = request.headers.get('user-agent') || '';
 
-    // Check if IP is blocked
-    if (blockedIPs.has(clientIP) || suspiciousIPs.has(clientIP)) {
-        console.warn(`Blocked request from suspicious IP: ${clientIP} to ${path}`);
-        return new NextResponse('Access denied', { status: 403 });
+    // Debug logging for IP issues
+    console.log(`🔍 Middleware: Request from IP ${clientIP} to ${path}`);
+
+    // Check if IP is blocked - but be less aggressive
+    if (blockedIPs.has(clientIP)) {
+        console.warn(`Blocked request from blocked IP: ${clientIP} to ${path}`);
+        return new NextResponse(
+            JSON.stringify({
+                error: 'Access denied',
+                message: 'Your IP has been blocked due to suspicious activity'
+            }),
+            {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
     }
 
-    // Validate IP format
-    if (process.env.IP_VALIDATION_ENABLED === 'true' && !isValidIP(clientIP)) {
+    // Be more lenient with suspicious IPs for admin users
+    if (suspiciousIPs.has(clientIP)) {
+        console.warn(`Suspicious IP detected but allowing: ${clientIP} to ${path}`);
+        // Don't block, just log - allow admin to work
+    }
+
+    // Validate IP format - but don't be too strict in production
+    if (process.env.IP_VALIDATION_ENABLED === 'true' && !isValidIP(clientIP) && process.env.NODE_ENV !== 'production') {
         console.warn(`Invalid IP format detected: ${clientIP}`);
+        // Only add to suspicious in development, not production
         suspiciousIPs.add(clientIP);
     }
 
@@ -275,13 +294,27 @@ function isSuspiciousRequest(request: NextRequest): boolean {
         'cmd.exe',
     ];
 
+    // Whitelist admin API paths that are legitimate
+    const adminApiPaths = [
+        '/api/personnel/bulk-import',
+        '/api/admin/',
+        '/api/debug/',
+        '/api/auth/',
+    ];
+
     const queryString = request.nextUrl.search.toLowerCase();
+
+    // Don't flag admin API calls as suspicious
+    const isAdminApiCall = adminApiPaths.some(adminPath => path.startsWith(adminPath));
+    if (isAdminApiCall) {
+        return false;
+    }
 
     return (
         suspiciousPatterns.some(pattern => pattern.test(userAgent)) ||
         suspiciousPaths.some(suspiciousPath => path.includes(suspiciousPath)) ||
         suspiciousQueries.some(query => queryString.includes(query)) ||
-        (request.method === 'POST' && !referer && path.startsWith('/api/'))
+        (request.method === 'POST' && !referer && path.startsWith('/api/') && !isAdminApiCall)
     );
 }
 

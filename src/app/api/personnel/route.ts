@@ -11,242 +11,45 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const url = new URL(request.url);
-        const searchParams = url.searchParams;
+        console.log('Personnel API: Session user:', session.user.email);
 
-        // Parse filter parameters
-        const search = searchParams.get('search') || '';
-        const role = searchParams.get('role') || '';
-        const employeeType = searchParams.get('employeeType') || '';
-        const company = searchParams.get('company') || '';
-        const workTypes = searchParams.get('workTypes')?.split(',').filter(Boolean) || [];
-        const status = searchParams.get('status') || '';
-        const hasContract = searchParams.get('hasContract');
-        const quickFilters = searchParams.get('quickFilters')?.split(',').filter(Boolean) || [];
-        const includeArchived = searchParams.get('includeArchived') === 'true';
-
-        // Salary range filters
-        const salaryType = searchParams.get('salaryType') || 'all';
-        const salaryMin = searchParams.get('salaryMin');
-        const salaryMax = searchParams.get('salaryMax');
-
-        // Date range filters
-        const hiredStartDate = searchParams.get('hiredStartDate');
-        const hiredEndDate = searchParams.get('hiredEndDate');
-        const lastActivityStartDate = searchParams.get('lastActivityStartDate');
-        const lastActivityEndDate = searchParams.get('lastActivityEndDate');
-
-        // Build Prisma where clause
-        const whereClause: any = {};
-
-        // Filter out archived users by default
-        if (!includeArchived) {
-            whereClause.archived = false;
-        }
-
-        // Text search
-        if (search) {
-            whereClause.OR = [
-                { firstName: { contains: search, mode: 'insensitive' } },
-                { lastName: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { company: { contains: search, mode: 'insensitive' } },
-            ];
-        }
-
-        // Basic filters
-        if (role) whereClause.role = role;
-        if (employeeType) whereClause.employeeType = employeeType;
-        if (company) whereClause.company = company;
-        if (status) whereClause.status = status;
-        if (hasContract !== null) {
-            whereClause.hasContract = hasContract === 'true';
-        }
-
-        // Work types filter
-        if (workTypes.length > 0) {
-            whereClause.UserWorkType = {
-                some: {
-                    workType: {
-                        name: { in: workTypes }
-                    }
-                }
-            };
-        }
-
-        // Salary range filters
-        if (salaryMin || salaryMax) {
-            const salaryConditions: any[] = [];
-
-            if (salaryType === 'hourlyRate' || salaryType === 'all') {
-                const hourlyRateCondition: any = {
-                    hourlyRate: { not: null }
-                };
-                if (salaryMin) hourlyRateCondition.hourlyRate = { ...hourlyRateCondition.hourlyRate, gte: parseFloat(salaryMin) };
-                if (salaryMax) hourlyRateCondition.hourlyRate = { ...hourlyRateCondition.hourlyRate, lte: parseFloat(salaryMax) };
-                salaryConditions.push(hourlyRateCondition);
-            }
-
-            if (salaryType === 'hourlyWage' || salaryType === 'all') {
-                const hourlyWageCondition: any = {
-                    hourlyWage: { not: null }
-                };
-                if (salaryMin) hourlyWageCondition.hourlyWage = { ...hourlyWageCondition.hourlyWage, gte: parseFloat(salaryMin) };
-                if (salaryMax) hourlyWageCondition.hourlyWage = { ...hourlyWageCondition.hourlyWage, lte: parseFloat(salaryMax) };
-                salaryConditions.push(hourlyWageCondition);
-            }
-
-            if (salaryType === 'monthlySalary' || salaryType === 'all') {
-                const monthlySalaryCondition: any = {
-                    monthlySalary: { not: null }
-                };
-                if (salaryMin) monthlySalaryCondition.monthlySalary = { ...monthlySalaryCondition.monthlySalary, gte: parseFloat(salaryMin) };
-                if (salaryMax) monthlySalaryCondition.monthlySalary = { ...monthlySalaryCondition.monthlySalary, lte: parseFloat(salaryMax) };
-                salaryConditions.push(monthlySalaryCondition);
-            }
-
-            if (salaryConditions.length > 0) {
-                whereClause.OR = whereClause.OR ?
-                    [...whereClause.OR, ...salaryConditions] :
-                    salaryConditions;
-            }
-        }
-
-        // Date range filters
-        if (hiredStartDate || hiredEndDate) {
-            whereClause.createdAt = {};
-            if (hiredStartDate) whereClause.createdAt.gte = new Date(hiredStartDate);
-            if (hiredEndDate) whereClause.createdAt.lte = new Date(hiredEndDate);
-        }
-
-        if (lastActivityStartDate || lastActivityEndDate) {
-            whereClause.lastLoginAt = {};
-            if (lastActivityStartDate) whereClause.lastLoginAt.gte = new Date(lastActivityStartDate);
-            if (lastActivityEndDate) whereClause.lastLoginAt.lte = new Date(lastActivityEndDate);
-        }
-
-        // Quick filters
-        if (quickFilters.length > 0) {
-            const quickFilterConditions: any[] = [];
-
-            quickFilters.forEach(filter => {
-                switch (filter) {
-                    case 'new_employees':
-                        // Hired in last 30 days
-                        quickFilterConditions.push({
-                            createdAt: {
-                                gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-                            }
-                        });
-                        break;
-
-                    case 'active_this_week':
-                        // Has time entry this week
-                        const startOfWeek = new Date();
-                        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-                        startOfWeek.setHours(0, 0, 0, 0);
-
-                        quickFilterConditions.push({
-                            timeEntries: {
-                                some: {
-                                    startTime: { gte: startOfWeek }
-                                }
-                            }
-                        });
-                        break;
-
-                    case 'contract_expiring':
-                        // This would need a contract expiry date field
-                        // For now, we'll skip this filter
-                        break;
-
-                    case 'high_earners':
-                        // Above average salary (simplified)
-                        quickFilterConditions.push({
-                            OR: [
-                                { hourlyRate: { gte: "50" } },
-                                { hourlyWage: { gte: "25" } },
-                                { monthlySalary: { gte: "4000" } }
-                            ]
-                        });
-                        break;
-
-                    case 'no_contract':
-                        quickFilterConditions.push({
-                            hasContract: false
-                        });
-                        break;
-
-                    case 'freelancers_only':
-                        quickFilterConditions.push({
-                            employeeType: 'FREELANCER'
-                        });
-                        break;
-
-                    case 'archived':
-                        quickFilterConditions.push({
-                            archived: true
-                        });
-                        break;
-                }
-            });
-
-            if (quickFilterConditions.length > 0) {
-                whereClause.AND = whereClause.AND ?
-                    [...whereClause.AND, ...quickFilterConditions] :
-                    quickFilterConditions;
-            }
-        }
-
+        // Simple query first to test database connection
         const users = await prisma.user.findMany({
-            where: whereClause,
+            where: {
+                archived: false
+            },
             select: {
                 id: true,
+                email: true,
                 name: true,
                 firstName: true,
                 lastName: true,
-                email: true,
                 role: true,
                 employeeType: true,
                 company: true,
                 phone: true,
-                status: true,
-                hasContract: true,
+                address: true,
+                bsnNumber: true,
                 hourlyRate: true,
                 monthlySalary: true,
                 hourlyWage: true,
+                kvkNumber: true,
+                btwNumber: true,
+                hasContract: true,
+                iban: true,
+                availableDays: true,
+                status: true,
                 createdAt: true,
                 lastLoginAt: true,
-                archived: true,
-                archivedAt: true,
-                UserWorkType: {
-                    include: {
-                        workType: {
-                            select: {
-                                id: true,
-                                name: true,
-                                emoji: true
-                            }
-                        }
-                    }
-                },
-                timeEntries: {
-                    select: {
-                        id: true,
-                        startTime: true,
-                        endTime: true
-                    },
-                    take: 5,
-                    orderBy: {
-                        startTime: 'desc'
-                    }
-                }
+                archived: true
             },
             orderBy: [
-                { archived: 'asc' }, // Non-archived first
+                { archived: 'asc' },
                 { createdAt: 'desc' }
             ]
         });
+
+        console.log(`Personnel API: Found ${users.length} users`);
 
         // Transform data for frontend
         const transformedUsers = users.map((user: any) => ({
@@ -254,15 +57,15 @@ export async function GET(request: Request) {
             name: user.firstName && user.lastName
                 ? `${user.firstName} ${user.lastName}`.trim()
                 : user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0],
-            workTypes: user.UserWorkType.map((uwt: any) => uwt.workType),
-            recentActivity: user.timeEntries.length > 0 ? user.timeEntries[0].startTime : user.lastLoginAt
+            workTypes: [], // Simplified for now
+            recentActivity: user.lastLoginAt
         }));
 
         return NextResponse.json(transformedUsers);
     } catch (error) {
         console.error('Error fetching personnel:', error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }
         );
     }

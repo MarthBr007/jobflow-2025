@@ -341,7 +341,68 @@ function PersonnelContent() {
   };
 
   const handleImport = async (importedEmployees: any[]): Promise<void> => {
-    // Implementation of handleImport function
+    console.log(
+      "🚀 Personnel: Starting import of",
+      importedEmployees.length,
+      "employees"
+    );
+
+    try {
+      const response = await fetch("/api/personnel/bulk-import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employees: importedEmployees,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("❌ Personnel: Import failed:", data);
+        throw new Error(
+          data.error || `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
+
+      console.log("✅ Personnel: Import successful:", data);
+
+      // Show success message
+      alert(
+        `Import succesvol! ${data.results.success} medewerkers geïmporteerd${
+          data.results.failed > 0 ? `, ${data.results.failed} gefaald` : ""
+        }.`
+      );
+
+      // Refresh the employee list
+      await fetchEmployees();
+    } catch (error) {
+      console.error("💥 Personnel: Import error:", error);
+
+      // Show user-friendly error message
+      let errorMessage = "Er is een fout opgetreden bij het importeren";
+
+      if (error instanceof Error) {
+        if (error.message.includes("401") || error.message.includes("403")) {
+          errorMessage = "Je hebt geen rechten om medewerkers te importeren";
+        } else if (error.message.includes("timeout")) {
+          errorMessage =
+            "De import duurde te lang. Probeer het opnieuw met minder medewerkers";
+        } else if (
+          error.message.includes("network") ||
+          error.message.includes("fetch")
+        ) {
+          errorMessage = "Netwerkfout. Controleer je internetverbinding";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      alert(`Import gefaald: ${errorMessage}`);
+      throw error; // Re-throw so the ExcelImport component can handle it
+    }
   };
 
   const getRoleColor = (role: string): string => {

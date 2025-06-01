@@ -85,6 +85,9 @@ model User {
   UserScheduleAssignment UserScheduleAssignment[]
   FilterPreset           FilterPreset[]
   contracts              Contract[]               @relation("UserContracts")
+  documents              Document[]               @relation("UserDocuments")
+  attendanceRecords      Attendance[]             @relation("UserAttendance")
+  Attendance             Attendance[]
 
   @@index([email])
   @@index([company])
@@ -790,6 +793,56 @@ model Contract {
   @@index([startDate, endDate])
 }
 
+model Document {
+  id           String         @id @default(cuid())
+  userId       String
+  type         String // Document type (identity_copy, employment_contract, etc.)
+  title        String // Display title
+  filename     String // Stored filename
+  originalName String // Original filename
+  filePath     String // File path on disk
+  size         Int // File size in bytes
+  mimeType     String // MIME type
+  uploadedBy   String // Email of uploader
+  uploadedAt   DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  status       DocumentStatus @default(ACTIVE)
+
+  user User @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([uploadedAt])
+  @@index([userId, type])
+  @@index([userId, status])
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  userId    String
+  date      DateTime         @default(now()) // Date of attendance
+  checkIn   DateTime? // When they checked in
+  checkOut  DateTime? // When they checked out
+  status    AttendanceStatus @default(PRESENT)
+  notes     String? // Reason for absence, sick note, etc.
+  location  String? // Where they checked in from
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User @relation("UserAttendance", fields: [userId], references: [id], onDelete: Cascade)
+  User User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@index([status])
+  @@index([checkIn])
+  @@index([checkOut])
+  @@index([userId, date])
+  @@index([date, status])
+}
+
 enum UserStatus {
   AVAILABLE
   WORKING
@@ -841,6 +894,7 @@ enum User_role {
   MANAGER
   EMPLOYEE
   FREELANCER
+  KIOSK
 }
 
 enum EmployeeType {
@@ -975,7 +1029,24 @@ enum TimeEntryType {
   REGULAR
   OVERTIME
   COMPENSATION_USED
-  SICK
+  TRAINING
+  MEETING
+  SICK_LEAVE
   VACATION
   BREAK
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+  EXPIRED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  SICK
+  VACATION
+  HOLIDAY
+  OTHER
 }

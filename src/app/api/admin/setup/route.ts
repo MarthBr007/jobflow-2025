@@ -4,7 +4,7 @@ import { hash } from 'bcryptjs';
 
 export async function POST(request: Request) {
     try {
-        // Temporary admin setup route - only works if no admin exists yet
+        // Temporary admin setup route
         const body = await request.json();
         const { email, password, setupKey } = body;
 
@@ -17,21 +17,25 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
         }
 
-        // Check if user exists
-        let user = await prisma.user.findUnique({
+        const hashedPassword = await hash(password, 12);
+
+        // First, try to update existing user
+        const existingUser = await prisma.user.findUnique({
             where: { email }
         });
 
-        const hashedPassword = await hash(password, 12);
+        let user;
 
-        if (user) {
-            // Update existing user
+        if (existingUser) {
+            // Update existing user to admin
             user = await prisma.user.update({
                 where: { email },
                 data: {
                     password: hashedPassword,
                     role: 'ADMIN',
-                    company: 'Broers Verhuur'
+                    company: 'Broers Verhuur',
+                    name: email === 'admin@jobflow.nl' ? 'Administrator' : existingUser.name,
+                    status: 'AVAILABLE'
                 }
             });
         } else {
@@ -40,24 +44,27 @@ export async function POST(request: Request) {
                 data: {
                     email,
                     password: hashedPassword,
-                    name: 'Admin',
+                    name: email === 'admin@jobflow.nl' ? 'Administrator' : 'Admin',
                     role: 'ADMIN',
                     company: 'Broers Verhuur',
-                    status: 'AVAILABLE'
+                    status: 'AVAILABLE',
+                    employeeType: 'PERMANENT'
                 }
             });
         }
 
         return NextResponse.json({
             success: true,
-            message: `Admin user ${user.email} setup complete`,
-            userId: user.id
+            message: `Admin user ${user.email} setup complete with ADMIN role`,
+            userId: user.id,
+            role: user.role,
+            company: user.company
         });
 
     } catch (error) {
         console.error('Admin setup error:', error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }
         );
     }
