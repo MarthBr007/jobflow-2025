@@ -104,6 +104,7 @@ export default function ContractsPage() {
   const userId = searchParams?.get("userId") || null;
   const userName = searchParams?.get("userName") || null;
   const userEmail = searchParams?.get("userEmail") || null;
+  const template = searchParams?.get("template") || null;
 
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
@@ -185,7 +186,12 @@ export default function ContractsPage() {
       return;
     }
     fetchContracts();
-  }, [canManageContracts, router]);
+
+    // Auto-open add contract form if template is specified
+    if (template && userId) {
+      handleAddContract();
+    }
+  }, [canManageContracts, router, template, userId]);
 
   useEffect(() => {
     // Filter contracts based on search and status
@@ -227,9 +233,20 @@ export default function ContractsPage() {
 
   const resetForm = () => {
     setFormData({
-      contractType: "PERMANENT_FULL_TIME",
-      title: "",
-      description: "",
+      contractType:
+        template === "advanced" ? "FREELANCE" : "PERMANENT_FULL_TIME",
+      title:
+        template === "basic"
+          ? `Arbeidsovereenkomst ${userName || "Nieuwe Medewerker"}`
+          : template === "advanced"
+          ? `Uitgebreide Overeenkomst ${userName || "Nieuwe Medewerker"}`
+          : "",
+      description:
+        template === "basic"
+          ? "Standaard arbeidsovereenkomst voor werkzaamheden"
+          : template === "advanced"
+          ? "Uitgebreide overeenkomst met specifieke voorwaarden"
+          : "",
       startDate: "",
       endDate: "",
       status: "DRAFT",
@@ -591,6 +608,12 @@ export default function ContractsPage() {
   const breadcrumbItems = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Personeel", href: "/dashboard/personnel" },
+    ...(userId && userName
+      ? [
+          { label: "Medewerkers", href: "/dashboard/personnel" },
+          { label: userName, href: `/dashboard/personnel/edit/${userId}` },
+        ]
+      : []),
     { label: "Contracten" },
   ];
 
@@ -604,13 +627,25 @@ export default function ContractsPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
               <DocumentTextIcon className="h-8 w-8 text-blue-600 mr-3" />
-              Contract Beheer
+              {userId && userName
+                ? `Contract Beheer - ${userName}`
+                : "Contract Beheer"}
             </h1>
             {userId && userName ? (
-              <p className="text-gray-600 dark:text-gray-400 mt-1 flex items-center">
-                <UserIcon className="h-4 w-4 mr-2" />
-                Voor: {userName} ({userEmail})
-              </p>
+              <div className="mt-2 space-y-1">
+                <p className="text-gray-600 dark:text-gray-400 flex items-center">
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  Contracten en documenten voor: {userName} ({userEmail})
+                </p>
+                {template && (
+                  <p className="text-blue-600 dark:text-blue-400 text-sm flex items-center">
+                    <DocumentTextIcon className="h-4 w-4 mr-2" />
+                    {template === "basic"
+                      ? "📄 Basis template geselecteerd"
+                      : "📋 Uitgebreid contract template geselecteerd"}
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 Beheer alle contracten van medewerkers
@@ -625,7 +660,7 @@ export default function ContractsPage() {
                 leftIcon={<ArrowLeftIcon className="h-4 w-4" />}
                 onClick={() => router.back()}
               >
-                Terug
+                Terug naar {userName}
               </Button>
             )}
             <Button
@@ -633,10 +668,32 @@ export default function ContractsPage() {
               leftIcon={<PlusIcon className="h-4 w-4" />}
               variant="primary"
             >
-              Nieuw Contract
+              {userId ? `Nieuw Contract voor ${userName}` : "Nieuw Contract"}
             </Button>
           </div>
         </div>
+
+        {/* Person-specific info card */}
+        {userId && userName && (
+          <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                  Persoonlijk Contract Beheer
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Op deze pagina kun je alle contracten voor{" "}
+                  <strong>{userName}</strong> beheren: nieuwe contracten
+                  aanmaken, bestaande bewerken, PDF's genereren en emails
+                  versturen.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -674,7 +731,13 @@ export default function ContractsPage() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               {selectedContract
-                ? "📝 Contract Bewerken"
+                ? `📝 Contract Bewerken - ${selectedContract.title}`
+                : template === "basic" && userName
+                ? `📄 Basis Contract Aanmaken voor ${userName}`
+                : template === "advanced" && userName
+                ? `📋 Uitgebreid Contract Aanmaken voor ${userName}`
+                : userName
+                ? `📄 Nieuw Contract Toevoegen voor ${userName}`
                 : "📄 Nieuw Contract Toevoegen"}
             </h3>
             <Button

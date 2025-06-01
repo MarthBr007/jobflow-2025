@@ -1093,7 +1093,15 @@ export default function EditEmployeeTabs() {
                                     <DocumentTextIcon className="h-4 w-4" />
                                   }
                                   onClick={() =>
-                                    router.push("/dashboard/contracts")
+                                    router.push(
+                                      `/dashboard/contracts?userId=${
+                                        employee.id
+                                      }&userName=${encodeURIComponent(
+                                        employee.name
+                                      )}&userEmail=${encodeURIComponent(
+                                        employee.email
+                                      )}&template=basic`
+                                    )
                                   }
                                 >
                                   Basis Template
@@ -1148,7 +1156,15 @@ export default function EditEmployeeTabs() {
                                   <DocumentTextIcon className="h-4 w-4" />
                                 }
                                 onClick={() =>
-                                  router.push("/dashboard/contracts")
+                                  router.push(
+                                    `/dashboard/contracts?userId=${
+                                      employee.id
+                                    }&userName=${encodeURIComponent(
+                                      employee.name
+                                    )}&userEmail=${encodeURIComponent(
+                                      employee.email
+                                    )}&template=basic`
+                                  )
                                 }
                               >
                                 {employee.employeeType === "FLEX_WORKER"
@@ -1163,7 +1179,15 @@ export default function EditEmployeeTabs() {
                                   <DocumentTextIcon className="h-4 w-4" />
                                 }
                                 onClick={() =>
-                                  router.push("/dashboard/contracts")
+                                  router.push(
+                                    `/dashboard/contracts?userId=${
+                                      employee.id
+                                    }&userName=${encodeURIComponent(
+                                      employee.name
+                                    )}&userEmail=${encodeURIComponent(
+                                      employee.email
+                                    )}&template=advanced`
+                                  )
                                 }
                               >
                                 Basis Template
@@ -1235,7 +1259,15 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                router.push("/dashboard/contracts")
+                                router.push(
+                                  `/dashboard/contracts?userId=${
+                                    employee.id
+                                  }&userName=${encodeURIComponent(
+                                    employee.name
+                                  )}&userEmail=${encodeURIComponent(
+                                    employee.email
+                                  )}&template=basic`
+                                )
                               }
                               className="w-full"
                             >
@@ -1249,7 +1281,15 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                router.push("/dashboard/contracts/freelance")
+                                router.push(
+                                  `/dashboard/contracts?userId=${
+                                    employee.id
+                                  }&userName=${encodeURIComponent(
+                                    employee.name
+                                  )}&userEmail=${encodeURIComponent(
+                                    employee.email
+                                  )}&template=advanced`
+                                )
                               }
                               className="w-full"
                             >
@@ -1275,7 +1315,17 @@ export default function EditEmployeeTabs() {
                             variant="outline"
                             size="md"
                             leftIcon={<DocumentTextIcon className="h-4 w-4" />}
-                            onClick={() => router.push("/dashboard/contracts")}
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/contracts?userId=${
+                                  employee.id
+                                }&userName=${encodeURIComponent(
+                                  employee.name
+                                )}&userEmail=${encodeURIComponent(
+                                  employee.email
+                                )}`
+                              )
+                            }
                             className="w-full"
                           >
                             Contracten Beheren
@@ -1378,7 +1428,15 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                router.push("/dashboard/contracts")
+                                router.push(
+                                  `/dashboard/contracts?userId=${
+                                    employee.id
+                                  }&userName=${encodeURIComponent(
+                                    employee.name
+                                  )}&userEmail=${encodeURIComponent(
+                                    employee.email
+                                  )}&template=basic`
+                                )
                               }
                               className="w-full"
                             >
@@ -1392,7 +1450,15 @@ export default function EditEmployeeTabs() {
                                 <DocumentTextIcon className="h-4 w-4" />
                               }
                               onClick={() =>
-                                router.push("/dashboard/contracts")
+                                router.push(
+                                  `/dashboard/contracts?userId=${
+                                    employee.id
+                                  }&userName=${encodeURIComponent(
+                                    employee.name
+                                  )}&userEmail=${encodeURIComponent(
+                                    employee.email
+                                  )}&template=advanced`
+                                )
                               }
                               className="w-full"
                             >
@@ -1420,7 +1486,17 @@ export default function EditEmployeeTabs() {
                             variant="outline"
                             size="md"
                             leftIcon={<DocumentTextIcon className="h-4 w-4" />}
-                            onClick={() => router.push("/dashboard/contracts")}
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/contracts?userId=${
+                                  employee.id
+                                }&userName=${encodeURIComponent(
+                                  employee.name
+                                )}&userEmail=${encodeURIComponent(
+                                  employee.email
+                                )}`
+                              )
+                            }
                             className="w-full"
                           >
                             Contracten Beheren
