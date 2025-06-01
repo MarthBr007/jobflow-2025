@@ -86,8 +86,6 @@ model User {
   FilterPreset           FilterPreset[]
   contracts              Contract[]               @relation("UserContracts")
   documents              Document[]               @relation("UserDocuments")
-  attendanceRecords      Attendance[]             @relation("UserAttendance")
-  Attendance             Attendance[]
 
   @@index([email])
   @@index([company])
@@ -818,31 +816,6 @@ model Document {
   @@index([userId, status])
 }
 
-model Attendance {
-  id        String           @id @default(cuid())
-  userId    String
-  date      DateTime         @default(now()) // Date of attendance
-  checkIn   DateTime? // When they checked in
-  checkOut  DateTime? // When they checked out
-  status    AttendanceStatus @default(PRESENT)
-  notes     String? // Reason for absence, sick note, etc.
-  location  String? // Where they checked in from
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  user User @relation("UserAttendance", fields: [userId], references: [id], onDelete: Cascade)
-  User User @relation(fields: [userId], references: [id])
-
-  @@unique([userId, date])
-  @@index([userId])
-  @@index([date])
-  @@index([status])
-  @@index([checkIn])
-  @@index([checkOut])
-  @@index([userId, date])
-  @@index([date, status])
-}
-
 enum UserStatus {
   AVAILABLE
   WORKING
@@ -1040,13 +1013,4 @@ enum DocumentStatus {
   ACTIVE
   ARCHIVED
   EXPIRED
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  SICK
-  VACATION
-  HOLIDAY
-  OTHER
 }

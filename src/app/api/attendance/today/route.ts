@@ -4,6 +4,27 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
+interface Employee {
+    id: string;
+    name: string;
+    email: string;
+    employeeType: string;
+    company: string;
+    profileImage?: string;
+    status: "AVAILABLE" | "WORKING" | "UNAVAILABLE";
+}
+
+interface AttendanceRecord {
+    id: string;
+    userId: string;
+    date: string;
+    checkIn?: string;
+    checkOut?: string;
+    status: "PRESENT" | "ABSENT" | "SICK" | "VACATION" | "HOLIDAY";
+    notes?: string;
+    user: Employee;
+}
+
 export async function GET(request: Request) {
     try {
         const session = await getServerSession(authOptions);

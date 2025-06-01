@@ -20,6 +20,7 @@ import {
   CalendarDaysIcon,
   HomeIcon,
   UserIcon,
+  ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 import Header from "@/components/Header";
 import { motion, AnimatePresence } from "framer-motion";
@@ -82,6 +83,11 @@ const adminNavigation = [
     name: "Klokstatus",
     href: "/dashboard/clock-management",
     icon: ClockIcon,
+  },
+  {
+    name: "Kiosk Dashboard",
+    href: "/dashboard/kiosk/login",
+    icon: ComputerDesktopIcon,
   },
   {
     name: "Systeeminstellingen",

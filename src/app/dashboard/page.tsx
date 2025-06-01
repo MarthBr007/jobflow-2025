@@ -22,6 +22,7 @@ import {
   Cog6ToothIcon,
   ExclamationTriangleIcon,
   EyeIcon,
+  ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "@/components/ui/Button";
@@ -896,6 +897,45 @@ export default function Dashboard() {
                     Overzicht personeel planning
                   </p>
                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/0 to-blue-600/0 group-hover:from-cyan-600/5 group-hover:to-blue-600/5 transition-all duration-300"></div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push("/dashboard/kiosk/login")}
+                className="group relative cursor-pointer"
+              >
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-100 dark:hover:shadow-indigo-900/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex-shrink-0">
+                      <div className="bg-indigo-500 rounded-lg p-2.5">
+                        <ComputerDesktopIcon className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="text-indigo-500 dark:text-indigo-400 opacity-20 group-hover:opacity-40 transition-opacity">
+                      <svg
+                        className="w-8 h-8"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+                    Kiosk Dashboard
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    Inklok systeem voor medewerkers
+                  </p>
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/0 to-purple-600/0 group-hover:from-indigo-600/5 group-hover:to-purple-600/5 transition-all duration-300"></div>
                 </div>
               </motion.div>
             </div>

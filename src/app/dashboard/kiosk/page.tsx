@@ -344,15 +344,23 @@ export default function KioskDashboard() {
       {/* Check-in Modal */}
       {showCheckInModal && selectedEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 rounded-full mx-auto mb-4 bg-blue-100 flex items-center justify-center">
-                <UserIcon className="h-10 w-10 text-blue-600" />
-              </div>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
+            <div className="text-center mb-8">
+              {selectedEmployee.profileImage ? (
+                <img
+                  src={selectedEmployee.profileImage}
+                  alt={selectedEmployee.name}
+                  className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-blue-100"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full mx-auto mb-4 bg-blue-100 flex items-center justify-center border-4 border-blue-200">
+                  <UserIcon className="h-12 w-12 text-blue-600" />
+                </div>
+              )}
               <h3 className="text-2xl font-bold text-gray-900 mb-2">
                 {selectedEmployee.name}
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-lg">
                 {checkInType === "in"
                   ? "Inklokken voor vandaag"
                   : "Uitklokken voor vandaag"}
@@ -360,39 +368,73 @@ export default function KioskDashboard() {
             </div>
 
             {checkInType === "in" ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
+                <div className="text-center mb-6">
+                  <p className="text-gray-700 font-medium">
+                    Selecteer uw status:
+                  </p>
+                </div>
+
+                {/* Radio Button Style Options */}
                 <button
                   onClick={() => handleCheckIn("PRESENT")}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  <CheckCircleIcon className="h-6 w-6 mr-3" />
-                  Aanwezig - Inklokken
+                  <CheckCircleIcon className="h-7 w-7 mr-4" />
+                  <div className="text-left">
+                    <div className="text-xl">Aanwezig</div>
+                    <div className="text-green-100 text-sm">
+                      Normaal inklokken
+                    </div>
+                  </div>
                 </button>
 
                 <button
                   onClick={() => handleCheckIn("SICK")}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  <HeartIcon className="h-6 w-6 mr-3" />
-                  Ziek melden
+                  <HeartIcon className="h-7 w-7 mr-4" />
+                  <div className="text-left">
+                    <div className="text-xl">Ziek</div>
+                    <div className="text-red-100 text-sm">Ziekmelding</div>
+                  </div>
                 </button>
 
                 <button
                   onClick={() => handleCheckIn("VACATION")}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  <CalendarDaysIcon className="h-6 w-6 mr-3" />
-                  Verlof
+                  <CalendarDaysIcon className="h-7 w-7 mr-4" />
+                  <div className="text-left">
+                    <div className="text-xl">Verlof</div>
+                    <div className="text-purple-100 text-sm">
+                      Vakantie/verlof
+                    </div>
+                  </div>
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => handleCheckIn("PRESENT")}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center"
-              >
-                <ClockIcon className="h-6 w-6 mr-3" />
-                Uitklokken
-              </button>
+              <div className="text-center">
+                <div className="mb-6">
+                  <ClockIcon className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-700 font-medium text-lg">
+                    Bevestig uitklokken
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleCheckIn("PRESENT")}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-6 px-6 rounded-xl transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  <ClockIcon className="h-8 w-8 mr-4" />
+                  <div className="text-left">
+                    <div className="text-2xl">Uitklokken</div>
+                    <div className="text-blue-100 text-sm">
+                      Werkdag beëindigen
+                    </div>
+                  </div>
+                </button>
+              </div>
             )}
 
             <button
@@ -400,7 +442,7 @@ export default function KioskDashboard() {
                 setShowCheckInModal(false);
                 setSelectedEmployee(null);
               }}
-              className="w-full mt-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors duration-200"
+              className="w-full mt-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-4 px-6 rounded-xl transition-colors duration-200"
             >
               Annuleren
             </button>
