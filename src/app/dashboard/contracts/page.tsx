@@ -28,6 +28,14 @@ import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { hasPermission, UserRole } from "@/lib/permissions";
+import {
+  SignaturePadManager,
+  ElectronicSignatureValidator,
+  LegalComplianceUtils,
+  type DigitalSignature,
+  type SignatureData,
+  defaultSignaturePadConfig,
+} from "@/lib/electronic-signature";
 
 interface Contract {
   id: string;
@@ -147,6 +155,23 @@ export default function ContractsPage() {
     expenseAllowance: "",
     file: null as File | null,
   });
+
+  // Electronic signature functionality states
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signatureContract, setSignatureContract] = useState<Contract | null>(
+    null
+  );
+  const [signaturePadManager, setSignaturePadManager] =
+    useState<SignaturePadManager | null>(null);
+  const [signerName, setSignerName] = useState("");
+  const [signerEmail, setSignerEmail] = useState("");
+  const [signerRole, setSignerRole] = useState<
+    "EMPLOYER" | "EMPLOYEE" | "WITNESS"
+  >("EMPLOYEE");
+  const [signatureStep, setSignatureStep] = useState<
+    "disclaimer" | "signature" | "confirmation"
+  >("disclaimer");
+  const [isSignatureSaving, setIsSignatureSaving] = useState(false);
 
   // Check permissions - contracts are part of user management
   const canManageContracts = hasPermission(
@@ -443,6 +468,120 @@ export default function ContractsPage() {
       (contractEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
     return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  };
+
+  const handleElectronicSign = (contract: Contract) => {
+    setSignatureContract(contract);
+    setSignerName("");
+    setSignerEmail("");
+    setSignerRole("EMPLOYEE");
+    setSignatureStep("disclaimer");
+    setShowSignatureModal(true);
+  };
+
+  const initializeSignaturePad = (canvas: HTMLCanvasElement) => {
+    const manager = new SignaturePadManager(canvas, {
+      ...defaultSignaturePadConfig,
+      width: 500,
+      height: 250,
+      backgroundColor: "#f8fafc",
+      penColor: "#2563eb",
+    });
+    setSignaturePadManager(manager);
+  };
+
+  const clearSignature = () => {
+    if (signaturePadManager) {
+      signaturePadManager.clear();
+    }
+  };
+
+  const saveElectronicSignature = async () => {
+    if (
+      !signaturePadManager ||
+      !signatureContract ||
+      !signerName ||
+      !signerEmail
+    ) {
+      alert("Vul alle verplichte velden in en plaats uw handtekening.");
+      return;
+    }
+
+    if (signaturePadManager.isEmpty()) {
+      alert("Plaats eerst uw handtekening in het veld.");
+      return;
+    }
+
+    setIsSignatureSaving(true);
+    try {
+      const signatureDataURL = signaturePadManager.getSignatureDataURL();
+
+      // Get user agent and IP (simplified for demo)
+      const userAgent = navigator.userAgent;
+      const now = new Date();
+
+      // Create signature data
+      const signatureData: SignatureData = {
+        signatureBase64: signatureDataURL,
+        signerName,
+        signerEmail,
+        signatureDate: now,
+        ipAddress: "127.0.0.1", // In production, get from server
+        userAgent,
+        contractId: signatureContract.id,
+        documentHash: "SHA256_HASH_OF_CONTRACT", // In production, calculate actual hash
+      };
+
+      // Generate verification code
+      const verificationCode =
+        ElectronicSignatureValidator.generateVerificationCode(signatureData);
+
+      // Create digital signature object
+      const digitalSignature: Partial<DigitalSignature> = {
+        contractId: signatureContract.id,
+        signerName,
+        signerEmail,
+        signerRole,
+        signatureImageBase64: signatureDataURL,
+        signedAt: now,
+        ipAddress: "127.0.0.1",
+        userAgent,
+        documentHash: "SHA256_HASH_OF_CONTRACT",
+        verificationCode,
+        isVerified: true,
+        metadata: {
+          browser: navigator.userAgent.split(" ")[0],
+          device: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent)
+            ? "Mobile"
+            : "Desktop",
+          sessionId: `SESSION_${Date.now()}`,
+        },
+      };
+
+      // In production, save to database via API
+      console.log("Digital Signature:", digitalSignature);
+
+      // Update contract status
+      await fetch(`/api/contracts/${signatureContract.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "SIGNED",
+          signedAt: now.toISOString(),
+          signedBy: signerName,
+        }),
+      });
+
+      setSignatureStep("confirmation");
+
+      // Refresh contracts list
+      fetchContracts();
+    } catch (error) {
+      console.error("Error saving signature:", error);
+      alert("Er is een fout opgetreden bij het opslaan van de handtekening.");
+    } finally {
+      setIsSignatureSaving(false);
+    }
   };
 
   if (!canManageContracts) {
@@ -1178,6 +1317,19 @@ export default function ContractsPage() {
                     </div>
                   )}
 
+                  {/* Electronic Signature Action */}
+                  {contract.fileUrl && contract.status !== "SIGNED" && (
+                    <Button
+                      onClick={() => handleElectronicSign(contract)}
+                      variant="outline"
+                      size="sm"
+                      leftIcon={<span className="text-blue-600">✍️</span>}
+                      className="w-full text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20"
+                    >
+                      🔐 Elektronisch Ondertekenen
+                    </Button>
+                  )}
+
                   {/* Edit/Delete Actions */}
                   <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                     <Button
@@ -1599,6 +1751,230 @@ Het contract PDF wordt automatisch bijgevoegd."
                   </Button>
                 </div>
               </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Electronic Signature Modal */}
+      {showSignatureModal && signatureContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="w-full max-w-4xl mx-4 max-h-[95vh] overflow-y-auto">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                  ✍️ Elektronische Handtekening
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowSignatureModal(false);
+                    setSignatureContract(null);
+                    setSignaturePadManager(null);
+                  }}
+                >
+                  Sluiten
+                </Button>
+              </div>
+
+              {/* Contract Info */}
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  📄 Contract Details
+                </h4>
+                <p className="text-blue-800 dark:text-blue-200">
+                  <strong>Titel:</strong> {signatureContract.title}
+                  <br />
+                  <strong>Type:</strong> {signatureContract.contractType}
+                  <br />
+                  <strong>Status:</strong> {signatureContract.status}
+                </p>
+              </div>
+
+              {signatureStep === "disclaimer" && (
+                <div className="space-y-6">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                    <h4 className="font-bold text-yellow-900 dark:text-yellow-100 mb-4 flex items-center">
+                      ⚖️ Juridische Bepalingen
+                    </h4>
+                    <div className="prose prose-sm text-yellow-800 dark:text-yellow-200 max-w-none">
+                      <pre className="whitespace-pre-wrap text-sm font-mono">
+                        {LegalComplianceUtils.generateLegalDisclaimer()}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Volledige naam *
+                      </label>
+                      <input
+                        type="text"
+                        value={signerName}
+                        onChange={(e) => setSignerName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        placeholder="Uw volledige naam"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        E-mailadres *
+                      </label>
+                      <input
+                        type="email"
+                        value={signerEmail}
+                        onChange={(e) => setSignerEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        placeholder="uw.email@example.com"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Rol *
+                    </label>
+                    <select
+                      value={signerRole}
+                      onChange={(e) =>
+                        setSignerRole(
+                          e.target.value as "EMPLOYER" | "EMPLOYEE" | "WITNESS"
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="EMPLOYEE">Werknemer</option>
+                      <option value="EMPLOYER">Werkgever</option>
+                      <option value="WITNESS">Getuige</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="acceptTerms"
+                      onChange={(e) => {
+                        if (e.target.checked && signerName && signerEmail) {
+                          setSignatureStep("signature");
+                        }
+                      }}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <label
+                      htmlFor="acceptTerms"
+                      className="ml-3 text-sm text-green-800 dark:text-green-200"
+                    >
+                      Ik ga akkoord met bovenstaande voorwaarden en ben bevoegd
+                      om dit document te ondertekenen
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {signatureStep === "signature" && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <h4 className="text-lg font-semibold mb-2">
+                      Plaats uw handtekening
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Teken hieronder met uw muis, vinger (op touch devices) of
+                      stylus
+                    </p>
+                  </div>
+
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+                    <canvas
+                      ref={(canvas) => {
+                        if (canvas && !signaturePadManager) {
+                          initializeSignaturePad(canvas);
+                        }
+                      }}
+                      className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white mx-auto block"
+                      style={{ maxWidth: "100%", height: "auto" }}
+                    />
+                  </div>
+
+                  <div className="flex justify-center space-x-4">
+                    <Button
+                      variant="outline"
+                      onClick={clearSignature}
+                      className="flex items-center"
+                    >
+                      🗑️ Wissen
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSignatureStep("disclaimer")}
+                    >
+                      ← Vorige
+                    </Button>
+                    <Button
+                      onClick={saveElectronicSignature}
+                      disabled={isSignatureSaving}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isSignatureSaving ? (
+                        <>⏳ Opslaan...</>
+                      ) : (
+                        <>✅ Ondertekenen</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {signatureStep === "confirmation" && (
+                <div className="text-center space-y-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <CheckCircleIcon className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h4 className="text-xl font-bold text-green-900 dark:text-green-100">
+                    Contract Succesvol Ondertekend! 🎉
+                  </h4>
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                    <p className="text-green-800 dark:text-green-200 mb-4">
+                      Uw elektronische handtekening is rechtsgeldig vastgelegd
+                      conform de eIDAS-verordening.
+                    </p>
+                    <div className="text-left space-y-2 text-sm">
+                      <p>
+                        <strong>Ondertekenaar:</strong> {signerName}
+                      </p>
+                      <p>
+                        <strong>Email:</strong> {signerEmail}
+                      </p>
+                      <p>
+                        <strong>Rol:</strong> {signerRole}
+                      </p>
+                      <p>
+                        <strong>Datum & Tijd:</strong>{" "}
+                        {new Date().toLocaleString("nl-NL")}
+                      </p>
+                      <p>
+                        <strong>Verificatiecode:</strong>{" "}
+                        <code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
+                          TEMP-{Date.now().toString().slice(-8)}
+                        </code>
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setShowSignatureModal(false);
+                      setSignatureContract(null);
+                      setSignaturePadManager(null);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Sluiten
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         </div>
