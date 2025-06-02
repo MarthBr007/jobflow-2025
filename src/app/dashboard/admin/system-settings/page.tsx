@@ -132,7 +132,7 @@ function SystemSettingsContent() {
                   onClick={() => router.push(category.href)}
                   variant="outline"
                   size="sm"
-                  className="w-full group-hover:bg-gray-50 dark:group-hover:bg-gray-700"
+                  className="w-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-700 dark:group-hover:text-blue-300 group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-all duration-200"
                 >
                   Configureren
                 </Button>
@@ -192,7 +192,7 @@ function SystemSettingsContent() {
               onClick={() => router.push("/dashboard/personnel")}
               variant="outline"
               leftIcon={<ShieldCheckIcon className="h-5 w-5" />}
-              className="justify-start"
+              className="justify-start hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200"
             >
               Gebruikers Beheren
             </Button>
@@ -200,7 +200,7 @@ function SystemSettingsContent() {
               onClick={() => router.push("/dashboard/admin/email-settings")}
               variant="outline"
               leftIcon={<EnvelopeIcon className="h-5 w-5" />}
-              className="justify-start"
+              className="justify-start hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-300 hover:border-green-300 dark:hover:border-green-600 transition-all duration-200"
             >
               Email Testen
             </Button>
@@ -208,7 +208,7 @@ function SystemSettingsContent() {
               onClick={() => router.push("/dashboard/projects")}
               variant="outline"
               leftIcon={<Cog6ToothIcon className="h-5 w-5" />}
-              className="justify-start"
+              className="justify-start hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-700 dark:hover:text-purple-300 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200"
             >
               Systeem Logs
             </Button>
@@ -216,7 +216,7 @@ function SystemSettingsContent() {
               onClick={() => window.location.reload()}
               variant="outline"
               leftIcon={<ClockIcon className="h-5 w-5" />}
-              className="justify-start"
+              className="justify-start hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-700 dark:hover:text-orange-300 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-200"
             >
               Cache Legen
             </Button>
