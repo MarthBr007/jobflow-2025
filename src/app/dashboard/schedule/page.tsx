@@ -14,6 +14,8 @@ import {
   CheckCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   DocumentTextIcon,
   BuildingOfficeIcon,
   PrinterIcon,
@@ -25,6 +27,8 @@ import {
   ExclamationTriangleIcon,
   SparklesIcon,
   ArrowPathIcon,
+  PauseIcon,
+  PlayIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { format, addDays, subDays } from "date-fns";
@@ -130,6 +134,7 @@ export default function SchedulePage() {
   const [weekShifts, setWeekShifts] = useState<ScheduleShift[]>([]);
   const [myAssignments, setMyAssignments] = useState<any[]>([]);
   const [scheduleAssignments, setScheduleAssignments] = useState<any[]>([]);
+  const [expandedBreaks, setExpandedBreaks] = useState<Set<string>>(new Set());
 
   const { confirm, ConfirmModal } = useConfirm();
 
@@ -526,6 +531,35 @@ export default function SchedulePage() {
     { value: 0, label: "Zo", fullLabel: "Zondag" },
   ];
 
+  const toggleBreaksExpansion = (shiftId: string) => {
+    const newExpanded = new Set(expandedBreaks);
+    if (newExpanded.has(shiftId)) {
+      newExpanded.delete(shiftId);
+    } else {
+      newExpanded.add(shiftId);
+    }
+    setExpandedBreaks(newExpanded);
+  };
+
+  const formatBreakDuration = (startTime: string, endTime: string) => {
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    const diffMs = end.getTime() - start.getTime();
+    const diffMins = Math.round(diffMs / (1000 * 60));
+    return diffMins;
+  };
+
+  const getTotalBreakTime = (breaks: any[]) => {
+    if (!breaks || breaks.length === 0) return 0;
+    return breaks.reduce((total, breakItem) => {
+      return (
+        total +
+        (breakItem.duration ||
+          formatBreakDuration(breakItem.startTime, breakItem.endTime))
+      );
+    }, 0);
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -858,7 +892,7 @@ export default function SchedulePage() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-4">
                                 <div className="flex-shrink-0">
-                                  <div className="h-10 w-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                                  <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
                                     <span className="text-lg">
                                       {getLeaveEmoji(leave.type)}
                                     </span>
@@ -879,37 +913,48 @@ export default function SchedulePage() {
                                   </div>
                                   <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                                     {leave.isFullDay ? (
-                                      <div className="flex items-center">
-                                        <CalendarDaysIcon className="h-4 w-4 mr-1" />
-                                        Hele dag afwezig
+                                      <div className="flex items-center space-x-2">
+                                        <div className="h-5 w-5 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700">
+                                          <CalendarDaysIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <span>Hele dag afwezig</span>
                                       </div>
                                     ) : (
-                                      <div className="flex items-center">
-                                        <ClockIcon className="h-4 w-4 mr-1" />
-                                        {leave.startTime} - {leave.endTime}
+                                      <div className="flex items-center space-x-2">
+                                        <div className="h-5 w-5 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
+                                          <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <span>
+                                          {leave.startTime} - {leave.endTime}
+                                        </span>
                                       </div>
                                     )}
                                     {leave.dayCount > 1 && (
-                                      <div className="flex items-center">
-                                        <CalendarIcon className="h-4 w-4 mr-1" />
-                                        {leave.dayCount} dagen totaal
+                                      <div className="flex items-center space-x-2">
+                                        <div className="h-5 w-5 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
+                                          <CalendarIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <span>
+                                          {leave.dayCount} dagen totaal
+                                        </span>
                                       </div>
                                     )}
-                                    <div className="flex items-center">
-                                      <UserIcon className="h-4 w-4 mr-1" />
-                                      {leave.userRole} -{" "}
-                                      {leave.employeeType || "Medewerker"}
+                                    <div className="flex items-center space-x-2">
+                                      <div className="h-5 w-5 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700">
+                                        <UserIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
+                                      </div>
+                                      <span>
+                                        {leave.userRole} -{" "}
+                                        {leave.employeeType || "Medewerker"}
+                                      </span>
                                     </div>
                                   </div>
                                   {leave.reason && (
-                                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                      <DocumentTextIcon className="h-4 w-4 inline mr-1" />
-                                      {leave.reason}
-                                    </div>
-                                  )}
-                                  {leave.description && (
-                                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic">
-                                      {leave.description}
+                                    <div className="mt-2 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                                      <div className="h-5 w-5 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5">
+                                        <DocumentTextIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                      </div>
+                                      <span>{leave.reason}</span>
                                     </div>
                                   )}
                                 </div>
@@ -973,7 +1018,7 @@ export default function SchedulePage() {
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex items-start space-x-4 flex-1 min-w-0">
                                   <div className="flex-shrink-0">
-                                    <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                    <div className="h-10 w-10 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-xl flex items-center justify-center shadow-sm border border-blue-200 dark:border-blue-700">
                                       <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                   </div>
@@ -994,8 +1039,10 @@ export default function SchedulePage() {
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="flex items-center">
-                                        <ClockIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                                      <div className="flex items-center space-x-2">
+                                        <div className="h-6 w-6 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
+                                          <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                        </div>
                                         <span className="truncate">
                                           {formatTime(shift.startTime)} -{" "}
                                           {formatTime(shift.endTime)}
@@ -1016,8 +1063,10 @@ export default function SchedulePage() {
                                       </div>
 
                                       {shift.project && (
-                                        <div className="flex items-center">
-                                          <BriefcaseIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                                        <div className="flex items-center space-x-2">
+                                          <div className="h-6 w-6 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
+                                            <BriefcaseIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                          </div>
                                           <span className="truncate">
                                             {shift.project.name}
                                           </span>
@@ -1025,8 +1074,10 @@ export default function SchedulePage() {
                                       )}
 
                                       {shift.project?.company && (
-                                        <div className="flex items-center">
-                                          <BuildingOfficeIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                                        <div className="flex items-center space-x-2">
+                                          <div className="h-6 w-6 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-lg flex items-center justify-center border border-orange-200 dark:border-orange-700">
+                                            <BuildingOfficeIcon className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                                          </div>
                                           <span className="truncate">
                                             {shift.project.company}
                                           </span>
@@ -1035,8 +1086,10 @@ export default function SchedulePage() {
                                     </div>
 
                                     {shift.notes && (
-                                      <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                                        <DocumentTextIcon className="h-4 w-4 inline mr-2 flex-shrink-0" />
+                                      <div className="mt-3 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                                        <div className="h-6 w-6 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700 flex-shrink-0 mt-0.5">
+                                          <DocumentTextIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
+                                        </div>
                                         <span>{shift.notes}</span>
                                       </div>
                                     )}
@@ -1045,28 +1098,111 @@ export default function SchedulePage() {
                                       Array.isArray(shift.breaks) &&
                                       shift.breaks.length > 0 && (
                                         <div className="mt-3">
-                                          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                            <ClockIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-                                            Pauzes:
-                                          </div>
-                                          <div className="space-y-1">
-                                            {shift.breaks.map(
-                                              (breakItem, index) => (
-                                                <div
-                                                  key={index}
-                                                  className="flex items-center space-x-2 text-xs bg-gray-50 dark:bg-gray-700 rounded px-2 py-1"
-                                                >
-                                                  <span className="text-gray-600 dark:text-gray-300">
-                                                    {breakItem.startTime} -{" "}
-                                                    {breakItem.endTime}
+                                          {/* Pauze samenvatting - klikbaar */}
+                                          <div
+                                            className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all duration-200"
+                                            onClick={() =>
+                                              toggleBreaksExpansion(shift.id)
+                                            }
+                                          >
+                                            <div className="flex items-center space-x-3">
+                                              <div className="flex-shrink-0">
+                                                <div className="h-8 w-8 bg-amber-100 dark:bg-amber-800 rounded-lg flex items-center justify-center">
+                                                  <PauseIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                </div>
+                                              </div>
+                                              <div>
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                                                    {shift.breaks.length}{" "}
+                                                    {shift.breaks.length === 1
+                                                      ? "Pauze"
+                                                      : "Pauzes"}
                                                   </span>
-                                                  <span className="text-gray-500 dark:text-gray-400">
-                                                    ({breakItem.duration} min)
+                                                  <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-800 px-2 py-1 rounded-full">
+                                                    {getTotalBreakTime(
+                                                      shift.breaks
+                                                    )}{" "}
+                                                    min totaal
                                                   </span>
                                                 </div>
-                                              )
-                                            )}
+                                                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                                  Klik om details te bekijken
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <div className="flex-shrink-0">
+                                              {expandedBreaks.has(shift.id) ? (
+                                                <ChevronUpIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                              ) : (
+                                                <ChevronDownIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                              )}
+                                            </div>
                                           </div>
+
+                                          {/* Uitvouwbare pauze details */}
+                                          {expandedBreaks.has(shift.id) && (
+                                            <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                              {shift.breaks.map(
+                                                (breakItem, index) => (
+                                                  <div
+                                                    key={index}
+                                                    className="flex items-center justify-between bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 rounded-lg p-3 shadow-sm"
+                                                  >
+                                                    <div className="flex items-center space-x-3">
+                                                      <div className="flex-shrink-0">
+                                                        <div className="h-6 w-6 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
+                                                          <ClockIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                                        </div>
+                                                      </div>
+                                                      <div>
+                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                          Pauze {index + 1}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                          {breakItem.startTime}{" "}
+                                                          - {breakItem.endTime}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                        {breakItem.duration ||
+                                                          formatBreakDuration(
+                                                            breakItem.startTime,
+                                                            breakItem.endTime
+                                                          )}{" "}
+                                                        min
+                                                      </div>
+                                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        Duur
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                )
+                                              )}
+
+                                              {/* Pauze statistieken */}
+                                              <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
+                                                <div className="flex items-center justify-between text-sm">
+                                                  <div className="flex items-center space-x-2">
+                                                    <div className="h-5 w-5 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                                                      <CheckCircleIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <span className="font-medium text-green-900 dark:text-green-100">
+                                                      Totale pauzetijd
+                                                    </span>
+                                                  </div>
+                                                  <span className="font-bold text-green-700 dark:text-green-300">
+                                                    {getTotalBreakTime(
+                                                      shift.breaks
+                                                    )}{" "}
+                                                    minuten
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                   </div>
@@ -1174,7 +1310,7 @@ export default function SchedulePage() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-4">
                                 <div className="flex-shrink-0">
-                                  <div className="h-10 w-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                                  <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
                                     <span className="text-lg">
                                       {getLeaveEmoji(leave.type)}
                                     </span>
@@ -1195,32 +1331,48 @@ export default function SchedulePage() {
                                   </div>
                                   <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                                     {leave.isFullDay ? (
-                                      <div className="flex items-center">
-                                        <CalendarDaysIcon className="h-4 w-4 mr-1" />
-                                        Hele dag afwezig
+                                      <div className="flex items-center space-x-2">
+                                        <div className="h-5 w-5 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700">
+                                          <CalendarDaysIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <span>Hele dag afwezig</span>
                                       </div>
                                     ) : (
-                                      <div className="flex items-center">
-                                        <ClockIcon className="h-4 w-4 mr-1" />
-                                        {leave.startTime} - {leave.endTime}
+                                      <div className="flex items-center space-x-2">
+                                        <div className="h-5 w-5 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
+                                          <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <span>
+                                          {leave.startTime} - {leave.endTime}
+                                        </span>
                                       </div>
                                     )}
                                     {leave.dayCount > 1 && (
-                                      <div className="flex items-center">
-                                        <CalendarIcon className="h-4 w-4 mr-1" />
-                                        {leave.dayCount} dagen totaal
+                                      <div className="flex items-center space-x-2">
+                                        <div className="h-5 w-5 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
+                                          <CalendarIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <span>
+                                          {leave.dayCount} dagen totaal
+                                        </span>
                                       </div>
                                     )}
-                                    <div className="flex items-center">
-                                      <UserIcon className="h-4 w-4 mr-1" />
-                                      {leave.userRole} -{" "}
-                                      {leave.employeeType || "Medewerker"}
+                                    <div className="flex items-center space-x-2">
+                                      <div className="h-5 w-5 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700">
+                                        <UserIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
+                                      </div>
+                                      <span>
+                                        {leave.userRole} -{" "}
+                                        {leave.employeeType || "Medewerker"}
+                                      </span>
                                     </div>
                                   </div>
                                   {leave.reason && (
-                                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                      <DocumentTextIcon className="h-4 w-4 inline mr-1" />
-                                      {leave.reason}
+                                    <div className="mt-2 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                                      <div className="h-5 w-5 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5">
+                                        <DocumentTextIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                      </div>
+                                      <span>{leave.reason}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1470,7 +1622,7 @@ export default function SchedulePage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <div className="flex-shrink-0">
-                              <div className="h-10 w-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                              <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
                                 <span className="text-lg">
                                   {getLeaveEmoji(leave.type)}
                                 </span>
@@ -1496,32 +1648,46 @@ export default function SchedulePage() {
                               </div>
                               <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                                 {leave.isFullDay ? (
-                                  <div className="flex items-center">
-                                    <CalendarDaysIcon className="h-4 w-4 mr-1" />
-                                    Hele dag afwezig
+                                  <div className="flex items-center space-x-2">
+                                    <div className="h-5 w-5 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700">
+                                      <CalendarDaysIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <span>Hele dag afwezig</span>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center">
-                                    <ClockIcon className="h-4 w-4 mr-1" />
-                                    {leave.startTime} - {leave.endTime}
+                                  <div className="flex items-center space-x-2">
+                                    <div className="h-5 w-5 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
+                                      <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <span>
+                                      {leave.startTime} - {leave.endTime}
+                                    </span>
                                   </div>
                                 )}
                                 {leave.dayCount > 1 && (
-                                  <div className="flex items-center">
-                                    <CalendarIcon className="h-4 w-4 mr-1" />
-                                    {leave.dayCount} dagen totaal
+                                  <div className="flex items-center space-x-2">
+                                    <div className="h-5 w-5 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
+                                      <CalendarIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <span>{leave.dayCount} dagen totaal</span>
                                   </div>
                                 )}
-                                <div className="flex items-center">
-                                  <UserIcon className="h-4 w-4 mr-1" />
-                                  {leave.userRole} -{" "}
-                                  {leave.employeeType || "Medewerker"}
+                                <div className="flex items-center space-x-2">
+                                  <div className="h-5 w-5 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700">
+                                    <UserIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
+                                  </div>
+                                  <span>
+                                    {leave.userRole} -{" "}
+                                    {leave.employeeType || "Medewerker"}
+                                  </span>
                                 </div>
                               </div>
                               {leave.reason && (
-                                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                  <DocumentTextIcon className="h-4 w-4 inline mr-1" />
-                                  {leave.reason}
+                                <div className="mt-2 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                                  <div className="h-5 w-5 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5">
+                                    <DocumentTextIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                  </div>
+                                  <span>{leave.reason}</span>
                                 </div>
                               )}
                             </div>
