@@ -16,12 +16,15 @@ import {
   EnvelopeIcon,
   EyeIcon,
   ChevronDownIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button from "./Button";
 import Input from "./Input";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import Toast from "./Toast";
+import { useToast } from "@/hooks/useToast";
 
 interface Contract {
   id: string;
@@ -125,11 +128,13 @@ export default function ContractManagement({
     file: null as File | null,
   });
 
+  const { toast, showToast, hideToast } = useToast();
+
   useEffect(() => {
     if (isOpen) {
       fetchContracts();
     }
-  }, [isOpen, userId]);
+  }, [isOpen]);
 
   const fetchContracts = async () => {
     setLoading(true);
@@ -159,11 +164,12 @@ export default function ContractManagement({
       signedDate: "",
       file: null,
     });
+    setSelectedContract(null);
+    setShowEditModal(false);
   };
 
   const handleAddContract = () => {
     resetForm();
-    setSelectedContract(null);
     setShowAddModal(true);
   };
 
@@ -172,12 +178,12 @@ export default function ContractManagement({
       contractType: contract.contractType,
       title: contract.title,
       description: contract.description || "",
-      startDate: contract.startDate.split("T")[0],
-      endDate: contract.endDate ? contract.endDate.split("T")[0] : "",
+      startDate: contract.startDate,
+      endDate: contract.endDate || "",
       status: contract.status,
       salary: contract.salary || "",
       notes: contract.notes || "",
-      signedDate: contract.signedDate ? contract.signedDate.split("T")[0] : "",
+      signedDate: contract.signedDate || "",
       file: null,
     });
     setSelectedContract(contract);
@@ -190,65 +196,66 @@ export default function ContractManagement({
   };
 
   const handleFileUpload = async (file: File): Promise<string | null> => {
-    // In a real implementation, you would upload to a cloud storage service
-    // For now, we'll simulate a file upload
-    setFileUploading(true);
-    try {
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    const formData = new FormData();
+    formData.append("file", file);
 
-      // Return a mock URL - in production this would be the actual uploaded file URL
-      const mockUrl = `/uploads/contracts/${userId}/${Date.now()}_${file.name}`;
-      return mockUrl;
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.url;
+      }
     } catch (error) {
-      console.error("File upload failed:", error);
-      return null;
-    } finally {
-      setFileUploading(false);
+      console.error("Error uploading file:", error);
     }
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      let fileUrl = null;
-      let fileName = null;
-      let fileSize = null;
-      let mimeType = null;
+    const contractData: any = { ...formData };
 
-      // Handle file upload if a file is selected
-      if (formData.file) {
-        fileUrl = await handleFileUpload(formData.file);
-        if (fileUrl) {
-          fileName = formData.file.name;
-          fileSize = formData.file.size;
-          mimeType = formData.file.type;
-        }
+    // Handle file upload if present
+    if (formData.file) {
+      try {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64 = reader.result as string;
+          const base64Data = base64.split(",")[1];
+
+          contractData.fileContent = base64Data;
+          contractData.fileName = formData.file!.name;
+          delete contractData.file;
+
+          await submitContract(contractData);
+        };
+        reader.readAsDataURL(formData.file);
+      } catch (error) {
+        console.error("Error reading file:", error);
+        setLoading(false);
       }
+    } else {
+      delete contractData.file;
+      await submitContract(contractData);
+    }
+  };
 
-      const contractData = {
-        userId,
-        contractType: formData.contractType,
-        title: formData.title,
-        description: formData.description,
-        startDate: formData.startDate,
-        endDate: formData.endDate || null,
-        status: formData.status,
-        salary: formData.salary,
-        notes: formData.notes,
-        signedDate: formData.signedDate || null,
-        fileName,
-        fileUrl,
-        fileSize,
-        mimeType,
-      };
-
+  const submitContract = async (contractData: any) => {
+    try {
       const url = selectedContract
         ? `/api/contracts/${selectedContract.id}`
         : "/api/contracts";
       const method = selectedContract ? "PUT" : "POST";
+
+      if (!selectedContract) {
+        contractData.userId = userId;
+      }
 
       const response = await fetch(url, {
         method,
@@ -259,34 +266,28 @@ export default function ContractManagement({
       });
 
       if (response.ok) {
-        const savedContract = await response.json();
         await fetchContracts();
         setShowAddModal(false);
         setShowEditModal(false);
         resetForm();
-
-        // If this is a new contract (not editing) and no file was uploaded,
-        // automatically generate PDF
-        if (!selectedContract && !formData.file) {
-          // Show success message and option to generate PDF
-          const generatePdfNow = confirm(
-            `Contract "${savedContract.title}" is succesvol aangemaakt!\n\nWil je nu automatisch een PDF genereren? Dan kun je het contract direct emailen.`
-          );
-
-          if (generatePdfNow) {
-            await generatePdf(savedContract.id);
-          }
-        }
+        showToast(
+          selectedContract ? "Contract bijgewerkt" : "Contract aangemaakt",
+          "success"
+        );
       } else {
         const error = await response.json();
         console.error("Error saving contract:", error);
-        alert(
-          "Fout bij opslaan contract: " + (error.error || "Onbekende fout")
+        showToast(
+          `Fout bij opslaan contract: ${error.error || "Onbekende fout"}`,
+          "error"
         );
       }
     } catch (error) {
       console.error("Error saving contract:", error);
-      alert("Er is een fout opgetreden bij het opslaan van het contract");
+      showToast(
+        "Er is een fout opgetreden bij het opslaan van het contract",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -575,19 +576,24 @@ export default function ContractManagement({
             }
           }
         } else {
-          alert(
-            "✅ PDF succesvol gegenereerd! Ververs de pagina om de nieuwe opties te zien."
+          showToast(
+            "PDF succesvol gegenereerd! Ververs de pagina om de nieuwe opties te zien.",
+            "success"
           );
         }
       } else {
         const error = await response.json();
-        alert(
-          "❌ Fout bij genereren PDF: " + (error.error || "Onbekende fout")
+        showToast(
+          `Fout bij genereren PDF: ${error.error || "Onbekende fout"}`,
+          "error"
         );
       }
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("❌ Er is een fout opgetreden bij het genereren van de PDF");
+      showToast(
+        "Er is een fout opgetreden bij het genereren van de PDF",
+        "error"
+      );
     } finally {
       setGeneratingPdf(null);
     }
@@ -610,16 +616,24 @@ export default function ContractManagement({
 
       if (response.ok) {
         const result = await response.json();
-        alert(result.message); // Or use a toast notification
+        showToast(`Email versturen: ${result.message}`, "success");
         setShowEmailOptions(null);
         await fetchContracts(); // Refresh to see updated notes
       } else {
         const error = await response.json();
-        alert(error.error || "Fout bij verzenden email");
+        showToast(
+          `Fout bij verzenden email: ${
+            error.error || "Fout bij verzenden email"
+          }`,
+          "error"
+        );
       }
     } catch (error) {
       console.error("Error sending email:", error);
-      alert("Er is een fout opgetreden bij het verzenden van de email");
+      showToast(
+        "Er is een fout opgetreden bij het verzenden van de email",
+        "error"
+      );
     } finally {
       setSendingEmail(null);
     }
@@ -628,7 +642,7 @@ export default function ContractManagement({
   // New function: Download PDF
   const downloadPdf = (contract: Contract) => {
     if (!contract.fileUrl) {
-      alert("Geen PDF beschikbaar. Genereer eerst een PDF.");
+      showToast("Geen PDF beschikbaar. Genereer eerst een PDF.", "warning");
       return;
     }
 
@@ -643,7 +657,7 @@ export default function ContractManagement({
   // New function: Preview PDF
   const previewPdf = (contract: Contract) => {
     if (!contract.fileUrl) {
-      alert("Geen PDF beschikbaar. Genereer eerst een PDF.");
+      showToast("Geen PDF beschikbaar. Genereer eerst een PDF.", "warning");
       return;
     }
 
@@ -1148,6 +1162,14 @@ export default function ContractManagement({
           onClick={() => setShowEmailOptions(null)}
         />
       )}
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </>
   );
 }

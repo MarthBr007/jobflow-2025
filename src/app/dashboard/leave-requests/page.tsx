@@ -17,7 +17,10 @@ import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
-import { Toast, useToast } from "@/components/ui/Toast";
+import PermissionGuard from "@/components/ui/PermissionGuard";
+import Toast from "@/components/ui/Toast";
+import { useToast } from "@/hooks/useToast";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface LeaveRequest {
   id: string;
@@ -73,6 +76,7 @@ export default function LeaveRequests() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  const { confirm, ConfirmModal } = useConfirm();
 
   const [formData, setFormData] = useState({
     type: "",
@@ -154,7 +158,15 @@ export default function LeaveRequests() {
   };
 
   const handleCancelRequest = async (id: string) => {
-    if (!confirm("Weet je zeker dat je deze verlofaanvraag wilt annuleren?")) {
+    const confirmed = await confirm({
+      type: "warning",
+      title: "Verlofaanvraag annuleren",
+      message: "Weet je zeker dat je deze verlofaanvraag wilt annuleren?",
+      confirmText: "Annuleren",
+      cancelText: "Behouden",
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -588,6 +600,9 @@ export default function LeaveRequests() {
         isVisible={toast.isVisible}
         onClose={hideToast}
       />
+
+      {/* Confirm Modal */}
+      <ConfirmModal />
     </div>
   );
 }

@@ -9,6 +9,8 @@ import {
 import Button from "./Button";
 import Input from "./Input";
 import Modal from "./Modal";
+import Toast from "./Toast";
+import { useToast } from "@/hooks/useToast";
 
 interface ContractUploaderProps {
   isOpen: boolean;
@@ -37,6 +39,7 @@ export default function ContractUploader({
   });
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const { toast, showToast, hideToast } = useToast();
 
   const handleFileChange = (selectedFile: File | null) => {
     if (selectedFile && selectedFile.type === "application/pdf") {
@@ -50,7 +53,7 @@ export default function ContractUploader({
         }));
       }
     } else {
-      alert("Alleen PDF bestanden zijn toegestaan");
+      showToast("Alleen PDF bestanden zijn toegestaan", "error");
     }
   };
 
@@ -83,12 +86,12 @@ export default function ContractUploader({
 
   const uploadContract = async () => {
     if (!file) {
-      alert("Selecteer eerst een PDF bestand");
+      showToast("Selecteer eerst een PDF bestand", "warning");
       return;
     }
 
     if (!contractData.title || !contractData.startDate) {
-      alert("Vul alle verplichte velden in");
+      showToast("Vul alle verplichte velden in", "warning");
       return;
     }
 
@@ -129,6 +132,7 @@ export default function ContractUploader({
         const contract = await response.json();
         onContractUploaded?.(contract.id);
         onClose();
+        showToast("Contract succesvol geüpload", "success");
 
         // Reset form
         setFile(null);
@@ -143,11 +147,17 @@ export default function ContractUploader({
         });
       } else {
         console.error("Failed to upload contract");
-        alert("Er is een fout opgetreden bij het uploaden van het contract");
+        showToast(
+          "Er is een fout opgetreden bij het uploaden van het contract",
+          "error"
+        );
       }
     } catch (error) {
       console.error("Error uploading contract:", error);
-      alert("Er is een fout opgetreden bij het uploaden van het contract");
+      showToast(
+        "Er is een fout opgetreden bij het uploaden van het contract",
+        "error"
+      );
     } finally {
       setUploading(false);
     }
@@ -354,6 +364,14 @@ export default function ContractUploader({
           </Button>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </Modal>
   );
 }

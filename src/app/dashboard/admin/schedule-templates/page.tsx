@@ -16,7 +16,9 @@ import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
-import { Toast, useToast } from "@/components/ui/Toast";
+import PermissionGuard from "@/components/ui/PermissionGuard";
+import Toast from "@/components/ui/Toast";
+import { useToast } from "@/hooks/useToast";
 import { useRouter } from "next/navigation";
 import Card from "@/components/ui/Card";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -612,8 +614,8 @@ export default function ScheduleTemplatesPage() {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div className="flex-1">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Vaste Rooster Toewijzingen
-              </h3>
+                  Vaste Rooster Toewijzingen
+                </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Beheer welke medewerkers op welke dagen werken volgens vaste
                   patronen
@@ -627,15 +629,15 @@ export default function ScheduleTemplatesPage() {
                   onChange={(e) => setSearchUser(e.target.value)}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
-              <Button
-                onClick={() => setShowAssignmentModal(true)}
-                leftIcon={<PlusIcon className="h-5 w-5" />}
-                variant="primary"
-                size="md"
-              >
-                Nieuwe Toewijzing
-              </Button>
-            </div>
+                <Button
+                  onClick={() => setShowAssignmentModal(true)}
+                  leftIcon={<PlusIcon className="h-5 w-5" />}
+                  variant="primary"
+                  size="md"
+                >
+                  Nieuwe Toewijzing
+                </Button>
+              </div>
             </div>
           </Card>
 
@@ -840,16 +842,16 @@ export default function ScheduleTemplatesPage() {
                           .includes(searchUser.toLowerCase())
                     )
                     .reduce((acc, assignment) => {
-                    const userKey = assignment.user.id;
-                    if (!acc[userKey]) {
-                      acc[userKey] = {
-                        user: assignment.user,
-                        assignments: [],
-                      };
-                    }
-                    acc[userKey].assignments.push(assignment);
-                    return acc;
-                  }, {} as Record<string, { user: any; assignments: UserScheduleAssignment[] }>)
+                      const userKey = assignment.user.id;
+                      if (!acc[userKey]) {
+                        acc[userKey] = {
+                          user: assignment.user,
+                          assignments: [],
+                        };
+                      }
+                      acc[userKey].assignments.push(assignment);
+                      return acc;
+                    }, {} as Record<string, { user: any; assignments: UserScheduleAssignment[] }>)
                 ).map(([userId, { user, assignments: userAssignments }]) => (
                   <div
                     key={userId}
@@ -890,8 +892,8 @@ export default function ScheduleTemplatesPage() {
                             )
                           : null;
 
-                          return (
-                            <div
+                        return (
+                          <div
                             key={day.value}
                             className={`p-3 rounded-lg border-2 transition-all ${
                               assignment
@@ -914,7 +916,7 @@ export default function ScheduleTemplatesPage() {
                                           template.category
                                         )} ${template.name}`
                                       : "Template verwijderd"}
-                                </div>
+                                  </div>
 
                                   <div className="text-xs text-gray-600 dark:text-gray-400">
                                     {assignment.customStartTime ||
@@ -960,12 +962,12 @@ export default function ScheduleTemplatesPage() {
                               ) : (
                                 <div className="text-xs text-gray-400 dark:text-gray-500">
                                   Geen patroon
-                                  </div>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
-                          );
-                        })}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

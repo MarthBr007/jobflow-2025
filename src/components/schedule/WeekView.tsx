@@ -113,10 +113,13 @@ export default function WeekView({
   };
 
   const formatTime = (timeString: string) => {
-    return new Date(timeString).toLocaleTimeString("nl-NL", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    // Extract just the time portion to avoid timezone conversion
+    // timeString format: "2025-05-30T08:00:00"
+    if (timeString.includes("T")) {
+      return timeString.substring(11, 16); // Gets "08:00" from "2025-05-30T08:00:00"
+    }
+    // Fallback for other formats
+    return timeString;
   };
 
   const calculateDayHours = (dayShifts: ScheduleShift[]) => {

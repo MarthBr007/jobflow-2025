@@ -12,7 +12,9 @@ import {
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Toast, useToast } from "@/components/ui/Toast";
+import PermissionGuard from "@/components/ui/PermissionGuard";
+import Toast from "@/components/ui/Toast";
+import { useToast } from "@/hooks/useToast";
 
 const CATEGORY_OPTIONS = [
   { value: "DAILY", label: "Dagelijks", emoji: "📅" },

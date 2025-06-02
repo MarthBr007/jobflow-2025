@@ -21,7 +21,8 @@ import {
 import Button from "./Button";
 import Modal from "./Modal";
 import ContractUploader from "./ContractUploader";
-import { Toast, useToast } from "./Toast";
+import Toast from "./Toast";
+import { useToast } from "@/hooks/useToast";
 // import EmailComposer from "./EmailComposer"; // Temporarily disabled
 
 interface Contract {
@@ -182,32 +183,34 @@ export default function ContractViewer({
   };
 
   const signContract = async (contractId: string) => {
-    setSigningContract(contractId);
     try {
       const response = await fetch(`/api/contracts/${contractId}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          status: "ACTIVE",
-          signedDate: new Date().toISOString(),
+          action: "sign",
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        await fetchContracts();
-        if (selectedContract && selectedContract.id === contractId) {
-          const updatedContract = await response.json();
-          setSelectedContract(updatedContract);
-        }
+        showToast("Contract succesvol ondertekend!", "success");
+        await fetchContracts(); // Refresh the contracts list
       } else {
-        console.error("Failed to sign contract");
+        showToast(
+          data.error || "Er is een fout opgetreden bij het ondertekenen",
+          "error"
+        );
       }
     } catch (error) {
       console.error("Error signing contract:", error);
-    } finally {
-      setSigningContract(null);
+      showToast(
+        "Er is een fout opgetreden bij het ondertekenen van het contract",
+        "error"
+      );
     }
   };
 

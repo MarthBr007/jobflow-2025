@@ -15,7 +15,10 @@ import { motion } from "framer-motion";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Toast, useToast } from "@/components/ui/Toast";
+import Modal from "@/components/ui/Modal";
+import PermissionGuard from "@/components/ui/PermissionGuard";
+import Toast from "@/components/ui/Toast";
+import { useToast } from "@/hooks/useToast";
 
 interface LeaveRequest {
   id: string;
