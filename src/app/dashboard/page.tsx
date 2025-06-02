@@ -903,7 +903,7 @@ export default function Dashboard() {
               <motion.div
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => router.push("/dashboard/kiosk/login")}
+                onClick={() => router.push("/dashboard/kiosk")}
                 className="group relative cursor-pointer"
               >
                 <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-100 dark:hover:shadow-indigo-900/20">

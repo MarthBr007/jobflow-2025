@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   ClockIcon,
   UserIcon,
@@ -46,6 +47,7 @@ interface AttendanceStats {
 
 export default function KioskDashboard() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [stats, setStats] = useState<AttendanceStats>({
@@ -62,6 +64,17 @@ export default function KioskDashboard() {
   );
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInType, setCheckInType] = useState<"in" | "out">("in");
+
+  // Redirect non-admin users to kiosk login page
+  useEffect(() => {
+    if (
+      session &&
+      session.user?.role !== "ADMIN" &&
+      session.user?.role !== "MANAGER"
+    ) {
+      router.push("/dashboard/kiosk/login");
+    }
+  }, [session, router]);
 
   // Update current time every second
   useEffect(() => {

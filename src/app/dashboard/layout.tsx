@@ -86,7 +86,7 @@ const adminNavigation = [
   },
   {
     name: "Kiosk Dashboard",
-    href: "/dashboard/kiosk/login",
+    href: "/dashboard/kiosk",
     icon: ComputerDesktopIcon,
   },
   {

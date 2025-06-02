@@ -22,7 +22,7 @@ export async function GET(
         const documents = await prisma.document.findMany({
             where: {
                 userId: employeeId,
-                status: 'active'
+                status: 'ACTIVE'
             },
             select: {
                 id: true,
@@ -124,8 +124,8 @@ export async function POST(
                 filePath: filePath,
                 size: file.size,
                 mimeType: file.type,
-                uploadedBy: session.user.email,
-                status: 'active'
+                uploadedBy: session.user.email!,
+                status: 'ACTIVE'
             }
         });
 
