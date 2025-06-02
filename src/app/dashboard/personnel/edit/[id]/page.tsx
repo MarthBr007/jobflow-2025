@@ -29,6 +29,7 @@ import FreelanceContractGenerator from "@/components/ui/FreelanceContractGenerat
 import EmployeeContractGenerator from "@/components/ui/EmployeeContractGenerator";
 import QuickContractGenerator from "@/components/ui/QuickContractGenerator";
 import PersonnelContractManagement from "@/components/ui/PersonnelContractManagement";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface Employee {
   id: string;
@@ -113,6 +114,8 @@ export default function EditEmployeeTabs() {
   const [assignmentNotes, setAssignmentNotes] = useState<string>("");
   const [showPersonnelContractManagement, setShowPersonnelContractManagement] =
     useState(false);
+
+  const { confirm, ConfirmModal } = useConfirm();
 
   useEffect(() => {
     if (params?.id) {
@@ -204,9 +207,16 @@ export default function EditEmployeeTabs() {
   };
 
   const handleRemoveScheduleAssignment = async (assignmentId: string) => {
-    if (
-      !confirm("Weet je zeker dat je deze rooster toewijzing wilt verwijderen?")
-    ) {
+    const confirmed = await confirm({
+      type: "danger",
+      title: "Rooster toewijzing verwijderen",
+      message:
+        "Weet je zeker dat je deze rooster toewijzing wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      confirmText: "Verwijderen",
+      cancelText: "Annuleren",
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -342,6 +352,7 @@ export default function EditEmployeeTabs() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal />
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[

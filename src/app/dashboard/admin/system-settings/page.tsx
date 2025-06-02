@@ -38,7 +38,7 @@ const settingsCategories = [
     title: "Werkzaamheden Types",
     description: "Configureer types werkzaamheden en categorieën",
     icon: WrenchScrewdriverIcon,
-    href: "/dashboard/admin/work-types",
+    href: "/dashboard/work-types",
     color: "bg-purple-500",
   },
   {

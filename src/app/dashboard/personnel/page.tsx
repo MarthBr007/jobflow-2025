@@ -682,110 +682,109 @@ function PersonnelContent() {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Medewerker
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Bedrijf
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Acties
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredEmployees
-                      .filter((emp) => !emp.archived)
-                      .map((employee) => (
-                        <tr
-                          key={employee.id}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                                <UserGroupIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {employee.name}
+                {(session?.user?.role === "ADMIN" ||
+                  session?.user?.role === "MANAGER" ||
+                  session?.user?.role === "HR_MANAGER") && (
+                  <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                    <div className="flex items-center">
+                      <DocumentTextIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mr-2" />
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        💡 <strong>Tip:</strong> Klik op een medewerker rij om
+                        naar hun personeelsbestand te gaan
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Medewerker
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Bedrijf
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Acties
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredEmployees
+                        .filter((employee) => !employee.archived)
+                        .map((employee) => (
+                          <tr
+                            key={employee.id}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/personnel/edit/${employee.id}`
+                              )
+                            }
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                      {employee.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                        .toUpperCase()}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {employee.email}
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {employee.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {employee.email}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-1 text-xs rounded-full font-medium ${getEmployeeTypeColor(
-                                employee.employeeType || ""
-                              )}`}
-                            >
-                              {getEmployeeTypeText(employee.employeeType || "")}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {employee.company || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/contracts?userId=${
-                                      employee.id
-                                    }&userName=${encodeURIComponent(
-                                      employee.name
-                                    )}&userEmail=${encodeURIComponent(
-                                      employee.email
-                                    )}`
-                                  )
-                                }
-                                leftIcon={
-                                  <DocumentTextIcon className="h-4 w-4" />
-                                }
-                                className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 py-1 text-xs rounded-full font-medium ${getEmployeeTypeColor(
+                                  employee.employeeType || ""
+                                )}`}
                               >
-                                Contracten
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/personnel/edit/${employee.id}`
-                                  )
-                                }
-                                leftIcon={<PencilIcon className="h-4 w-4" />}
-                              >
-                                Bewerken
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  handleDeleteEmployee(employee.id)
-                                }
-                                leftIcon={<TrashIcon className="h-4 w-4" />}
-                                className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
-                              >
-                                Uit Dienst
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                                {getEmployeeTypeText(
+                                  employee.employeeType || ""
+                                )}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {employee.company || "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <div className="flex justify-end space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteEmployee(employee.id);
+                                  }}
+                                  leftIcon={<TrashIcon className="h-4 w-4" />}
+                                  className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
+                                >
+                                  Uit Dienst
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -829,7 +828,12 @@ function PersonnelContent() {
                       .map((employee) => (
                         <tr
                           key={employee.id}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700 opacity-75"
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700 opacity-75 transition-colors duration-200 cursor-pointer"
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/personnel/edit/${employee.id}`
+                            )
+                          }
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -866,9 +870,10 @@ function PersonnelContent() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() =>
-                                  handleUnarchiveEmployee(employee)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUnarchiveEmployee(employee);
+                                }}
                                 leftIcon={
                                   <CheckCircleIcon className="h-4 w-4" />
                                 }

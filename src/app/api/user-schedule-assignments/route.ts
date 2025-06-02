@@ -228,4 +228,100 @@ export async function DELETE(request: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+export async function PUT(request: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Check permissions
+        if (!hasPermission(session.user.role as UserRole, 'canManageShifts')) {
+            return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+        }
+
+        const data = await request.json();
+        const {
+            id,
+            dayOfWeek,
+            customStartTime,
+            customEndTime,
+            customBreaks,
+            notes,
+            isActive,
+        } = data;
+
+        if (!id) {
+            return NextResponse.json(
+                { error: 'Assignment ID is required' },
+                { status: 400 }
+            );
+        }
+
+        // Check if assignment exists
+        const existingAssignment = await prisma.userScheduleAssignment.findUnique({
+            where: { id },
+        });
+
+        if (!existingAssignment) {
+            return NextResponse.json(
+                { error: 'Assignment not found' },
+                { status: 404 }
+            );
+        }
+
+        // Update the assignment
+        const updatedAssignment = await prisma.userScheduleAssignment.update({
+            where: { id },
+            data: {
+                dayOfWeek: dayOfWeek !== undefined ? dayOfWeek : existingAssignment.dayOfWeek,
+                customStartTime: customStartTime !== undefined ? customStartTime : existingAssignment.customStartTime,
+                customEndTime: customEndTime !== undefined ? customEndTime : existingAssignment.customEndTime,
+                customBreaks: customBreaks !== undefined ? customBreaks : existingAssignment.customBreaks,
+                notes: notes !== undefined ? notes : existingAssignment.notes,
+                isActive: isActive !== undefined ? isActive : existingAssignment.isActive,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+                template: {
+                    include: {
+                        shifts: {
+                            include: {
+                                workLocation: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        city: true,
+                                    },
+                                },
+                                project: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        company: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return NextResponse.json(updatedAssignment);
+    } catch (error) {
+        console.error('Error updating user schedule assignment:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
+    }
 } 

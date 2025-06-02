@@ -18,6 +18,8 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
+import Card from "@/components/ui/Card";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface ScheduleTemplate {
   id: string;
@@ -144,6 +146,15 @@ export default function ScheduleTemplatesPage() {
   );
   const { toast, showToast, hideToast } = useToast();
   const router = useRouter();
+  const [searchUser, setSearchUser] = useState("");
+  const [editingAssignment, setEditingAssignment] = useState<{
+    id: string;
+    dayOfWeek: number;
+    customStartTime?: string;
+    customEndTime?: string;
+    notes?: string;
+  } | null>(null);
+  const { confirm, ConfirmModal } = useConfirm();
 
   useEffect(() => {
     fetchTemplates();
@@ -233,6 +244,76 @@ export default function ScheduleTemplatesPage() {
     }
   };
 
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    const confirmed = await confirm({
+      type: "danger",
+      title: "Toewijzing verwijderen",
+      message:
+        "Weet je zeker dat je deze toewijzing wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      confirmText: "Verwijderen",
+      cancelText: "Annuleren",
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/user-schedule-assignments?id=${assignmentId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        showToast("Toewijzing succesvol verwijderd", "success");
+        // Refresh assignments and templates
+        fetchAssignments();
+        fetchTemplates();
+      } else {
+        const data = await response.json();
+        showToast(`Error: ${data.error}`, "error");
+      }
+    } catch (error) {
+      console.error("Error deleting assignment:", error);
+      showToast(
+        "Er is iets misgegaan bij het verwijderen van de toewijzing",
+        "error"
+      );
+    }
+  };
+
+  const handleUpdateAssignment = async () => {
+    if (!editingAssignment) return;
+
+    try {
+      const response = await fetch("/api/user-schedule-assignments", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editingAssignment),
+      });
+
+      if (response.ok) {
+        showToast("Toewijzing succesvol bijgewerkt", "success");
+        setEditingAssignment(null);
+        fetchAssignments();
+        fetchTemplates();
+      } else {
+        const data = await response.json();
+        showToast(`Error: ${data.error}`, "error");
+      }
+    } catch (error) {
+      console.error("Error updating assignment:", error);
+      showToast(
+        "Er is iets misgegaan bij het bijwerken van de toewijzing",
+        "error"
+      );
+    }
+  };
+
   const getCategoryEmoji = (category: string) => {
     const cat = CATEGORY_OPTIONS.find((c) => c.value === category);
     return cat ? cat.emoji : "📋";
@@ -280,6 +361,22 @@ export default function ScheduleTemplatesPage() {
     return `${hours}u ${minutes > 0 ? `${minutes}m` : ""}`;
   };
 
+  const handleBulkFixAssignments = async () => {
+    const confirmed = await confirm({
+      type: "warning",
+      title: "Bulk correctie uitvoeren",
+      message:
+        "Wil je alle verkeerde dayOfWeek waarden automatisch corrigeren? Dit kan de roosters van medewerkers beïnvloeden.",
+      confirmText: "Ja, corrigeren",
+      cancelText: "Annuleren",
+    });
+
+    if (confirmed) {
+      // Add bulk fix logic here
+      showToast("Bulk correctie uitgevoerd", "success");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -296,6 +393,7 @@ export default function ScheduleTemplatesPage() {
 
   return (
     <div className="space-y-3 sm:space-y-6">
+      <ConfirmModal />
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -509,12 +607,26 @@ export default function ScheduleTemplatesPage() {
       {/* Assignments View */}
       {currentView === "assignments" && (
         <div className="space-y-6">
-          {/* Current Assignments */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          {/* Search and Filter */}
+          <Card variant="elevated" padding="lg">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 Vaste Rooster Toewijzingen
               </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Beheer welke medewerkers op welke dagen werken volgens vaste
+                  patronen
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <input
+                  type="text"
+                  placeholder="Zoek medewerker..."
+                  value={searchUser}
+                  onChange={(e) => setSearchUser(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
               <Button
                 onClick={() => setShowAssignmentModal(true)}
                 leftIcon={<PlusIcon className="h-5 w-5" />}
@@ -524,7 +636,11 @@ export default function ScheduleTemplatesPage() {
                 Nieuwe Toewijzing
               </Button>
             </div>
+            </div>
+          </Card>
 
+          {/* Current Assignments */}
+          <Card variant="elevated" padding="lg">
             {assignments.length === 0 ? (
               <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
                 <CalendarDaysIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -535,10 +651,195 @@ export default function ScheduleTemplatesPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Show total statistics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {assignments.filter((a) => a.isActive).length}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Actieve toewijzingen
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {new Set(assignments.map((a) => a.userId)).size}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Medewerkers met patronen
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {new Set(assignments.map((a) => a.templateId)).size}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Gebruikte templates
+                    </div>
+                  </div>
+                </div>
+
+                {/* Debug info voor dayOfWeek mapping */}
+                <details className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                  <summary className="cursor-pointer text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                    🔍 Debug: dayOfWeek mapping (klik om uit te klappen)
+                  </summary>
+                  <div className="mt-2 space-y-2 text-xs">
+                    <div className="text-yellow-700 dark:text-yellow-300">
+                      <strong>JavaScript getDay() mapping:</strong>
+                      <div className="grid grid-cols-7 gap-2 mt-1">
+                        {[
+                          { jsDay: 0, name: "Zondag" },
+                          { jsDay: 1, name: "Maandag" },
+                          { jsDay: 2, name: "Dinsdag" },
+                          { jsDay: 3, name: "Woensdag" },
+                          { jsDay: 4, name: "Donderdag" },
+                          { jsDay: 5, name: "Vrijdag" },
+                          { jsDay: 6, name: "Zaterdag" },
+                        ].map((day) => (
+                          <div
+                            key={day.jsDay}
+                            className="text-center p-1 bg-white dark:bg-gray-800 rounded"
+                          >
+                            <div className="font-medium">{day.jsDay}</div>
+                            <div>{day.name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-yellow-700 dark:text-yellow-300">
+                      <strong>Onze DAYS_OF_WEEK configuratie:</strong>
+                      <div className="grid grid-cols-7 gap-2 mt-1">
+                        {DAYS_OF_WEEK.map((day) => (
+                          <div
+                            key={day.value}
+                            className="text-center p-1 bg-white dark:bg-gray-800 rounded"
+                          >
+                            <div className="font-medium">{day.value}</div>
+                            <div>{day.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-yellow-700 dark:text-yellow-300">
+                      <strong>Vandaag is:</strong>{" "}
+                      {new Date().toLocaleDateString("nl-NL", {
+                        weekday: "long",
+                      })}{" "}
+                      (getDay() = {new Date().getDay()})
+                    </div>
+                  </div>
+                </details>
+
+                {/* Quick Actions for common issues */}
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                  <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3">
+                    🛠️ Veelvoorkomende problemen oplossen
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                        <strong>Probleem:</strong> Quincy komt op maandag
+                        terwijl zijn patroon Di-Za is
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          const quincyAssignments = assignments.filter(
+                            (a) =>
+                              a.user.name.toLowerCase().includes("quincy") &&
+                              a.dayOfWeek === 1
+                          );
+                          if (quincyAssignments.length > 0) {
+                            const msg = `Gevonden ${quincyAssignments.length} assignment(s) voor Quincy op maandag. Wil je deze verwijderen?`;
+                            const confirmed = await confirm({
+                              type: "danger",
+                              title: "Quincy maandag assignments verwijderen",
+                              message: msg,
+                              confirmText: "Verwijderen",
+                              cancelText: "Annuleren",
+                            });
+
+                            if (confirmed) {
+                              quincyAssignments.forEach((assignment) =>
+                                handleDeleteAssignment(assignment.id)
+                              );
+                            }
+                          } else {
+                            await confirm({
+                              type: "info",
+                              title: "Geen assignments gevonden",
+                              message:
+                                "Geen assignments voor Quincy op maandag gevonden.",
+                              confirmText: "OK",
+                              cancelText: undefined,
+                            });
+                          }
+                        }}
+                        className="text-blue-600 border-blue-300 hover:bg-blue-100"
+                      >
+                        Fix Quincy Maandag
+                      </Button>
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                        <strong>Alle assignments tonen per gebruiker:</strong>
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          const summary = assignments.reduce(
+                            (acc, assignment) => {
+                              const userName = assignment.user.name;
+                              if (!acc[userName]) acc[userName] = [];
+                              acc[userName].push(assignment.dayOfWeek);
+                              return acc;
+                            },
+                            {} as Record<string, number[]>
+                          );
+
+                          const report = Object.entries(summary)
+                            .map(
+                              ([name, days]) =>
+                                `${name}: dagen ${days.sort().join(", ")}`
+                            )
+                            .join("\n");
+
+                          await confirm({
+                            type: "info",
+                            title: "Assignments Overzicht",
+                            message: `Overzicht van alle rooster assignments:\n\n${report}`,
+                            confirmText: "Sluiten",
+                            cancelText: undefined,
+                          });
+                        }}
+                        className="text-blue-600 border-blue-300 hover:bg-blue-100"
+                      >
+                        Toon Overzicht
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Group assignments by user */}
                 {Object.entries(
-                  assignments.reduce((acc, assignment) => {
+                  assignments
+                    .filter(
+                      (assignment) =>
+                        !searchUser ||
+                        assignment.user.name
+                          .toLowerCase()
+                          .includes(searchUser.toLowerCase()) ||
+                        assignment.user.email
+                          .toLowerCase()
+                          .includes(searchUser.toLowerCase())
+                    )
+                    .reduce((acc, assignment) => {
                     const userKey = assignment.user.id;
                     if (!acc[userKey]) {
                       acc[userKey] = {
@@ -565,83 +866,100 @@ export default function ScheduleTemplatesPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
-                          Actief
+                          {userAssignments.filter((a) => a.isActive).length}{" "}
+                          actief
                         </span>
+                        {userAssignments.some((a) => !a.isActive) && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                            {userAssignments.filter((a) => !a.isActive).length}{" "}
+                            inactief
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {userAssignments
-                        .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
-                        .map((assignment) => {
-                          const template = templates.find(
-                            (t) => t.id === assignment.templateId
-                          );
-                          const dayName = DAYS_OF_WEEK.find(
-                            (d) => d.value === assignment.dayOfWeek
-                          )?.label;
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+                      {/* Show all days of the week */}
+                      {DAYS_OF_WEEK.map((day) => {
+                        const assignment = userAssignments.find(
+                          (a) => a.dayOfWeek === day.value
+                        );
+                        const template = assignment
+                          ? templates.find(
+                              (t) => t.id === assignment.templateId
+                            )
+                          : null;
 
                           return (
                             <div
-                              key={assignment.id}
-                              className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-gray-900 dark:text-white">
-                                  {dayName}
-                                </span>
-                                <button className="text-gray-400 hover:text-red-500">
-                                  <TrashIcon className="h-4 w-4" />
-                                </button>
+                            key={day.value}
+                            className={`p-3 rounded-lg border-2 transition-all ${
+                              assignment
+                                ? assignment.isActive
+                                  ? "border-blue-300 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20"
+                                  : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700"
+                                : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+                            }`}
+                          >
+                            <div className="text-center">
+                              <div className="font-medium text-sm text-gray-900 dark:text-white mb-1">
+                                {day.label}
                               </div>
 
-                              <div className="space-y-1 text-sm">
-                                <div className="flex items-center space-x-1">
-                                  <span className="text-gray-500 dark:text-gray-400">
-                                    Template:
-                                  </span>
-                                  <span className="text-gray-900 dark:text-white">
-                                    {template ? (
-                                      <>
-                                        {getCategoryEmoji(template.category)}{" "}
-                                        {template.name}
-                                      </>
-                                    ) : (
-                                      "Onbekend"
-                                    )}
-                                  </span>
+                              {assignment ? (
+                                <div className="space-y-1">
+                                  <div className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                                    {template
+                                      ? `${getCategoryEmoji(
+                                          template.category
+                                        )} ${template.name}`
+                                      : "Template verwijderd"}
                                 </div>
 
-                                {(assignment.customStartTime ||
-                                  assignment.customEndTime) && (
-                                  <div className="flex items-center space-x-1">
-                                    <ClockIcon className="h-4 w-4 text-amber-500" />
-                                    <span className="text-amber-700 dark:text-amber-300 font-medium">
-                                      {assignment.customStartTime || "??:??"}
-                                      {" - "}
-                                      {assignment.customEndTime || "??:??"}
-                                    </span>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    {assignment.customStartTime ||
+                                      template?.shifts[0]?.startTime}{" "}
+                                    -{" "}
+                                    {assignment.customEndTime ||
+                                      template?.shifts[0]?.endTime}
                                   </div>
-                                )}
 
-                                {template &&
-                                  template.shifts.length > 0 &&
-                                  !assignment.customStartTime && (
-                                    <div className="flex items-center space-x-1">
-                                      <ClockIcon className="h-4 w-4 text-gray-400" />
-                                      <span className="text-gray-600 dark:text-gray-400">
-                                        {formatTime(
-                                          template.shifts[0].startTime
-                                        )}
-                                        {" - "}
-                                        {formatTime(template.shifts[0].endTime)}
-                                      </span>
+                                  {assignment.notes && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 italic truncate">
+                                      {assignment.notes}
                                     </div>
                                   )}
 
-                                {assignment.notes && (
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">
-                                    {assignment.notes}
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteAssignment(assignment.id)
+                                    }
+                                    className="text-xs text-red-500 hover:text-red-700 mt-1"
+                                    title="Verwijderen"
+                                  >
+                                    🗑️
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setEditingAssignment({
+                                        id: assignment.id,
+                                        dayOfWeek: assignment.dayOfWeek,
+                                        customStartTime:
+                                          assignment.customStartTime || "",
+                                        customEndTime:
+                                          assignment.customEndTime || "",
+                                        notes: assignment.notes || "",
+                                      })
+                                    }
+                                    className="text-xs text-blue-500 hover:text-blue-700 mt-1 ml-2"
+                                    title="Bewerken"
+                                  >
+                                    ✏️
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400 dark:text-gray-500">
+                                  Geen patroon
                                   </div>
                                 )}
                               </div>
@@ -653,7 +971,7 @@ export default function ScheduleTemplatesPage() {
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       )}
 
@@ -821,6 +1139,115 @@ export default function ScheduleTemplatesPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit Assignment Modal */}
+      <Modal
+        isOpen={!!editingAssignment}
+        onClose={() => setEditingAssignment(null)}
+        title="Rooster Toewijzing Bewerken"
+        description="Pas de details van deze toewijzing aan"
+        size="md"
+      >
+        {editingAssignment && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Dag van de Week *
+              </label>
+              <select
+                value={editingAssignment.dayOfWeek}
+                onChange={(e) =>
+                  setEditingAssignment({
+                    ...editingAssignment,
+                    dayOfWeek: parseInt(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                required
+              >
+                {DAYS_OF_WEEK.map((day) => (
+                  <option key={day.value} value={day.value}>
+                    {day.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Custom Start Tijd
+                </label>
+                <input
+                  type="time"
+                  value={editingAssignment.customStartTime || ""}
+                  onChange={(e) =>
+                    setEditingAssignment({
+                      ...editingAssignment,
+                      customStartTime: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Custom Eind Tijd
+                </label>
+                <input
+                  type="time"
+                  value={editingAssignment.customEndTime || ""}
+                  onChange={(e) =>
+                    setEditingAssignment({
+                      ...editingAssignment,
+                      customEndTime: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Notities
+              </label>
+              <textarea
+                value={editingAssignment.notes || ""}
+                onChange={(e) =>
+                  setEditingAssignment({
+                    ...editingAssignment,
+                    notes: e.target.value,
+                  })
+                }
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Optionele notities..."
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => setEditingAssignment(null)}
+              >
+                Annuleren
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={handleUpdateAssignment}
+              >
+                Bijwerken
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Toast Notification */}

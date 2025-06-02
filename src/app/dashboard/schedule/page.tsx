@@ -42,7 +42,8 @@ import SpeedDial from "@/components/ui/SpeedDial";
 import MetricCard from "@/components/ui/MetricCard";
 import Timeline from "@/components/ui/Timeline";
 import AutoScheduleGenerator from "@/components/schedule/AutoScheduleGenerator";
-import FixedScheduleIndicator from "@/components/schedule/FixedScheduleIndicator";
+import DateRangePicker from "@/components/ui/DateRangePicker";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface User {
   id: string;
@@ -129,6 +130,8 @@ export default function SchedulePage() {
   const [weekShifts, setWeekShifts] = useState<ScheduleShift[]>([]);
   const [myAssignments, setMyAssignments] = useState<any[]>([]);
   const [scheduleAssignments, setScheduleAssignments] = useState<any[]>([]);
+
+  const { confirm, ConfirmModal } = useConfirm();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -295,7 +298,16 @@ export default function SchedulePage() {
   };
 
   const handleDeleteShift = async (shiftId: string) => {
-    if (!confirm("Weet je zeker dat je deze dienst wilt verwijderen?")) return;
+    const confirmed = await confirm({
+      type: "danger",
+      title: "Dienst verwijderen",
+      message:
+        "Weet je zeker dat je deze dienst wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      confirmText: "Verwijderen",
+      cancelText: "Annuleren",
+    });
+
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`/api/schedule/shifts/${shiftId}`, {
@@ -534,6 +546,7 @@ export default function SchedulePage() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal />
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -736,15 +749,6 @@ export default function SchedulePage() {
                   </div>
                 </div>
               </Card>
-
-              {/* Fixed Schedule Indicator - show fixed patterns for this day */}
-              {(session?.user?.role === "ADMIN" ||
-                session?.user?.role === "MANAGER") && (
-                <FixedScheduleIndicator
-                  selectedDate={selectedDate}
-                  onGeneratePressed={() => setShowAutoGenerateModal(true)}
-                />
-              )}
 
               {/* Day Schedule Content */}
               {schedule && schedule.shifts.length > 0 ? (
