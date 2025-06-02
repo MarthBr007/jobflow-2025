@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import {
   CheckCircleIcon,
   XCircleIcon,
-  InformationCircleIcon,
   ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-export type ToastType = "success" | "error" | "info" | "warning";
+export type ToastType = "success" | "error" | "warning" | "info";
 
 interface ToastProps {
   message: string;
@@ -19,110 +19,87 @@ interface ToastProps {
   duration?: number;
 }
 
-export function Toast({
+const Toast: React.FC<ToastProps> = ({
   message,
   type,
   isVisible,
   onClose,
-  duration = 5000,
-}: ToastProps) {
+  duration = 4000,
+}) => {
   useEffect(() => {
     if (isVisible && duration > 0) {
       const timer = setTimeout(() => {
         onClose();
       }, duration);
-
       return () => clearTimeout(timer);
     }
   }, [isVisible, duration, onClose]);
 
+  if (!isVisible) return null;
+
+  const getToastStyles = () => {
+    switch (type) {
+      case "success":
+        return "bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200";
+      case "error":
+        return "bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200";
+      case "warning":
+        return "bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200";
+      case "info":
+        return "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200";
+      default:
+        return "bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-900/20 dark:border-gray-800 dark:text-gray-200";
+    }
+  };
+
   const getIcon = () => {
+    const iconClass = "h-5 w-5";
     switch (type) {
       case "success":
-        return <CheckCircleIcon className="h-6 w-6 text-green-600" />;
+        return <CheckCircleIcon className={`${iconClass} text-green-500`} />;
       case "error":
-        return <XCircleIcon className="h-6 w-6 text-red-600" />;
+        return <XCircleIcon className={`${iconClass} text-red-500`} />;
       case "warning":
-        return <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />;
+        return (
+          <ExclamationTriangleIcon className={`${iconClass} text-yellow-500`} />
+        );
       case "info":
+        return (
+          <InformationCircleIcon className={`${iconClass} text-blue-500`} />
+        );
       default:
-        return <InformationCircleIcon className="h-6 w-6 text-blue-600" />;
-    }
-  };
-
-  const getBackgroundColor = () => {
-    switch (type) {
-      case "success":
-        return "bg-green-50 border-green-200";
-      case "error":
-        return "bg-red-50 border-red-200";
-      case "warning":
-        return "bg-yellow-50 border-yellow-200";
-      case "info":
-      default:
-        return "bg-blue-50 border-blue-200";
-    }
-  };
-
-  const getTextColor = () => {
-    switch (type) {
-      case "success":
-        return "text-green-800";
-      case "error":
-        return "text-red-800";
-      case "warning":
-        return "text-yellow-800";
-      case "info":
-      default:
-        return "text-blue-800";
+        return (
+          <InformationCircleIcon className={`${iconClass} text-gray-500`} />
+        );
     }
   };
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: -50, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -50, scale: 0.9 }}
-          className="fixed top-4 right-4 z-50 max-w-sm w-full"
-        >
-          <div
-            className={`rounded-lg border p-4 shadow-lg ${getBackgroundColor()}`}
-          >
-            <div className="flex items-start">
-              <div className="flex-shrink-0">{getIcon()}</div>
-              <div className="ml-3 flex-1">
-                <p className={`text-sm font-medium ${getTextColor()}`}>
-                  {message}
-                </p>
-              </div>
-              <div className="ml-4 flex-shrink-0">
-                <button
-                  onClick={onClose}
-                  className={`inline-flex rounded-md p-1.5 hover:bg-opacity-20 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 ${getTextColor()}`}
-                >
-                  <span className="sr-only">Sluiten</span>
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
+    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+      <div
+        className={`max-w-sm w-full border rounded-lg shadow-lg p-4 ${getToastStyles()}`}
+      >
+        <div className="flex items-start">
+          <div className="flex-shrink-0">{getIcon()}</div>
+          <div className="ml-3 flex-1">
+            <p className="text-sm font-medium">{message}</p>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          <div className="ml-4 flex-shrink-0 flex">
+            <button
+              className="inline-flex text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+              onClick={onClose}
+            >
+              <span className="sr-only">Sluiten</span>
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default Toast;
 
 // Hook for using toast
 export function useToast() {

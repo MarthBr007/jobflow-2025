@@ -15,6 +15,8 @@ import Card from "@/components/ui/Card";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Modal from "@/components/ui/Modal";
 import PermissionGuard from "@/components/ui/PermissionGuard";
+import Toast from "@/components/ui/Toast";
+import { useToast } from "@/hooks/useToast";
 import {
   UserRole,
   getRoleDisplayInfo,
@@ -35,6 +37,7 @@ interface User {
 export default function UserRolesPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { toast, showToast, hideToast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,6 +60,7 @@ export default function UserRolesPage() {
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      showToast("Fout bij ophalen van gebruikers", "error");
     } finally {
       setLoading(false);
     }
@@ -84,13 +88,22 @@ export default function UserRolesPage() {
         await fetchUsers();
         setShowRoleModal(false);
         setSelectedUser(null);
+        showToast(
+          `Rol succesvol gewijzigd naar ${
+            getRoleDisplayInfo(selectedRole).name
+          }`,
+          "success"
+        );
       } else {
         const error = await response.json();
-        alert(`Fout bij wijzigen rol: ${error.error}`);
+        showToast(`Fout bij wijzigen rol: ${error.error}`, "error");
       }
     } catch (error) {
       console.error("Error updating role:", error);
-      alert("Er is een fout opgetreden bij het wijzigen van de rol");
+      showToast(
+        "Er is een fout opgetreden bij het wijzigen van de rol",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -113,174 +126,226 @@ export default function UserRolesPage() {
 
   return (
     <PermissionGuard permission="canChangeUserRoles">
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Toast */}
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onClose={hideToast}
+        />
+
         {/* Breadcrumbs */}
         <Breadcrumbs
           items={[
+            { label: "Home", href: "/dashboard" },
             { label: "Dashboard", href: "/dashboard" },
             { label: "Admin", href: "/dashboard/admin" },
             { label: "Gebruikersrollen" },
           ]}
+          className="mb-6"
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
-              <ShieldCheckIcon className="h-8 w-8 text-blue-600 mr-3" />
-              Gebruikersrollen Beheer
-            </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Beheer gebruikersrollen en permissies voor het systeem
-            </p>
-          </div>
-        </div>
-
-        {/* Role Information Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {availableRoles.map((role) => {
-            const roleInfo = getRoleDisplayInfo(role);
-            const userCount = users.filter((u) => u.role === role).length;
-
-            return (
-              <Card key={role} className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{roleInfo.emoji}</span>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {roleInfo.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Niveau {getRoleLevel(role)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold text-blue-600">
-                      {userCount}
-                    </span>
-                    <p className="text-xs text-gray-500">gebruikers</p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {roleInfo.description}
-                </p>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Users Table */}
-        <Card className="overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-              Alle Gebruikers
-            </h2>
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Gebruikers laden...
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+                <ShieldCheckIcon className="h-8 w-8 text-blue-600 mr-3" />
+                Gebruikersrollen Beheer
+              </h1>
+              <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
+                Beheer gebruikersrollen en permissies voor het systeem
               </p>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Gebruiker
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Huidige Rol
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Bedrijf
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Acties
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {users.map((user) => {
-                    const roleInfo = getRoleDisplayInfo(user.role as UserRole);
-
-                    return (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <UserGroupIcon className="h-8 w-8 text-gray-400 mr-3" />
-                            <div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {user.name}
-                              </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {user.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-lg">{roleInfo.emoji}</span>
-                            <div>
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                {roleInfo.name}
-                              </span>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Niveau {getRoleLevel(user.role as UserRole)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {user.company}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              user.status === "active"
-                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                            }`}
-                          >
-                            {user.status === "active" ? "Actief" : "Inactief"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {canModifyUser(user) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              leftIcon={<PencilIcon className="h-4 w-4" />}
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setSelectedRole(user.role as UserRole);
-                                setShowRoleModal(true);
-                              }}
-                            >
-                              Rol Wijzigen
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="flex space-x-3">
+              <Button variant="outline" onClick={() => router.back()}>
+                Terug
+              </Button>
             </div>
-          )}
-        </Card>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {/* Role Information Cards */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+              Rol Overzicht
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {availableRoles.map((role) => {
+                const roleInfo = getRoleDisplayInfo(role);
+                const userCount = users.filter((u) => u.role === role).length;
+
+                return (
+                  <Card key={role} className="overflow-hidden">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-blue-100 dark:bg-blue-800 p-2 rounded-lg">
+                            <span className="text-2xl">{roleInfo.emoji}</span>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {roleInfo.name}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Niveau {getRoleLevel(role)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-3xl font-bold text-blue-600">
+                            {userCount}
+                          </span>
+                          <p className="text-xs text-gray-500">gebruikers</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {roleInfo.description}
+                      </p>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Users Table */}
+          <Card className="overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Alle Gebruikers
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Beheer rollen en permissies van gebruikers
+              </p>
+            </div>
+
+            {loading ? (
+              <div className="p-12 text-center">
+                <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">
+                  Gebruikers laden...
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Gebruiker
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Huidige Rol
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Bedrijf
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Acties
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                    {users.map((user) => {
+                      const roleInfo = getRoleDisplayInfo(
+                        user.role as UserRole
+                      );
+
+                      return (
+                        <tr
+                          key={user.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full mr-3">
+                                <UserGroupIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {user.name}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {user.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-blue-100 dark:bg-blue-800 p-1.5 rounded-lg">
+                                <span className="text-lg">
+                                  {roleInfo.emoji}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  {roleInfo.name}
+                                </span>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  Niveau {getRoleLevel(user.role as UserRole)}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {user.company}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                user.status === "active"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              }`}
+                            >
+                              {user.status === "active" ? "Actief" : "Inactief"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            {canModifyUser(user) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                leftIcon={<PencilIcon className="h-4 w-4" />}
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setSelectedRole(user.role as UserRole);
+                                  setShowRoleModal(true);
+                                }}
+                                className="hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300"
+                              >
+                                Rol Wijzigen
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {users.length === 0 && (
+                  <div className="p-12 text-center">
+                    <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      Geen gebruikers gevonden
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Er zijn nog geen gebruikers in het systeem.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        </div>
 
         {/* Role Change Modal */}
         <Modal
@@ -296,12 +361,14 @@ export default function UserRolesPage() {
           {selectedUser && (
             <div className="space-y-6">
               {/* Current User Info */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                   Gebruiker Informatie
                 </h4>
                 <div className="flex items-center space-x-3">
-                  <UserGroupIcon className="h-8 w-8 text-gray-400" />
+                  <div className="bg-blue-100 dark:bg-blue-800 p-2 rounded-lg">
+                    <UserGroupIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {selectedUser.name}
@@ -309,26 +376,30 @@ export default function UserRolesPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {selectedUser.email}
                     </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      Huidige rol:{" "}
+                      {getRoleDisplayInfo(selectedUser.role as UserRole).name}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Role Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
                   Selecteer Nieuwe Rol
                 </label>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-80 overflow-y-auto">
                   {availableRoles.map((role) => {
                     const roleInfo = getRoleDisplayInfo(role);
 
                     return (
                       <label
                         key={role}
-                        className={`relative flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        className={`relative flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                           selectedRole === role
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
                         }`}
                       >
                         <input
@@ -341,21 +412,29 @@ export default function UserRolesPage() {
                           className="sr-only"
                         />
                         <div className="flex items-center space-x-3 flex-1">
-                          <span className="text-2xl">{roleInfo.emoji}</span>
-                          <div>
+                          <div
+                            className={`p-2 rounded-lg ${
+                              selectedRole === role
+                                ? "bg-blue-100 dark:bg-blue-800"
+                                : "bg-gray-100 dark:bg-gray-700"
+                            }`}
+                          >
+                            <span className="text-xl">{roleInfo.emoji}</span>
+                          </div>
+                          <div className="flex-1">
                             <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                               {roleInfo.name}
                             </h4>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                               {roleInfo.description}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                               Toegangsniveau: {getRoleLevel(role)}
                             </p>
                           </div>
                         </div>
                         {selectedRole === role && (
-                          <CheckCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                          <CheckCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-1" />
                         )}
                       </label>
                     );
@@ -365,7 +444,7 @@ export default function UserRolesPage() {
 
               {/* Warning */}
               {selectedRole !== selectedUser.role && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
                   <div className="flex items-start space-x-3">
                     <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                     <div>
@@ -399,6 +478,7 @@ export default function UserRolesPage() {
                   loading={saving}
                   disabled={saving || selectedRole === selectedUser.role}
                   leftIcon={<ShieldCheckIcon className="h-4 w-4" />}
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   {saving ? "Opslaan..." : "Rol Wijzigen"}
                 </Button>
