@@ -198,7 +198,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* Luxury Sidebar */}
+      {/* Professional Sidebar */}
       <motion.aside
         initial={false}
         animate={{
@@ -206,15 +206,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           width: !isMobile && sidebarCollapsed ? 80 : 280,
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed inset-y-0 left-0 z-50 bg-gradient-to-b from-white via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-r border-gray-200/50 dark:border-gray-700/50 shadow-xl lg:translate-x-0 lg:static lg:inset-0 backdrop-blur-lg"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(249,250,251,0.95) 100%)",
-        }}
+        className="fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-xl lg:translate-x-0 lg:static lg:inset-0"
       >
         <div className="flex flex-col h-full">
-          {/* Luxury Header */}
-          <div className="relative h-20 px-6 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-900/20 dark:to-purple-900/20">
+          {/* Header */}
+          <div className="relative h-20 px-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <div className="flex items-center justify-between h-full">
               <Link
                 href="/dashboard"
@@ -225,14 +221,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 }`}
               >
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg ring-2 ring-white/20 backdrop-blur-sm">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <span className="text-white font-bold text-xl">J</span>
                   </div>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-900 shadow-sm animate-pulse"></div>
                 </div>
                 {(!sidebarCollapsed || isMobile) && (
                   <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                       JobFlow
                     </h1>
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
@@ -248,7 +244,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setSidebarOpen(false)}
-                  className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700/50 transition-all duration-200"
+                  className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-all duration-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </motion.button>
@@ -256,8 +252,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          {/* Luxury Navigation */}
-          <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 scrollbar-hide">
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
             <AnimatePresence>
               {navItems.map((item, index) => (
                 <motion.div
@@ -265,17 +261,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.02, x: 4 }}
+                  whileHover={{ x: 4 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <Link
                     href={item.href}
-                    className={`group relative flex items-center px-4 py-3.5 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                    className={`group relative flex items-center px-4 py-3 text-sm font-medium transition-all duration-200 ${
                       sidebarCollapsed && !isMobile ? "justify-center" : ""
                     } ${
                       isActive(item.href)
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/25"
-                        : "text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:from-gray-700/50 dark:hover:to-gray-600/50"
+                        ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                        : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                     }`}
                     onClick={() => isMobile && setSidebarOpen(false)}
                     title={
@@ -286,7 +282,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     {isActive(item.href) && (
                       <motion.div
                         layoutId="activeNav"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"
+                        className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 dark:bg-blue-400 rounded-r-full"
                         initial={false}
                         transition={{
                           type: "spring",
@@ -298,26 +294,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
                     <div
                       className={`relative ${
-                        sidebarCollapsed && !isMobile ? "" : "mr-4"
+                        sidebarCollapsed && !isMobile ? "" : "mr-3"
                       }`}
                     >
                       <item.icon
-                        className={`h-6 w-6 transition-all duration-300 ${
-                          isActive(item.href) ? "text-white" : "text-current"
+                        className={`h-5 w-5 transition-all duration-200 ${
+                          isActive(item.href)
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-current"
                         }`}
                       />
-                      {isActive(item.href) && (
-                        <div className="absolute -inset-1 bg-white/20 rounded-lg animate-pulse"></div>
-                      )}
                     </div>
 
                     {(!sidebarCollapsed || isMobile) && (
                       <span className="truncate">{item.name}</span>
-                    )}
-
-                    {/* Hover effect */}
-                    {!isActive(item.href) && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-100/0 to-gray-100/0 group-hover:via-gray-100/50 rounded-2xl transition-all duration-300 dark:via-gray-700/0 dark:group-hover:via-gray-700/30"></div>
                     )}
                   </Link>
                 </motion.div>
@@ -325,24 +315,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </AnimatePresence>
           </nav>
 
-          {/* Luxury User Section */}
-          <div className="relative border-t border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 p-4">
+          {/* User Section */}
+          <div className="relative border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
             {/* User Profile Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className={`w-full flex items-center p-3 rounded-2xl text-left hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-700/50 dark:hover:to-gray-600/50 transition-all duration-300 ${
+              className={`w-full flex items-center p-3 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 ${
                 sidebarCollapsed && !isMobile ? "justify-center" : "space-x-3"
               }`}
             >
               <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg ring-2 ring-white/20">
-                  <span className="text-white font-bold text-lg">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-sm">
                     {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                   </span>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm"></div>
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900 shadow-sm"></div>
               </div>
 
               {(!sidebarCollapsed || isMobile) && (
@@ -365,7 +355,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute bottom-full left-4 right-4 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-lg overflow-hidden"
+                  className="absolute bottom-full left-4 right-4 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-lg overflow-hidden"
                 >
                   <div className="py-2">
                     <Link
@@ -374,9 +364,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         setShowUserMenu(false);
                         isMobile && setSidebarOpen(false);
                       }}
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50 transition-colors"
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      <UserCircleIcon className="h-5 w-5 mr-3 text-gray-400" />
+                      <UserCircleIcon className="h-5 w-5 mr-3 text-gray-400 dark:text-gray-500" />
                       Mijn Profiel
                     </Link>
                     <Link
@@ -385,9 +375,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         setShowUserMenu(false);
                         isMobile && setSidebarOpen(false);
                       }}
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50 transition-colors"
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      <Cog6ToothIcon className="h-5 w-5 mr-3 text-gray-400" />
+                      <Cog6ToothIcon className="h-5 w-5 mr-3 text-gray-400 dark:text-gray-500" />
                       Instellingen
                     </Link>
                     <hr className="my-2 border-gray-200 dark:border-gray-700" />
@@ -396,7 +386,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         setShowUserMenu(false);
                         handleLogout();
                       }}
-                      className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                      className="w-full flex items-center px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
                       Uitloggen
@@ -412,7 +402,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all duration-200 z-10"
+                className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-200 z-10"
                 title={
                   sidebarCollapsed ? "Sidebar uitklappen" : "Sidebar inklappen"
                 }
@@ -455,7 +445,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
                   <span className="text-white font-bold text-sm">J</span>
                 </div>
-                <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
+                <span className="text-lg font-bold text-gray-900 dark:text-white">
                   JobFlow
                 </span>
               </div>
