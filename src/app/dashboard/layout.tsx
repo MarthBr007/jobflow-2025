@@ -455,7 +455,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         )}
 
         {/* Content Container */}
-        <div className={`flex-1 p-4 lg:p-6 xl:p-8 max-w-7xl mx-auto w-full`}>
+        <div className={`flex-1 p-3 lg:p-4 xl:p-6 max-w-7xl mx-auto w-full`}>
           <div className="min-h-full">{children}</div>
         </div>
       </main>
