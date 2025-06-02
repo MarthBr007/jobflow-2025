@@ -128,6 +128,7 @@ export default function SchedulePage() {
   );
   const [weekShifts, setWeekShifts] = useState<ScheduleShift[]>([]);
   const [myAssignments, setMyAssignments] = useState<any[]>([]);
+  const [scheduleAssignments, setScheduleAssignments] = useState<any[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -139,6 +140,7 @@ export default function SchedulePage() {
     if (session?.user) {
       fetchUsers();
       fetchProjects();
+      fetchScheduleAssignments();
       if (currentView === "mySchedule") {
         fetchMyAssignments();
       }
@@ -199,6 +201,18 @@ export default function SchedulePage() {
       }
     } catch (error) {
       console.error("Error fetching my assignments:", error);
+    }
+  };
+
+  const fetchScheduleAssignments = async () => {
+    try {
+      const response = await fetch("/api/user-schedule-assignments");
+      if (response.ok) {
+        const data = await response.json();
+        setScheduleAssignments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching schedule assignments:", error);
     }
   };
 
@@ -480,6 +494,25 @@ export default function SchedulePage() {
       return "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300";
     }
   };
+
+  const getWorkPatternsForDate = (date: string) => {
+    const selectedDate = new Date(date);
+    const dayOfWeek = selectedDate.getDay();
+
+    return scheduleAssignments.filter(
+      (assignment) => assignment.dayOfWeek === dayOfWeek
+    );
+  };
+
+  const DAYS_OF_WEEK = [
+    { value: 1, label: "Ma", fullLabel: "Maandag" },
+    { value: 2, label: "Di", fullLabel: "Dinsdag" },
+    { value: 3, label: "Wo", fullLabel: "Woensdag" },
+    { value: 4, label: "Do", fullLabel: "Donderdag" },
+    { value: 5, label: "Vr", fullLabel: "Vrijdag" },
+    { value: 6, label: "Za", fullLabel: "Zaterdag" },
+    { value: 0, label: "Zo", fullLabel: "Zondag" },
+  ];
 
   if (status === "loading" || loading) {
     return (

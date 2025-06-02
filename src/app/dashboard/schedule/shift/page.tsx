@@ -13,6 +13,9 @@ import {
   ArrowLeftIcon,
   PlusIcon,
   TrashIcon,
+  CalendarDaysIcon,
+  CheckIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -37,6 +40,37 @@ interface Project {
   company: string;
 }
 
+interface WorkPattern {
+  userId: string;
+  userName: string;
+  workDays: number[]; // Array of days: 0=Sunday, 1=Monday, etc.
+  startTime: string;
+  endTime: string;
+  role: string;
+}
+
+interface ScheduleAssignment {
+  id: string;
+  userId: string;
+  dayOfWeek: number;
+  customStartTime?: string;
+  customEndTime?: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  template: {
+    id: string;
+    name: string;
+    shifts: Array<{
+      startTime: string;
+      endTime: string;
+      role: string;
+    }>;
+  };
+}
+
 export default function ShiftPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -51,6 +85,18 @@ export default function ShiftPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [workType, setWorkType] = useState("");
+  const [scheduleAssignments, setScheduleAssignments] = useState<
+    ScheduleAssignment[]
+  >([]);
+  const [showWorkPatterns, setShowWorkPatterns] = useState(false);
+  const [showQuickAssign, setShowQuickAssign] = useState(false);
+  const [quickAssignData, setQuickAssignData] = useState({
+    userId: "",
+    workDays: [] as number[],
+    startTime: "09:00",
+    endTime: "17:00",
+    role: "Standaard Werkdag",
+  });
 
   const [shiftData, setShiftData] = useState({
     userId: "",
@@ -91,6 +137,8 @@ export default function ShiftPage() {
     if (isEditing && shiftId) {
       fetchShiftData(shiftId);
     }
+
+    fetchScheduleAssignments();
   }, [session, shiftId, isEditing, router]);
 
   const fetchUsers = async () => {
@@ -147,6 +195,18 @@ export default function ShiftPage() {
       }
     } catch (error) {
       console.error("Error fetching shift data:", error);
+    }
+  };
+
+  const fetchScheduleAssignments = async () => {
+    try {
+      const response = await fetch("/api/user-schedule-assignments");
+      if (response.ok) {
+        const data = await response.json();
+        setScheduleAssignments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching schedule assignments:", error);
     }
   };
 
@@ -281,10 +341,124 @@ export default function ShiftPage() {
   };
 
   const getTotalBreakDuration = () => {
-    return breaks.reduce(
-      (total, breakItem) => total + (breakItem.duration || 0),
-      0
+    return breaks.reduce((total, breakItem) => {
+      const start = new Date(`2024-01-01T${breakItem.startTime}`);
+      const end = new Date(`2024-01-01T${breakItem.endTime}`);
+      return total + (end.getTime() - start.getTime()) / (1000 * 60);
+    }, 0);
+  };
+
+  const DAYS_OF_WEEK = [
+    { value: 1, label: "Ma", fullLabel: "Maandag" },
+    { value: 2, label: "Di", fullLabel: "Dinsdag" },
+    { value: 3, label: "Wo", fullLabel: "Woensdag" },
+    { value: 4, label: "Do", fullLabel: "Donderdag" },
+    { value: 5, label: "Vr", fullLabel: "Vrijdag" },
+    { value: 6, label: "Za", fullLabel: "Zaterdag" },
+    { value: 0, label: "Zo", fullLabel: "Zondag" },
+  ];
+
+  const getWorkPatternsForDate = () => {
+    const selectedDate = new Date(shiftData.date);
+    const dayOfWeek = selectedDate.getDay();
+
+    return scheduleAssignments.filter(
+      (assignment) => assignment.dayOfWeek === dayOfWeek
     );
+  };
+
+  const handleQuickAssignSubmit = async () => {
+    const { userId, workDays, startTime, endTime, role } = quickAssignData;
+
+    if (!userId || workDays.length === 0) {
+      alert("Selecteer een medewerker en minimaal één werkdag");
+      return;
+    }
+
+    // Create a basic template first (if needed)
+    const templateData = {
+      name: `${users.find((u) => u.id === userId)?.name} - ${role}`,
+      description: `Werkpatroon voor ${DAYS_OF_WEEK.filter((d) =>
+        workDays.includes(d.value)
+      )
+        .map((d) => d.label)
+        .join(", ")}`,
+      category: "WEEKLY",
+      shifts: [
+        {
+          role,
+          startTime,
+          endTime,
+          count: 1,
+          requirements: [],
+        },
+      ],
+    };
+
+    try {
+      // Create template
+      const templateResponse = await fetch("/api/schedule-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(templateData),
+      });
+
+      if (!templateResponse.ok) {
+        throw new Error("Failed to create template");
+      }
+
+      const template = await templateResponse.json();
+
+      // Create assignments for each selected day
+      for (const dayOfWeek of workDays) {
+        const assignmentData = {
+          userId,
+          templateId: template.id,
+          dayOfWeek,
+          customStartTime: startTime,
+          customEndTime: endTime,
+          notes: `Automatisch aangemaakt werkpatroon`,
+        };
+
+        const assignmentResponse = await fetch(
+          "/api/user-schedule-assignments",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(assignmentData),
+          }
+        );
+
+        if (!assignmentResponse.ok) {
+          console.error(`Failed to create assignment for day ${dayOfWeek}`);
+        }
+      }
+
+      // Refresh assignments
+      fetchScheduleAssignments();
+      setShowQuickAssign(false);
+      setQuickAssignData({
+        userId: "",
+        workDays: [],
+        startTime: "09:00",
+        endTime: "17:00",
+        role: "Standaard Werkdag",
+      });
+
+      alert("Werkpatroon succesvol aangemaakt!");
+    } catch (error) {
+      console.error("Error creating work pattern:", error);
+      alert("Error bij het aanmaken van werkpatroon");
+    }
+  };
+
+  const toggleWorkDay = (dayValue: number) => {
+    setQuickAssignData((prev) => ({
+      ...prev,
+      workDays: prev.workDays.includes(dayValue)
+        ? prev.workDays.filter((d) => d !== dayValue)
+        : [...prev.workDays, dayValue].sort(),
+    }));
   };
 
   if (!session) {
@@ -503,6 +677,124 @@ export default function ShiftPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Selecteer eerst een medewerker om werkzaamheden te kunnen
                   kiezen
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Werkpatronen Section */}
+        <Card
+          variant="glass"
+          padding="lg"
+          className="border-indigo-200 dark:border-indigo-800"
+        >
+          <CardHeader>
+            <CardTitle
+              size="lg"
+              className="flex items-center justify-between text-indigo-700 dark:text-indigo-300"
+            >
+              <div className="flex items-center">
+                <CalendarDaysIcon className="h-5 w-5 mr-3" />
+                📋 Werkpatronen voor deze dag
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowQuickAssign(true)}
+                leftIcon={<PlusIcon className="h-4 w-4" />}
+              >
+                Werkpatroon instellen
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {getWorkPatternsForDate().length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Medewerkers met vaste werkpatronen voor{" "}
+                  {
+                    DAYS_OF_WEEK.find(
+                      (d) => d.value === new Date(shiftData.date).getDay()
+                    )?.fullLabel
+                  }
+                  :
+                </p>
+                {getWorkPatternsForDate().map((assignment) => (
+                  <div
+                    key={assignment.id}
+                    className="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-700"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+                        <UserIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {assignment.user.name}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {assignment.customStartTime ||
+                            assignment.template.shifts[0]?.startTime ||
+                            "??:??"}
+                          {" - "}
+                          {assignment.customEndTime ||
+                            assignment.template.shifts[0]?.endTime ||
+                            "??:??"}
+                          {" • "}
+                          {assignment.template.shifts[0]?.role ||
+                            "Standaard werk"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShiftData((prev) => ({
+                            ...prev,
+                            userId: assignment.userId,
+                            startTime:
+                              assignment.customStartTime ||
+                              assignment.template.shifts[0]?.startTime ||
+                              "09:00",
+                            endTime:
+                              assignment.customEndTime ||
+                              assignment.template.shifts[0]?.endTime ||
+                              "17:00",
+                            role:
+                              assignment.template.shifts[0]?.role ||
+                              "Standaard werk",
+                          }));
+                          setWorkType(
+                            assignment.template.shifts[0]?.role || ""
+                          );
+                        }}
+                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                      >
+                        Gebruik patroon
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <CalendarDaysIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 mb-2">
+                  Geen vaste werkpatronen voor{" "}
+                  {
+                    DAYS_OF_WEEK.find(
+                      (d) => d.value === new Date(shiftData.date).getDay()
+                    )?.fullLabel
+                  }
+                </p>
+                <p className="text-xs text-gray-400">
+                  Klik op "Werkpatroon instellen" om een vaste planning aan te
+                  maken
                 </p>
               </div>
             )}
@@ -899,6 +1191,225 @@ export default function ShiftPage() {
           </div>
         </Card>
       </form>
+
+      {/* Quick Assign Work Pattern Modal */}
+      {showQuickAssign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                  <CalendarDaysIcon className="h-6 w-6 mr-3 text-indigo-600" />
+                  Werkpatroon instellen
+                </h3>
+                <button
+                  onClick={() => setShowQuickAssign(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Stel vaste werkdagen en tijden in voor een medewerker
+              </p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Employee Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Medewerker *
+                </label>
+                <select
+                  value={quickAssignData.userId}
+                  onChange={(e) =>
+                    setQuickAssignData((prev) => ({
+                      ...prev,
+                      userId: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                >
+                  <option value="">Selecteer medewerker</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Work Days Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Werkdagen *
+                </label>
+                <div className="grid grid-cols-7 gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => toggleWorkDay(day.value)}
+                      className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-200 ${
+                        quickAssignData.workDays.includes(day.value)
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-400"
+                          : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500"
+                      }`}
+                    >
+                      <div className="text-center">
+                        <div
+                          className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
+                            quickAssignData.workDays.includes(day.value)
+                              ? "bg-indigo-100 dark:bg-indigo-800"
+                              : "bg-gray-100 dark:bg-gray-700"
+                          }`}
+                        >
+                          {quickAssignData.workDays.includes(day.value) ? (
+                            <CheckIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                          ) : (
+                            <span className="text-xs font-bold">
+                              {day.label}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs">{day.label}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Selecteer de dagen waarop deze medewerker standaard werkt
+                </p>
+              </div>
+
+              {/* Time Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Start tijd *
+                  </label>
+                  <input
+                    type="time"
+                    value={quickAssignData.startTime}
+                    onChange={(e) =>
+                      setQuickAssignData((prev) => ({
+                        ...prev,
+                        startTime: e.target.value,
+                      }))
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Eind tijd *
+                  </label>
+                  <input
+                    type="time"
+                    value={quickAssignData.endTime}
+                    onChange={(e) =>
+                      setQuickAssignData((prev) => ({
+                        ...prev,
+                        endTime: e.target.value,
+                      }))
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Role/Function */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Functie/Rol *
+                </label>
+                <input
+                  type="text"
+                  value={quickAssignData.role}
+                  onChange={(e) =>
+                    setQuickAssignData((prev) => ({
+                      ...prev,
+                      role: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Bijv. Standaard Werkdag, Schoonmaak, etc."
+                  required
+                />
+              </div>
+
+              {/* Preview */}
+              {quickAssignData.userId &&
+                quickAssignData.workDays.length > 0 && (
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
+                    <h4 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">
+                      📋 Voorvertoning werkpatroon:
+                    </h4>
+                    <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                      <strong>
+                        {
+                          users.find((u) => u.id === quickAssignData.userId)
+                            ?.name
+                        }
+                      </strong>{" "}
+                      werkt{" "}
+                      <strong>
+                        {quickAssignData.workDays.length} dagen per week
+                      </strong>
+                      :
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {quickAssignData.workDays.sort().map((dayValue) => (
+                        <span
+                          key={dayValue}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100"
+                        >
+                          {
+                            DAYS_OF_WEEK.find((d) => d.value === dayValue)
+                              ?.fullLabel
+                          }
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-2">
+                      Tijden:{" "}
+                      <strong>
+                        {quickAssignData.startTime} - {quickAssignData.endTime}
+                      </strong>{" "}
+                      • Functie: <strong>{quickAssignData.role}</strong>
+                    </p>
+                  </div>
+                )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowQuickAssign(false)}
+              >
+                Annuleren
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleQuickAssignSubmit}
+                disabled={
+                  !quickAssignData.userId ||
+                  quickAssignData.workDays.length === 0
+                }
+                leftIcon={<CheckIcon className="h-4 w-4" />}
+              >
+                Werkpatroon aanmaken
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
