@@ -29,6 +29,8 @@ import {
   ArrowPathIcon,
   PauseIcon,
   PlayIcon,
+  DocumentArrowDownIcon,
+  TableCellsIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { format, addDays, subDays } from "date-fns";
@@ -48,6 +50,7 @@ import Timeline from "@/components/ui/Timeline";
 import AutoScheduleGenerator from "@/components/schedule/AutoScheduleGenerator";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 import { useConfirm } from "@/hooks/useConfirm";
+import { ExportUtils } from "@/utils/exportUtils";
 
 interface User {
   id: string;
@@ -560,6 +563,51 @@ export default function SchedulePage() {
     }, 0);
   };
 
+  // Export functions
+  const handleExportPDF = async () => {
+    if (!schedule?.shifts || schedule.shifts.length === 0) {
+      alert("Geen diensten om te exporteren");
+      return;
+    }
+
+    try {
+      await ExportUtils.exportScheduleToPDF(schedule.shifts, selectedDate, {
+        title: `Rooster ${format(new Date(selectedDate), "dd MMMM yyyy", {
+          locale: nl,
+        })}`,
+        companyName: "JobFlow Solutions",
+        includeBreaks: true,
+        includeNotes: true,
+        includeMetadata: true,
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      alert("PDF export mislukt");
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!schedule?.shifts || schedule.shifts.length === 0) {
+      alert("Geen diensten om te exporteren");
+      return;
+    }
+
+    try {
+      ExportUtils.exportScheduleToExcel(schedule.shifts, selectedDate, {
+        title: `Rooster ${format(new Date(selectedDate), "dd MMMM yyyy", {
+          locale: nl,
+        })}`,
+        companyName: "JobFlow Solutions",
+        includeBreaks: true,
+        includeNotes: true,
+        includeMetadata: true,
+      });
+    } catch (error) {
+      console.error("Excel export error:", error);
+      alert("Excel export mislukt");
+    }
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -603,6 +651,48 @@ export default function SchedulePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Export buttons - show for admin/manager when there are shifts */}
+            {(session?.user?.role === "ADMIN" ||
+              session?.user?.role === "MANAGER") &&
+              schedule?.shifts &&
+              schedule.shifts.length > 0 && (
+                <>
+                  <Tooltip
+                    content="Exporteer rooster als PDF rapport"
+                    placement="top"
+                  >
+                    <Button
+                      onClick={handleExportPDF}
+                      leftIcon={<DocumentArrowDownIcon className="h-4 w-4" />}
+                      variant="outline"
+                      size="md"
+                      elevation="soft"
+                      className="flex-1 sm:flex-none whitespace-nowrap"
+                    >
+                      <span className="hidden sm:inline">PDF</span>
+                      <span className="sm:hidden">📄</span>
+                    </Button>
+                  </Tooltip>
+
+                  <Tooltip
+                    content="Exporteer rooster als Excel bestand"
+                    placement="top"
+                  >
+                    <Button
+                      onClick={handleExportExcel}
+                      leftIcon={<TableCellsIcon className="h-4 w-4" />}
+                      variant="outline"
+                      size="md"
+                      elevation="soft"
+                      className="flex-1 sm:flex-none whitespace-nowrap"
+                    >
+                      <span className="hidden sm:inline">Excel</span>
+                      <span className="sm:hidden">📊</span>
+                    </Button>
+                  </Tooltip>
+                </>
+              )}
+
             {/* Auto-generate button - only show for admin/manager */}
             {(session?.user?.role === "ADMIN" ||
               session?.user?.role === "MANAGER") && (

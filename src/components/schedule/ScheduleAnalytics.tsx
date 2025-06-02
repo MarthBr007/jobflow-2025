@@ -10,6 +10,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import TrendAnalysis from "@/components/analytics/TrendAnalysis";
 
 interface ScheduleShift {
   id: string;
@@ -441,6 +442,11 @@ export default function ScheduleAnalytics({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Trend Analysis Section */}
+      <div className="mt-8">
+        <TrendAnalysis />
       </div>
     </div>
   );
