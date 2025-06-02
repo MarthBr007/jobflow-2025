@@ -21,6 +21,7 @@ import Card from "@/components/ui/Card";
 import PermissionGuard from "@/components/ui/PermissionGuard";
 import Toast from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function CompanySettings() {
   return (
@@ -110,9 +111,13 @@ function CompanySettingsContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-32 h-32 border-b-2 border-indigo-600 rounded-full animate-spin"></div>
-      </div>
+      <LoadingSpinner
+        size="lg"
+        variant="bars"
+        message="Bedrijfsinstellingen laden..."
+        description="Configuratiegegevens worden opgehaald en gevalideerd"
+        centerInParent={true}
+      />
     );
   }
 

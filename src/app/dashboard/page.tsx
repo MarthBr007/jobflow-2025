@@ -34,6 +34,8 @@ import Tooltip from "@/components/ui/Tooltip";
 import SpeedDial from "@/components/ui/SpeedDial";
 import Timeline from "@/components/ui/Timeline";
 import ContractViewer from "@/components/ui/ContractViewer";
+import ActivityFeed, { ActivityItem } from "@/components/ui/ActivityFeed";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface TimeEntry {
   id: string;
@@ -90,6 +92,52 @@ export default function Dashboard() {
     };
   } | null>(null);
   const [showContractViewer, setShowContractViewer] = useState(false);
+
+  // Sample activities for the enhanced feed
+  const sampleActivities: ActivityItem[] = [
+    {
+      id: "1",
+      type: "schedule",
+      action: "heeft het rooster bijgewerkt voor",
+      target: "Week 6, 2025",
+      user: { name: "Manager", role: "MANAGER" },
+      description: "Nieuwe werknemers toegevoegd en tijden aangepast",
+      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      priority: "medium",
+      metadata: { changes: 3, affected_employees: 5 },
+    },
+    {
+      id: "2",
+      type: "contract",
+      action: "heeft een nieuw contract ondertekend",
+      user: {
+        name: session?.user?.name || "Medewerker",
+        role: session?.user?.role || "EMPLOYEE",
+      },
+      description: "Arbeidsovereenkomst voor onbepaalde tijd geactiveerd",
+      timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+      priority: "high",
+    },
+    {
+      id: "3",
+      type: "success",
+      action: "heeft zich ingeklokt om",
+      target: "09:00",
+      user: { name: "Quincy Bakker", role: "EMPLOYEE" },
+      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      metadata: { location: "Hoofdkantoor" },
+    },
+    {
+      id: "4",
+      type: "project",
+      action: "heeft project voltooid:",
+      target: "Website Redesign Q1",
+      user: { name: "Sarah de Vries", role: "FREELANCER" },
+      description: "Alle deliverables zijn opgeleverd en goedgekeurd",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      priority: "high",
+    },
+  ];
 
   // Update current time every second
   useEffect(() => {
@@ -367,15 +415,13 @@ export default function Dashboard() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-xl"
-        >
-          Loading...
-        </motion.div>
-      </div>
+      <LoadingSpinner
+        size="xl"
+        variant="dots"
+        message="Dashboard laden..."
+        description="We bereiden je persoonlijke overzicht voor"
+        overlay={true}
+      />
     );
   }
 
@@ -1005,204 +1051,24 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent Activity */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
-            Recente Activiteit
-          </h3>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Laatste updates en wijzigingen in het systeem
-          </p>
-        </div>
-        <div className="p-4 sm:p-6">
-          <div className="space-y-2.5 sm:space-y-4">
-            <AnimatePresence>
-              {session.user.role === "ADMIN" ||
-              session.user.role === "MANAGER" ? (
-                // Admin/Manager activities
-                <>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="bg-blue-100 dark:bg-blue-900/20 rounded-xl p-2">
-                        <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                        Nieuwe diensten ingepland
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        3 diensten toegevoegd voor deze week
-                      </p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="bg-green-100 dark:bg-green-900/20 rounded-xl p-2">
-                        <ClipboardDocumentListIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                        Project status bijgewerkt
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        2 projecten gemarkeerd als voltooid
-                      </p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="bg-purple-100 dark:bg-purple-900/20 rounded-xl p-2">
-                        <UserGroupIcon className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                        Beschikbaarheid bijgewerkt
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        5 medewerkers hebben hun planning aangepast
-                      </p>
-                    </div>
-                  </motion.div>
-                </>
-              ) : (
-                // Employee/Freelancer activities
-                <>
-                  {/* Contract-related activities */}
-                  {contractInfo?.hasContract && contractInfo.latestContract && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
-                    >
-                      <div className="flex-shrink-0">
-                        <div className="bg-green-100 dark:bg-green-900/20 rounded-xl p-2">
-                          {contractInfo.latestContract.status === "ACTIVE" ? (
-                            <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
-                          ) : contractInfo.latestContract.status ===
-                            "PENDING_SIGNATURE" ? (
-                            <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400" />
-                          ) : (
-                            <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {contractInfo.latestContract.status === "ACTIVE"
-                            ? "Contract actief"
-                            : contractInfo.latestContract.status ===
-                              "PENDING_SIGNATURE"
-                            ? "Contract wacht op ondertekening"
-                            : "Contract status bijgewerkt"}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {contractInfo.latestContract.title}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowContractViewer(true)}
-                        className="flex-shrink-0 touch-manipulation"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                  )}
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="bg-blue-100 dark:bg-blue-900/20 rounded-xl p-2">
-                        <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                        Tijdsregistratie bijgewerkt
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {clockState.isClocked
-                          ? "Momenteel ingeklokt"
-                          : "Laatste sessie: 8.5 uur"}
-                      </p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="bg-green-100 dark:bg-green-900/20 rounded-xl p-2">
-                        <ClipboardDocumentListIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                        Nieuwe projecten beschikbaar
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {dashboardStats.availableProjects} nieuwe klussen om
-                        interesse voor te tonen
-                      </p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl touch-manipulation"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="bg-orange-100 dark:bg-orange-900/20 rounded-xl p-2">
-                        <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                        Beschikbaarheid ingesteld
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        Planning bijgewerkt voor komende week
-                      </p>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
+      {/* Enhanced Activity Feed */}
+      <ActivityFeed
+        activities={sampleActivities}
+        title="🚀 Live Activiteit"
+        showTimestamps={true}
+        showAvatars={true}
+        maxItems={6}
+        loading={false}
+        onItemClick={(activity) => {
+          // Handle activity click - could navigate to relevant page
+          if (activity.link) {
+            router.push(activity.link);
+          }
+        }}
+        className="shadow-sm"
+        compact={false}
+        realTime={true}
+      />
 
       {/* Speed Dial for Quick Actions */}
       {session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER" ? (

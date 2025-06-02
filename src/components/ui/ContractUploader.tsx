@@ -360,7 +360,7 @@ export default function ContractUploader({
             loading={uploading}
             leftIcon={<CloudArrowUpIcon className="h-5 w-5" />}
           >
-            {uploading ? "Contract Uploaden..." : "Contract Uploaden"}
+            {uploading ? "Contract wordt verwerkt..." : "Contract Uploaden"}
           </Button>
         </div>
       </div>

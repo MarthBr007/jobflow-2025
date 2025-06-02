@@ -21,6 +21,7 @@ import PermissionGuard from "@/components/ui/PermissionGuard";
 import Toast from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { useConfirm } from "@/hooks/useConfirm";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface LeaveRequest {
   id: string;
@@ -260,15 +261,13 @@ export default function LeaveRequests() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-xl"
-        >
-          Loading...
-        </motion.div>
-      </div>
+      <LoadingSpinner
+        size="xl"
+        variant="pulse"
+        message="Verlofaanvragen laden..."
+        description="We controleren je verlofhistorie en openstaande aanvragen"
+        overlay={true}
+      />
     );
   }
 

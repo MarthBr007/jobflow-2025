@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import Toast from "./Toast";
 import { useToast } from "@/hooks/useToast";
+import LoadingSpinner from "./LoadingSpinner";
 
 interface Contract {
   id: string;
@@ -695,12 +696,13 @@ export default function ContractManagement({
 
           {/* Contracts List */}
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Contracten laden...
-              </p>
-            </div>
+            <LoadingSpinner
+              size="lg"
+              variant="default"
+              message="Contracten laden..."
+              description="Even geduld terwijl we je contractgegevens ophalen"
+              centerInParent={true}
+            />
           ) : contracts.length === 0 ? (
             <div className="text-center py-8">
               <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
