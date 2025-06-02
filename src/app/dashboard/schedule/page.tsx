@@ -640,112 +640,82 @@ export default function SchedulePage() {
 
       {/* Header */}
       <Card variant="elevated" padding="lg" className="mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
               📅 Rooster Beheer
             </h1>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 sm:mt-2">
               Plan en beheer werkdiensten voor je team
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {/* Export buttons - show for admin/manager when there are shifts */}
+          <div className="button-group button-group-mobile-row">
+            {/* Export buttons - show for admin/manager when shifts exist */}
             {(session?.user?.role === "ADMIN" ||
               session?.user?.role === "MANAGER") &&
               schedule?.shifts &&
               schedule.shifts.length > 0 && (
                 <>
-                  <Tooltip
-                    content="Exporteer rooster als PDF rapport"
-                    placement="top"
+                  <Button
+                    onClick={handleExportPDF}
+                    variant="outline"
+                    size="md"
+                    leftIcon={
+                      <DocumentArrowDownIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    }
+                    className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20 touch-target-sm"
+                    title="Exporteer als PDF"
                   >
-                    <Button
-                      onClick={handleExportPDF}
-                      leftIcon={<DocumentArrowDownIcon className="h-4 w-4" />}
-                      variant="outline"
-                      size="md"
-                      elevation="soft"
-                      className="flex-1 sm:flex-none whitespace-nowrap"
-                    >
-                      <span className="hidden sm:inline">PDF</span>
-                      <span className="sm:hidden">📄</span>
-                    </Button>
-                  </Tooltip>
-
-                  <Tooltip
-                    content="Exporteer rooster als Excel bestand"
-                    placement="top"
+                    <span className="sm:hidden">PDF</span>
+                    <span className="hidden sm:inline">PDF Export</span>
+                  </Button>
+                  <Button
+                    onClick={handleExportExcel}
+                    variant="outline"
+                    size="md"
+                    leftIcon={
+                      <TableCellsIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    }
+                    className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20 touch-target-sm"
+                    title="Exporteer als Excel"
                   >
-                    <Button
-                      onClick={handleExportExcel}
-                      leftIcon={<TableCellsIcon className="h-4 w-4" />}
-                      variant="outline"
-                      size="md"
-                      elevation="soft"
-                      className="flex-1 sm:flex-none whitespace-nowrap"
-                    >
-                      <span className="hidden sm:inline">Excel</span>
-                      <span className="sm:hidden">📊</span>
-                    </Button>
-                  </Tooltip>
+                    <span className="sm:hidden">Excel</span>
+                    <span className="hidden sm:inline">Excel Export</span>
+                  </Button>
                 </>
               )}
 
             {/* Auto-generate button - only show for admin/manager */}
             {(session?.user?.role === "ADMIN" ||
               session?.user?.role === "MANAGER") && (
-              <Tooltip
-                content="Genereer roosters automatisch op basis van vaste patronen"
-                placement="top"
+              <Button
+                onClick={() => setShowAutoGenerateModal(true)}
+                variant="outline"
+                size="md"
+                leftIcon={<SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 touch-target-sm"
               >
-                <Button
-                  onClick={() => setShowAutoGenerateModal(true)}
-                  leftIcon={<SparklesIcon className="h-4 w-4" />}
-                  variant="secondary"
-                  size="md"
-                  elevation="medium"
-                  className="flex-1 sm:flex-none whitespace-nowrap"
-                >
-                  <span className="hidden sm:inline">Auto Rooster</span>
-                  <span className="sm:hidden">Auto</span>
-                </Button>
-              </Tooltip>
+                <span className="sm:hidden">Auto</span>
+                <span className="hidden sm:inline">Auto Genereren</span>
+              </Button>
             )}
 
             {/* Add shift button - only show for admin/manager */}
             {(session?.user?.role === "ADMIN" ||
               session?.user?.role === "MANAGER") && (
-              <Tooltip
-                content="Voeg een nieuwe dienst toe aan het rooster"
-                placement="top"
+              <Button
+                onClick={() =>
+                  router.push(`/dashboard/schedule/shift?date=${selectedDate}`)
+                }
+                variant="primary"
+                size="md"
+                leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                className="touch-target-sm"
               >
-                <Button
-                  onClick={() => {
-                    router.push(
-                      `/dashboard/schedule/shift?date=${selectedDate}`
-                    );
-                  }}
-                  leftIcon={<PlusIcon className="h-4 w-4" />}
-                  variant="primary"
-                  size="md"
-                  elevation="medium"
-                  className="flex-1 sm:flex-none whitespace-nowrap"
-                >
-                  <span className="hidden sm:inline">Nieuwe Dienst</span>
-                  <span className="sm:hidden">Nieuw</span>
-                </Button>
-              </Tooltip>
-            )}
-
-            {/* Employee view - just shows their info */}
-            {(session?.user?.role === "EMPLOYEE" ||
-              session?.user?.role === "FREELANCER") && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <UserIcon className="h-4 w-4" />
-                <span>Mijn diensten voor deze dag</span>
-              </div>
+                <span className="sm:hidden">Nieuw</span>
+                <span className="hidden sm:inline">Nieuwe Dienst</span>
+              </Button>
             )}
           </div>
         </div>
@@ -753,67 +723,77 @@ export default function SchedulePage() {
 
       {/* View Switcher Tabs */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex space-x-8">
-            {[
-              {
-                key: "day",
-                label: "Dag Overzicht",
-                icon: CalendarIcon,
-                roles: ["ADMIN", "MANAGER", "EMPLOYEE", "FREELANCER"],
-              },
-              {
-                key: "week",
-                label: "Week Overzicht",
-                icon: CalendarDaysIcon,
-                roles: ["ADMIN", "MANAGER"],
-              },
-              {
-                key: "analytics",
-                label: "Analytics",
-                icon: ChartBarIcon,
-                roles: ["ADMIN", "MANAGER"],
-              },
-              {
-                key: "templates",
-                label: "Templates",
-                icon: BookmarkIcon,
-                roles: ["ADMIN", "MANAGER"],
-              },
-              {
-                key: "mySchedule",
-                label: "Mijn Rooster",
-                icon: ListBulletIcon,
-                roles: ["EMPLOYEE", "FREELANCER"],
-              },
-            ]
-              .filter((tab) => tab.roles.includes(session?.user?.role || ""))
-              .map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setCurrentView(tab.key as any)}
-                  className={`${
-                    currentView === tab.key
-                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
-                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center space-x-2`}
-                >
-                  <tab.icon className="h-5 w-5" />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 sm:px-6 sm:py-4">
+          <nav className="flex overflow-x-auto scrollbar-hide -mb-px">
+            <div className="flex space-x-6 sm:space-x-8 min-w-max">
+              {[
+                {
+                  key: "day",
+                  label: "Dag",
+                  fullLabel: "Dag Overzicht",
+                  icon: CalendarIcon,
+                  roles: ["ADMIN", "MANAGER", "EMPLOYEE", "FREELANCER"],
+                },
+                {
+                  key: "week",
+                  label: "Week",
+                  fullLabel: "Week Overzicht",
+                  icon: CalendarDaysIcon,
+                  roles: ["ADMIN", "MANAGER"],
+                },
+                {
+                  key: "analytics",
+                  label: "Data",
+                  fullLabel: "Analytics",
+                  icon: ChartBarIcon,
+                  roles: ["ADMIN", "MANAGER"],
+                },
+                {
+                  key: "templates",
+                  label: "Templates",
+                  fullLabel: "Templates",
+                  icon: BookmarkIcon,
+                  roles: ["ADMIN", "MANAGER"],
+                },
+                {
+                  key: "mySchedule",
+                  label: "Mijn",
+                  fullLabel: "Mijn Rooster",
+                  icon: ListBulletIcon,
+                  roles: ["EMPLOYEE", "FREELANCER"],
+                },
+              ]
+                .filter((tab) => tab.roles.includes(session?.user?.role || ""))
+                .map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setCurrentView(tab.key as any)}
+                    className={`${
+                      currentView === tab.key
+                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
+                    } whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm transition-colors duration-200 flex flex-col items-center space-y-1 sm:flex-row sm:space-y-0 sm:space-x-2 min-w-[80px] sm:min-w-0`}
+                  >
+                    <tab.icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">
+                      <span className="sm:hidden">{tab.label}</span>
+                      <span className="hidden sm:inline">{tab.fullLabel}</span>
+                    </span>
+                  </button>
+                ))}
+            </div>
           </nav>
         </div>
 
         {/* View Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {currentView === "day" && (
             <>
               {/* Date Navigation - only show for day view */}
               <Card variant="glass" padding="md" className="mb-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-center sm:text-left">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white sm:text-xl">
                       {format(new Date(selectedDate), "EEEE d MMMM yyyy", {
                         locale: nl,
                       })}
@@ -828,11 +808,11 @@ export default function SchedulePage() {
                       <Button
                         onClick={() => navigateDate("prev")}
                         variant="outline"
-                        size="sm"
-                        leftIcon={<ChevronLeftIcon className="h-4 w-4" />}
+                        size="md"
+                        leftIcon={<ChevronLeftIcon className="h-5 w-5" />}
                         elevation="soft"
                         rounded="lg"
-                        className="min-w-[100px]"
+                        className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
                       >
                         <span className="hidden sm:inline">Vorige</span>
                         <span className="sm:hidden">◀</span>
@@ -847,10 +827,10 @@ export default function SchedulePage() {
                           )
                         }
                         variant="secondary"
-                        size="sm"
+                        size="md"
                         elevation="soft"
                         rounded="lg"
-                        className="min-w-[80px] font-medium"
+                        className="min-w-[80px] min-h-[44px] font-medium"
                       >
                         Vandaag
                       </Button>
@@ -860,11 +840,11 @@ export default function SchedulePage() {
                       <Button
                         onClick={() => navigateDate("next")}
                         variant="outline"
-                        size="sm"
-                        rightIcon={<ChevronRightIcon className="h-4 w-4" />}
+                        size="md"
+                        rightIcon={<ChevronRightIcon className="h-5 w-5" />}
                         elevation="soft"
                         rounded="lg"
-                        className="min-w-[100px]"
+                        className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
                       >
                         <span className="hidden sm:inline">Volgende</span>
                         <span className="sm:hidden">▶</span>
@@ -878,7 +858,7 @@ export default function SchedulePage() {
               {schedule && schedule.shifts.length > 0 ? (
                 <div className="space-y-6">
                   {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 mb-6">
                     <MetricCard
                       title="Totaal Diensten"
                       value={schedule.shifts.length}
@@ -1299,10 +1279,10 @@ export default function SchedulePage() {
                                 </div>
 
                                 {/* Action buttons */}
-                                <div className="flex-shrink-0">
+                                <div className="flex-shrink-0 mt-4 sm:mt-0">
                                   {(session?.user?.role === "ADMIN" ||
                                     session?.user?.role === "MANAGER") && (
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                       <Tooltip
                                         content="Bewerk deze dienst"
                                         placement="top"
@@ -1318,7 +1298,7 @@ export default function SchedulePage() {
                                           leftIcon={
                                             <PencilIcon className="w-4 h-4" />
                                           }
-                                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+                                          className="w-full min-h-[40px] sm:w-auto text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
                                         >
                                           Bewerken
                                         </Button>
@@ -1337,7 +1317,7 @@ export default function SchedulePage() {
                                           leftIcon={
                                             <TrashIcon className="w-4 h-4" />
                                           }
-                                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                                          className="w-full min-h-[40px] sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                                         >
                                           Verwijderen
                                         </Button>
@@ -1347,7 +1327,7 @@ export default function SchedulePage() {
 
                                   {(session?.user?.role === "EMPLOYEE" ||
                                     session?.user?.role === "FREELANCER") && (
-                                    <div className="flex items-center gap-2 text-sm">
+                                    <div className="flex items-center justify-center gap-2 text-sm bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
                                       <div className="text-gray-500 dark:text-gray-400 text-xs">
                                         📋 Alleen-lezen
                                       </div>
@@ -1488,14 +1468,14 @@ export default function SchedulePage() {
 
                   {/* No shifts message */}
                   <Card variant="default" padding="xl" className="text-center">
-                    <div className="py-12">
-                      <div className="mx-auto h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mb-6">
-                        <CalendarIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    <div className="py-8 sm:py-12">
+                      <div className="mx-auto h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mb-4 sm:mb-6">
+                        <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                         Geen diensten gepland
                       </h3>
-                      <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                      <p className="text-gray-500 dark:text-gray-400 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">
                         Er zijn nog geen diensten gepland voor{" "}
                         {format(new Date(selectedDate), "EEEE d MMMM", {
                           locale: nl,
@@ -1525,7 +1505,7 @@ export default function SchedulePage() {
                             size="lg"
                             elevation="medium"
                             rounded="xl"
-                            className="shadow-lg"
+                            className="shadow-lg min-h-[48px] w-full sm:w-auto"
                           >
                             Eerste Dienst Toevoegen
                           </Button>
@@ -1536,7 +1516,7 @@ export default function SchedulePage() {
                       {(session?.user?.role === "EMPLOYEE" ||
                         session?.user?.role === "FREELANCER") && (
                         <div className="text-center">
-                          <div className="text-gray-400 dark:text-gray-500">
+                          <div className="text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
                             👤 Je hebt nog geen diensten voor deze dag
                           </div>
                         </div>
@@ -1835,7 +1815,7 @@ export default function SchedulePage() {
               </div>
 
               {/* Quick Navigation for Employees */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                   🔍 Andere Dagen Bekijken
                 </h3>
@@ -1844,24 +1824,24 @@ export default function SchedulePage() {
                     <Button
                       onClick={() => navigateDate("prev")}
                       variant="outline"
-                      size="sm"
-                      leftIcon={<ChevronLeftIcon className="h-4 w-4" />}
+                      size="md"
+                      leftIcon={<ChevronLeftIcon className="h-5 w-5" />}
                       elevation="soft"
                       rounded="lg"
-                      className="min-w-[100px]"
+                      className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
                     >
                       <span className="hidden sm:inline">Vorige</span>
                       <span className="sm:hidden">◀</span>
                     </Button>
                   </Tooltip>
 
-                  <div className="text-center px-4">
+                  <div className="text-center px-2 sm:px-4 flex-shrink-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {format(new Date(selectedDate), "EEEE d MMMM yyyy", {
+                      {format(new Date(selectedDate), "EEE d MMM", {
                         locale: nl,
                       })}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                       {leaveInfo.length} afwezig
                     </p>
                   </div>
@@ -1870,11 +1850,11 @@ export default function SchedulePage() {
                     <Button
                       onClick={() => navigateDate("next")}
                       variant="outline"
-                      size="sm"
-                      rightIcon={<ChevronRightIcon className="h-4 w-4" />}
+                      size="md"
+                      rightIcon={<ChevronRightIcon className="h-5 w-5" />}
                       elevation="soft"
                       rounded="lg"
-                      className="min-w-[100px]"
+                      className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
                     >
                       <span className="hidden sm:inline">Volgende</span>
                       <span className="sm:hidden">▶</span>
@@ -1888,10 +1868,10 @@ export default function SchedulePage() {
                       setSelectedDate(new Date().toISOString().split("T")[0])
                     }
                     variant="secondary"
-                    size="sm"
+                    size="md"
                     elevation="soft"
                     rounded="lg"
-                    className="font-medium"
+                    className="font-medium min-h-[44px] w-full sm:w-auto"
                   >
                     Vandaag
                   </Button>

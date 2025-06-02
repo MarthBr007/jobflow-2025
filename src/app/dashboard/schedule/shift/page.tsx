@@ -114,8 +114,9 @@ export default function ShiftPage() {
     Array<{
       startTime: string;
       endTime: string;
-      type: "morning" | "lunch" | "afternoon";
+      type: "morning" | "lunch" | "afternoon" | "break" | "meeting" | "other";
       duration?: number;
+      description?: string;
     }>
   >([]);
 
@@ -321,7 +322,18 @@ export default function ShiftPage() {
     } else if (field === "type") {
       updatedBreaks[index] = {
         ...updatedBreaks[index],
-        type: value as "morning" | "lunch" | "afternoon",
+        type: value as
+          | "morning"
+          | "lunch"
+          | "afternoon"
+          | "break"
+          | "meeting"
+          | "other",
+      };
+    } else if (field === "description") {
+      updatedBreaks[index] = {
+        ...updatedBreaks[index],
+        description: value,
       };
     }
     setBreaks(updatedBreaks);
@@ -335,17 +347,42 @@ export default function ShiftPage() {
         return "🍽️";
       case "afternoon":
         return "🫖";
+      case "break":
+        return "⏸️";
+      case "meeting":
+        return "🤝";
+      case "other":
+        return "📝";
       default:
         return "⏸️";
     }
   };
 
-  const getTotalBreakDuration = () => {
+  const getTotalBreakDuration = (): number => {
     return breaks.reduce((total, breakItem) => {
-      const start = new Date(`2024-01-01T${breakItem.startTime}`);
-      const end = new Date(`2024-01-01T${breakItem.endTime}`);
-      return total + (end.getTime() - start.getTime()) / (1000 * 60);
+      return total + (breakItem.duration || 0);
     }, 0);
+  };
+
+  const calculateBreakDuration = (
+    startTime: string,
+    endTime: string
+  ): string => {
+    if (!startTime || !endTime) return "0 min";
+
+    const start = new Date(`2000-01-01T${startTime}:00`);
+    const end = new Date(`2000-01-01T${endTime}:00`);
+    const diffMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+
+    if (diffMinutes < 0) return "0 min";
+
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours}u ${minutes > 0 ? `${minutes}m` : ""}`;
+    }
+    return `${minutes}m`;
   };
 
   const DAYS_OF_WEEK = [
@@ -876,15 +913,11 @@ export default function ShiftPage() {
         </Card>
 
         {/* Pauzes Section */}
-        <Card
-          variant="glass"
-          padding="lg"
-          className="border-cyan-200 dark:border-cyan-800"
-        >
+        <Card variant="elevated" className="container-query">
           <CardHeader>
             <CardTitle
               size="lg"
-              className="flex items-center justify-between text-cyan-700 dark:text-cyan-300"
+              className="flex-responsive justify-between text-cyan-700 dark:text-cyan-300"
             >
               <div className="flex items-center">
                 <ClockIcon className="h-5 w-5 mr-3" />
@@ -896,34 +929,30 @@ export default function ShiftPage() {
                 size="sm"
                 onClick={addBreak}
                 leftIcon={<PlusIcon className="h-4 w-4" />}
-                className="text-cyan-600 border-cyan-300 hover:bg-cyan-50 dark:text-cyan-400 dark:border-cyan-600 dark:hover:bg-cyan-900/20"
+                className="text-cyan-600 border-cyan-300 hover:bg-cyan-50 dark:text-cyan-400 dark:border-cyan-600 dark:hover:bg-cyan-900/20 w-full sm:w-auto"
               >
                 Pauze Toevoegen
               </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+
+          <CardContent className="space-fluid">
             {breaks.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="mx-auto h-12 w-12 rounded-full bg-cyan-100 dark:bg-cyan-900/20 flex items-center justify-center mb-4">
-                  <ClockIcon className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
-                </div>
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                  Geen pauzes gepland
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Voeg pauzes toe voor deze dienst (ochtendpauze, lunch,
-                  middagpauze)
+              <div className="card-adaptive text-center text-gray-500 dark:text-gray-400">
+                <ClockIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-fluid">Geen pauzes toegevoegd</p>
+                <p className="text-fluid text-sm">
+                  Klik op "Pauze Toevoegen" om te beginnen
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="auto-fit-grid">
                 {breaks.map((breakItem, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                    className="card-adaptive stack-context border border-gray-200 dark:border-gray-600"
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex-responsive justify-between mb-3">
                       <div className="flex items-center space-x-2">
                         <span className="text-lg">
                           {getBreakTypeEmoji(breakItem.type)}
@@ -933,26 +962,26 @@ export default function ShiftPage() {
                           onChange={(e) =>
                             updateBreak(index, "type", e.target.value)
                           }
-                          className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          className="text-fluid border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-w-0 flex-1"
                         >
-                          <option value="morning">Ochtendpauze</option>
-                          <option value="lunch">Lunchpauze</option>
-                          <option value="afternoon">Middagpauze</option>
+                          <option value="lunch">🍽️ Lunch</option>
+                          <option value="break">☕ Pauze</option>
+                          <option value="meeting">🤝 Overleg</option>
+                          <option value="other">📝 Anders</option>
                         </select>
                       </div>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => removeBreak(index)}
-                        leftIcon={<TrashIcon className="h-4 w-4" />}
-                        className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1"
                       >
-                        Verwijderen
+                        <TrashIcon className="h-4 w-4" />
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="responsive-grid">
                       <Input
                         label="Start Tijd"
                         type="time"
@@ -962,6 +991,7 @@ export default function ShiftPage() {
                         }
                         variant="outlined"
                         inputSize="sm"
+                        className="w-full"
                       />
                       <Input
                         label="Eind Tijd"
@@ -972,62 +1002,40 @@ export default function ShiftPage() {
                         }
                         variant="outlined"
                         inputSize="sm"
+                        className="w-full"
                       />
-                      <div className="flex items-end">
-                        <div className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Duur
-                          </label>
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {breakItem.duration || 0} minuten
-                          </span>
-                        </div>
+                    </div>
+
+                    {breakItem.type === "other" && (
+                      <div className="mt-3">
+                        <Input
+                          label="Beschrijving"
+                          value={breakItem.description || ""}
+                          onChange={(e) =>
+                            updateBreak(index, "description", e.target.value)
+                          }
+                          placeholder="Beschrijf de activiteit..."
+                          variant="outlined"
+                          inputSize="sm"
+                          className="w-full"
+                        />
                       </div>
+                    )}
+
+                    {/* Enhanced break info */}
+                    <div className="enhanced-only mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      {breakItem.startTime && breakItem.endTime && (
+                        <div className="text-fluid text-gray-600 dark:text-gray-400">
+                          <span className="font-medium">Duur: </span>
+                          {calculateBreakDuration(
+                            breakItem.startTime,
+                            breakItem.endTime
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
-
-                {/* Total break time summary */}
-                <div className="mt-4 p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-cyan-700 dark:text-cyan-300 font-medium">
-                      ⏸️ Totale pauzetijd:
-                    </span>
-                    <span className="text-cyan-900 dark:text-cyan-100 font-bold">
-                      {getTotalBreakDuration()} minuten
-                    </span>
-                  </div>
-                </div>
-
-                {/* Working time minus breaks */}
-                {shiftData.startTime && shiftData.endTime && (
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-green-700 dark:text-green-300 font-medium">
-                        💼 Netto werktijd:
-                      </span>
-                      <span className="text-green-900 dark:text-green-100 font-bold">
-                        {(() => {
-                          const start = new Date(
-                            `2000-01-01T${shiftData.startTime}:00`
-                          );
-                          const end = new Date(
-                            `2000-01-01T${shiftData.endTime}:00`
-                          );
-                          const totalMinutes =
-                            (end.getTime() - start.getTime()) / (1000 * 60);
-                          const netMinutes =
-                            totalMinutes - getTotalBreakDuration();
-                          const hours = Math.floor(netMinutes / 60);
-                          const minutes = netMinutes % 60;
-                          return hours > 0
-                            ? `${hours}u ${minutes > 0 ? `${minutes}m` : ""}`
-                            : `${minutes}m`;
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </CardContent>
@@ -1164,7 +1172,7 @@ export default function ShiftPage() {
 
         {/* Action Buttons */}
         <Card variant="default" padding="lg">
-          <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
+          <div className="button-group keyline-spacing">
             <Button
               type="button"
               variant="outline"
@@ -1172,7 +1180,7 @@ export default function ShiftPage() {
               onClick={() => router.back()}
               elevation="soft"
               rounded="lg"
-              className="flex-1 sm:flex-none sm:min-w-[120px]"
+              className="touch-target-lg component-padding-md"
             >
               ❌ Annuleren
             </Button>
@@ -1184,7 +1192,7 @@ export default function ShiftPage() {
               disabled={loading}
               elevation="medium"
               rounded="lg"
-              className="flex-1 sm:flex-none sm:min-w-[160px]"
+              className="touch-target-lg component-padding-md"
             >
               {isEditing ? "✅ Dienst Bijwerken" : "➕ Dienst Toevoegen"}
             </Button>

@@ -7,6 +7,19 @@ module.exports = {
   ],
   darkMode: 'class',
   theme: {
+    // Mobile-first responsive breakpoints (2025 best practices)
+    screens: {
+      'xs': '475px',    // Extra small devices
+      'sm': '640px',    // Small devices (landscape phones)
+      'md': '768px',    // Medium devices (tablets)
+      'lg': '1024px',   // Large devices (small laptops)
+      'xl': '1280px',   // Extra large devices (large laptops)
+      '2xl': '1536px',  // 2X large devices (large desktops)
+      '3xl': '1920px',  // 3X large devices (very large screens)
+      // Touch-specific breakpoints
+      'touch': {'raw': '(hover: none) and (pointer: coarse)'},
+      'hover': {'raw': '(hover: hover) and (pointer: fine)'},
+    },
     extend: {
       colors: {
         primary: '#1F2A44',
@@ -16,6 +29,28 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Source Sans Pro', 'sans-serif'],
+      },
+      // Mobile-optimized font sizes
+      fontSize: {
+        'mobile-xs': ['0.75rem', { lineHeight: '1rem' }],
+        'mobile-sm': ['0.875rem', { lineHeight: '1.25rem' }],
+        'mobile-base': ['1rem', { lineHeight: '1.5rem' }],
+        'mobile-lg': ['1.125rem', { lineHeight: '1.75rem' }],
+        'mobile-xl': ['1.25rem', { lineHeight: '1.75rem' }],
+        'mobile-2xl': ['1.5rem', { lineHeight: '2rem' }],
+      },
+      // Touch-friendly minimum sizes
+      minHeight: {
+        'touch': '44px',
+        'touch-sm': '40px',
+        'touch-lg': '48px',
+        'touch-xl': '52px',
+      },
+      minWidth: {
+        'touch': '44px',
+        'touch-sm': '40px',
+        'touch-lg': '48px',
+        'touch-xl': '52px',
       },
       // Enhanced shadows inspired by uinkits
       boxShadow: {

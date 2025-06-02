@@ -10,6 +10,7 @@ import {
   ClockIcon,
   DocumentArrowDownIcon,
   ArrowPathIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import { format, subDays, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -40,10 +41,11 @@ export default function TrendAnalysis({ dateRange }: TrendAnalysisProps) {
     "week" | "month" | "quarter"
   >("week");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchTrendData();
-  }, [selectedPeriod, dateRange]);
+  }, [selectedPeriod, dateRange, refreshKey]);
 
   const fetchTrendData = async () => {
     setLoading(true);
@@ -90,35 +92,30 @@ export default function TrendAnalysis({ dateRange }: TrendAnalysisProps) {
     return ((recent - previous) / previous) * 100;
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchTrendData();
-    setRefreshing(false);
+  const handleRefresh = () => {
+    setRefreshKey((prev) => prev + 1);
   };
 
   const handleExport = () => {
-    if (trendData.length === 0) {
-      alert("Geen data om te exporteren");
-      return;
-    }
-
-    const exportData = trendData.map((item) => ({
-      Datum: format(parseISO(item.date), "dd-MM-yyyy", { locale: nl }),
-      "Totaal Uren": item.totalHours,
-      "Aantal Diensten": item.totalShifts,
-      "Unieke Medewerkers": item.uniqueEmployees,
-      "Productiviteit (%)": item.productivity,
+    // Simple CSV export functionality
+    const csvData = trendData.map((item) => ({
+      Date: item.date,
+      Hours: item.totalHours,
+      Productivity: item.productivity,
     }));
 
-    try {
-      ExportUtils.exportTrendAnalysisToExcel(exportData, {
-        start: trendData[0]?.date || "",
-        end: trendData[trendData.length - 1]?.date || "",
-      });
-    } catch (error) {
-      console.error("Export error:", error);
-      alert("Export mislukt");
-    }
+    const csv = [
+      Object.keys(csvData[0]).join(","),
+      ...csvData.map((row) => Object.values(row).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `trend-analysis-${selectedPeriod}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const totalHoursTrend = calculateTrend(trendData, "totalHours");
@@ -142,9 +139,9 @@ export default function TrendAnalysis({ dateRange }: TrendAnalysisProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white sm:text-xl">
             📈 Trend Analyse
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -152,16 +149,16 @@ export default function TrendAnalysis({ dateRange }: TrendAnalysisProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+        <div className="button-group-tight">
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-auto">
             {(["week", "month", "quarter"] as const).map((period) => (
               <button
                 key={period}
                 onClick={() => setSelectedPeriod(period)}
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 touch-target-sm ${
                   selectedPeriod === period
                     ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 }`}
               >
                 {period === "week"
@@ -173,33 +170,26 @@ export default function TrendAnalysis({ dateRange }: TrendAnalysisProps) {
             ))}
           </div>
 
-          <Button
+          <button
             onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            leftIcon={
-              <ArrowPathIcon
-                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-              />
-            }
-            disabled={refreshing}
+            className="component-padding-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors touch-target-sm"
+            title="Gegevens verversen"
           >
-            Vernieuwen
-          </Button>
+            <ArrowPathIcon className="h-4 w-4" />
+          </button>
 
-          <Button
+          <button
             onClick={handleExport}
-            variant="outline"
-            size="sm"
-            leftIcon={<DocumentArrowDownIcon className="h-4 w-4" />}
+            className="component-padding-sm bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors touch-target-sm"
+            title="Exporteer trend data"
           >
-            Export
-          </Button>
+            <ArrowDownTrayIcon className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -128,13 +128,13 @@ export default function Header({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-gray-200 dark:border-gray-700 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-gray-200 dark:border-gray-700 safe-top ${
         isScrolled
-          ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-lg"
+          ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg"
           : "bg-white dark:bg-gray-900"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo - hidden on mobile, hamburger menu will take this spot */}
           <div className="flex-shrink-0 hidden md:block">
@@ -152,24 +152,25 @@ export default function Header({
           {/* Hamburger Menu Button for Mobile - positioned where logo was */}
           <button
             onClick={onToggleSidebar}
-            className="md:hidden p-2.5 rounded-xl shadow-sm transition-all duration-200 bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-white hover:text-gray-900 dark:bg-gray-800/90 dark:text-gray-200 dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-600/50 touch-manipulation"
-            style={{ minHeight: "44px", minWidth: "44px" }}
+            className="md:hidden p-3 rounded-xl shadow-sm transition-all duration-200 bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-white hover:text-gray-900 dark:bg-gray-800/90 dark:text-gray-200 dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-600/50 touch-manipulation"
+            style={{ minHeight: "48px", minWidth: "48px" }}
           >
             {isSidebarOpen ? (
-              <XMarkIcon className="w-5 h-5" />
+              <XMarkIcon className="w-6 h-6" />
             ) : (
-              <Bars3Icon className="w-5 h-5" />
+              <Bars3Icon className="w-6 h-6" />
             )}
           </button>
 
           {/* Right side items - responsive spacing */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {/* Dark mode toggle - touch-friendly */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onDarkModeToggle}
-              className="p-2 sm:p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 touch-manipulation"
+              className="p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 touch-manipulation"
+              style={{ minHeight: "44px", minWidth: "44px" }}
               aria-label="Toggle dark mode"
             >
               <motion.div

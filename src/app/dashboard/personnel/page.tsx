@@ -23,6 +23,7 @@ import {
   DocumentArrowUpIcon,
   ArrowUpTrayIcon,
   ExclamationTriangleIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
@@ -61,6 +62,8 @@ interface Employee {
   postalCode?: string;
   city?: string;
   archived: boolean;
+  hireDate?: string;
+  phoneNumber?: string;
 }
 
 interface WorkType {
@@ -155,6 +158,8 @@ function PersonnelContent() {
     Array<{ id: string; name: string; emoji?: string }>
   >([]);
   const [availableCompanies, setAvailableCompanies] = useState<string[]>([]);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     fetchEmployees();
@@ -271,12 +276,21 @@ function PersonnelContent() {
     // Implementation of handleAddEmployee function
   };
 
-  const handleDeleteEmployee = async (employeeId: string): Promise<void> => {
-    const employee = employees.find((emp) => emp.id === employeeId);
-    if (employee) {
-      setEmployeeToArchive(employee);
-      setShowArchiveModal(true);
-    }
+  const handleDeleteEmployee = (id: string) => {
+    setEmployees(employees.filter((emp) => emp.id !== id));
+    console.log("Medewerker succesvol verwijderd");
+  };
+
+  const openEditModal = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setIsEditModalOpen(true);
+  };
+
+  const archiveEmployee = (id: string) => {
+    setEmployees(
+      employees.map((emp) => (emp.id === id ? { ...emp, archived: true } : emp))
+    );
+    console.log("Medewerker succesvol gearchiveerd");
   };
 
   const handleArchiveEmployee = async (): Promise<void> => {
@@ -461,6 +475,36 @@ function PersonnelContent() {
     }
   };
 
+  const getRoleBadgeColor = (role: string): string => {
+    switch (role?.toLowerCase()) {
+      case "admin":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "manager":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "employee":
+        return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+      case "freelancer":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+    }
+  };
+
+  const getRoleDisplayName = (role: string): string => {
+    switch (role?.toLowerCase()) {
+      case "admin":
+        return "👑 Administrator";
+      case "manager":
+        return "👔 Manager";
+      case "employee":
+        return "👷 Medewerker";
+      case "freelancer":
+        return "💼 Freelancer";
+      default:
+        return role || "Onbekend";
+    }
+  };
+
   const tableColumns = [
     // Implementation of tableColumns function
   ];
@@ -476,7 +520,7 @@ function PersonnelContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 header-spacing">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
             👥 Personeel Beheer
@@ -485,14 +529,14 @@ function PersonnelContent() {
             Beheer medewerkers, freelancers en hun gegevens
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="button-group button-group-mobile-row">
           {selectedEmployees.length > 0 && (
             <Button
               onClick={handleBulkDelete}
               variant="destructive"
               size="md"
               leftIcon={<TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-              className="w-full sm:w-auto touch-manipulation"
+              className="touch-target-sm"
             >
               <span className="sm:hidden">
                 {selectedEmployees.length} verwijderen
@@ -507,7 +551,7 @@ function PersonnelContent() {
             leftIcon={<DocumentArrowUpIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
             variant="outline"
             size="md"
-            className="w-full sm:w-auto touch-manipulation"
+            className="touch-target-sm"
           >
             <span className="sm:hidden">Import</span>
             <span className="hidden sm:inline">Excel Import</span>
@@ -517,7 +561,7 @@ function PersonnelContent() {
             leftIcon={<DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
             variant="outline"
             size="md"
-            className="w-full sm:w-auto touch-manipulation text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+            className="touch-target-sm text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
           >
             <span className="sm:hidden">Contracten</span>
             <span className="hidden sm:inline">Alle Contracten</span>
@@ -527,7 +571,7 @@ function PersonnelContent() {
             leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
             variant="primary"
             size="md"
-            className="w-full sm:w-auto touch-manipulation"
+            className="touch-target-sm"
           >
             <span className="sm:hidden">Toevoegen</span>
             <span className="hidden sm:inline">Nieuwe Medewerker</span>
@@ -671,119 +715,142 @@ function PersonnelContent() {
         <div className="space-y-8">
           {/* Active Employees Section */}
           {filteredEmployees.filter((emp) => !emp.archived).length > 0 && (
-            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+            <div className="container-query bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="padding-fluid border-b border-gray-200 dark:border-gray-700">
+                <div className="flex-responsive-center justify-between">
+                  <h3 className="text-fluid-lg font-semibold text-gray-900 dark:text-white flex items-center">
                     <UserGroupIcon className="h-5 w-5 mr-2 text-green-600" />
                     Actieve Medewerkers (
                     {filteredEmployees.filter((emp) => !emp.archived).length})
                   </h3>
+                  <div className="enhanced-only">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Container optimized view
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                {(session?.user?.role === "ADMIN" ||
-                  session?.user?.role === "MANAGER" ||
-                  session?.user?.role === "HR_MANAGER") && (
-                  <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-                    <div className="flex items-center">
-                      <DocumentTextIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mr-2" />
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        💡 <strong>Tip:</strong> Klik op een medewerker rij om
-                        naar hun personeelsbestand te gaan
-                      </p>
-                    </div>
-                  </div>
-                )}
 
-                <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Medewerker
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Bedrijf
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Acties
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredEmployees
-                        .filter((employee) => !employee.archived)
-                        .map((employee) => (
-                          <tr
-                            key={employee.id}
-                            className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
-                            onClick={() =>
-                              router.push(
-                                `/dashboard/personnel/edit/${employee.id}`
-                              )
-                            }
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10">
-                                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                      {employee.name
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")
-                                        .toUpperCase()}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {employee.name}
-                                  </div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    {employee.email}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+              {/* Container Query Responsive Employee Grid */}
+              <div className="padding-fluid">
+                <div className="auto-fit-grid">
+                  {filteredEmployees
+                    .filter((emp) => !emp.archived)
+                    .map((employee) => (
+                      <div
+                        key={employee.id}
+                        className="card-adaptive stack-context hover-adaptive"
+                      >
+                        <div className="flex-responsive gap-3">
+                          {/* Avatar */}
+                          <div className="flex-shrink-0">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                              <span className="text-white font-semibold text-fluid">
+                                {employee.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Employee Info */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-fluid-lg font-semibold text-gray-900 dark:text-white truncate">
+                              {employee.name}
+                            </h4>
+                            <p className="text-fluid text-gray-500 dark:text-gray-400 truncate">
+                              {employee.email}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Enhanced Employee Details */}
+                        <div className="enhanced-only">
+                          <div className="space-fluid mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex-responsive text-fluid">
+                              <span className="font-medium text-gray-600 dark:text-gray-300">
+                                Rol:
+                              </span>
                               <span
-                                className={`px-2 py-1 text-xs rounded-full font-medium ${getEmployeeTypeColor(
-                                  employee.employeeType || ""
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                                  employee.role
                                 )}`}
                               >
-                                {getEmployeeTypeText(
-                                  employee.employeeType || ""
-                                )}
+                                {getRoleDisplayName(employee.role)}
                               </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {employee.company || "-"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex justify-end space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteEmployee(employee.id);
-                                  }}
-                                  leftIcon={<TrashIcon className="h-4 w-4" />}
-                                  className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
-                                >
-                                  Uit Dienst
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                            </div>
+                            <div className="flex-responsive text-fluid">
+                              <span className="font-medium text-gray-600 dark:text-gray-300">
+                                Telefoon:
+                              </span>
+                              <span className="text-gray-900 dark:text-white">
+                                {employee.phoneNumber || "Niet ingevuld"}
+                              </span>
+                            </div>
+                            <div className="flex-responsive text-fluid">
+                              <span className="font-medium text-gray-600 dark:text-gray-300">
+                                Gestart:
+                              </span>
+                              <span className="text-gray-900 dark:text-white">
+                                {employee.hireDate
+                                  ? format(
+                                      new Date(employee.hireDate),
+                                      "dd/MM/yyyy",
+                                      { locale: nl }
+                                    )
+                                  : "Onbekend"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Fallback for older browsers */}
+                        <div className="fallback-only mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                          <div className="grid grid-cols-1 gap-2 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-600 dark:text-gray-300">
+                                Rol:{" "}
+                              </span>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                                  employee.role
+                                )}`}
+                              >
+                                {getRoleDisplayName(employee.role)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600 dark:text-gray-300">
+                                Telefoon:{" "}
+                              </span>
+                              <span className="text-gray-900 dark:text-white">
+                                {employee.phoneNumber || "Niet ingevuld"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex-responsive space-fluid mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<PencilIcon className="h-4 w-4" />}
+                            onClick={() => openEditModal(employee)}
+                            className="flex-1 sm:flex-none"
+                          >
+                            Bewerken
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<ArchiveBoxIcon className="h-4 w-4" />}
+                            onClick={() => archiveEmployee(employee.id)}
+                            className="flex-1 sm:flex-none text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-orange-900/20"
+                          >
+                            Archiveren
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
@@ -791,9 +858,9 @@ function PersonnelContent() {
 
           {/* Archived Employees Section */}
           {filteredEmployees.filter((emp) => emp.archived).length > 0 && (
-            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
+            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                     <TrashIcon className="h-5 w-5 mr-2 text-gray-600" />
                     Oud Medewerkers (
@@ -804,56 +871,48 @@ function PersonnelContent() {
                   </p>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Medewerker
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Bedrijf
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Acties
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredEmployees
-                      .filter((emp) => emp.archived)
-                      .map((employee) => (
-                        <tr
-                          key={employee.id}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700 opacity-75 transition-colors duration-200 cursor-pointer"
-                          onClick={() =>
-                            router.push(
-                              `/dashboard/personnel/edit/${employee.id}`
-                            )
-                          }
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center">
-                                <UserGroupIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 line-through">
-                                  {employee.name}
-                                  <span className="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
-                                    Gearchiveerd
-                                  </span>
-                                </div>
-                                <div className="text-sm text-gray-400 dark:text-gray-500">
-                                  {employee.email}
-                                </div>
-                              </div>
+
+              {/* Mobile Card Layout for Archived */}
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredEmployees
+                  .filter((emp) => emp.archived)
+                  .map((employee) => (
+                    <div
+                      key={employee.id}
+                      className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700 opacity-75 transition-colors duration-200 cursor-pointer"
+                      onClick={() =>
+                        router.push(`/dashboard/personnel/edit/${employee.id}`)
+                      }
+                    >
+                      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                        {/* Employee Info */}
+                        <div className="flex items-center space-x-4">
+                          <div className="flex-shrink-0">
+                            <div className="h-12 w-12 sm:h-10 sm:w-10 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center">
+                              <UserGroupIcon className="h-6 w-6 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-400" />
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-base font-medium text-gray-500 dark:text-gray-400 line-through truncate sm:text-sm">
+                              {employee.name}
+                              <span className="ml-2 px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full">
+                                Gearchiveerd
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-400 dark:text-gray-500 truncate">
+                              {employee.email}
+                            </div>
+                            {employee.company && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400 truncate sm:hidden">
+                                {employee.company}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Tags and Actions */}
+                        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+                          <div className="flex flex-wrap gap-2">
                             <span
                               className={`px-2 py-1 text-xs rounded-full font-medium opacity-60 ${getEmployeeTypeColor(
                                 employee.employeeType || ""
@@ -861,32 +920,36 @@ function PersonnelContent() {
                             >
                               {getEmployeeTypeText(employee.employeeType || "")}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {employee.company || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUnarchiveEmployee(employee);
-                                }}
-                                leftIcon={
-                                  <CheckCircleIcon className="h-4 w-4" />
-                                }
-                                className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
-                              >
+                            {employee.company && (
+                              <span className="hidden sm:inline-flex px-2 py-1 text-xs bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-full opacity-60">
+                                {employee.company}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnarchiveEmployee(employee);
+                              }}
+                              leftIcon={<CheckCircleIcon className="h-4 w-4" />}
+                              className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 w-full sm:w-auto"
+                            >
+                              <span className="sm:hidden">
+                                Weer in dienst nemen
+                              </span>
+                              <span className="hidden sm:inline">
                                 Terugzetten
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                              </span>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
@@ -1385,7 +1448,7 @@ function PersonnelContent() {
                       </span>
                     </label>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Nieuwe medewerkers worden standaard als actief aangemaakt
                   </p>
                 </div>

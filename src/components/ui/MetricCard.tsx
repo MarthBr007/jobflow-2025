@@ -89,25 +89,25 @@ export default function MetricCard({
 
   const sizeStyles = {
     sm: {
-      padding: "p-4",
-      iconSize: "h-6 w-6",
-      valueText: "text-xl",
-      titleText: "text-sm",
+      padding: "p-3 sm:p-4",
+      iconSize: "h-5 w-5 sm:h-6 sm:w-6",
+      valueText: "text-lg sm:text-xl",
+      titleText: "text-xs sm:text-sm",
       trendText: "text-xs",
     },
     md: {
-      padding: "p-6",
-      iconSize: "h-8 w-8",
-      valueText: "text-2xl",
-      titleText: "text-sm",
+      padding: "p-4 sm:p-6",
+      iconSize: "h-6 w-6 sm:h-8 sm:w-8",
+      valueText: "text-xl sm:text-2xl",
+      titleText: "text-xs sm:text-sm",
       trendText: "text-xs",
     },
     lg: {
-      padding: "p-8",
-      iconSize: "h-10 w-10",
-      valueText: "text-3xl",
-      titleText: "text-base",
-      trendText: "text-sm",
+      padding: "p-6 sm:p-8",
+      iconSize: "h-8 w-8 sm:h-10 sm:w-10",
+      valueText: "text-2xl sm:text-3xl",
+      titleText: "text-sm sm:text-base",
+      trendText: "text-xs sm:text-sm",
     },
   };
 

@@ -216,18 +216,18 @@ export default function ScheduleAnalytics({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card, index) => (
           <motion.div
             key={card.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 sm:p-6"
           >
             <div className="flex items-center">
               <div
-                className={`p-3 rounded-lg ${
+                className={`p-2 sm:p-3 rounded-lg ${
                   card.color === "blue"
                     ? "bg-blue-100 dark:bg-blue-900/20"
                     : card.color === "green"
@@ -240,7 +240,7 @@ export default function ScheduleAnalytics({
                 }`}
               >
                 <card.icon
-                  className={`h-6 w-6 ${
+                  className={`h-5 w-5 sm:h-6 sm:w-6 ${
                     card.color === "blue"
                       ? "text-blue-600 dark:text-blue-400"
                       : card.color === "green"
@@ -253,19 +253,19 @@ export default function ScheduleAnalytics({
                   }`}
                 />
               </div>
-              <div className="ml-4 flex-1">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              <div className="ml-3 sm:ml-4 flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
                   {card.title}
                 </p>
                 <div className="flex items-baseline">
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-white truncate">
                     {card.value}
                   </p>
-                  <p className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                  <p className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
                     {card.unit}
                   </p>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                   {card.trend}
                 </p>
               </div>
@@ -275,7 +275,7 @@ export default function ScheduleAnalytics({
       </div>
 
       {/* Detailed Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Work Type Distribution */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
           <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">

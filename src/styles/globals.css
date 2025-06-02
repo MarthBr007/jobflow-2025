@@ -1,0 +1,644 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Advanced responsive utilities based on Next.js best practices */
+@layer utilities {
+  /* 8dp/4dp Baseline Grid Spacing System (uinkits inspired) */
+  .spacing-4dp {
+    margin: 4px;
+  }
+  .spacing-8dp {
+    margin: 8px;
+  }
+  .spacing-12dp {
+    margin: 12px;
+  }
+  .spacing-16dp {
+    margin: 16px;
+  }
+  .spacing-24dp {
+    margin: 24px;
+  }
+  .spacing-32dp {
+    margin: 32px;
+  }
+
+  /* Button Group Spacing */
+  .button-group {
+    display: flex;
+    gap: 12px; /* 3 * 4dp */
+  }
+
+  .button-group-tight {
+    display: flex;
+    gap: 8px; /* 2 * 4dp */
+  }
+
+  .button-group-loose {
+    display: flex;
+    gap: 16px; /* 4 * 4dp */
+  }
+
+  .button-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Responsive Button Groups */
+  @media (max-width: 640px) {
+    .button-group {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .button-group-mobile-row {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  }
+
+  /* Keyline-based spacing for layout elements */
+  .keyline-spacing {
+    padding: 16px; /* 4 * 4dp */
+  }
+
+  .keyline-spacing-sm {
+    padding: 8px; /* 2 * 4dp */
+  }
+
+  .keyline-spacing-lg {
+    padding: 24px; /* 6 * 4dp */
+  }
+
+  .keyline-spacing-xl {
+    padding: 32px; /* 8 * 4dp */
+  }
+
+  /* Component Internal Spacing (Padding) */
+  .component-padding-sm {
+    padding: 8px 12px; /* 2*4dp vertical, 3*4dp horizontal */
+  }
+
+  .component-padding-md {
+    padding: 12px 16px; /* 3*4dp vertical, 4*4dp horizontal */
+  }
+
+  .component-padding-lg {
+    padding: 16px 24px; /* 4*4dp vertical, 6*4dp horizontal */
+  }
+
+  /* Touch Target Optimization */
+  .touch-target-sm {
+    min-height: 44px; /* iOS minimum */
+    min-width: 44px;
+  }
+
+  .touch-target-md {
+    min-height: 48px; /* Android minimum */
+    min-width: 48px;
+  }
+
+  .touch-target-lg {
+    min-height: 56px; /* Large touch target */
+    min-width: 56px;
+  }
+
+  /* Header Spacing */
+  .header-spacing {
+    margin-bottom: 24px; /* 6 * 4dp */
+  }
+
+  .header-spacing-sm {
+    margin-bottom: 16px; /* 4 * 4dp */
+  }
+
+  .header-spacing-lg {
+    margin-bottom: 32px; /* 8 * 4dp */
+  }
+
+  /* Section Spacing */
+  .section-spacing {
+    margin-bottom: 32px; /* 8 * 4dp */
+  }
+
+  .section-spacing-sm {
+    margin-bottom: 24px; /* 6 * 4dp */
+  }
+
+  .section-spacing-lg {
+    margin-bottom: 48px; /* 12 * 4dp */
+  }
+
+  /* Container Query Foundation */
+  .container-query {
+    container-type: inline-size;
+  }
+
+  .container-query-size {
+    container-type: size;
+  }
+
+  .container-named-main {
+    container: main / inline-size;
+  }
+
+  .container-named-sidebar {
+    container: sidebar / inline-size;
+  }
+
+  /* Advanced Container Queries for JobFlow Components */
+  @container (min-width: 300px) {
+    .cq-compact {
+      padding: 0.75rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  @container (min-width: 500px) {
+    .cq-medium {
+      padding: 1.5rem;
+      font-size: 1rem;
+    }
+  }
+
+  @container (min-width: 800px) {
+    .cq-large {
+      padding: 2rem;
+      font-size: 1.125rem;
+    }
+  }
+
+  /* Responsive Grid Systems with Container Query support */
+  .responsive-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  @container (min-width: 640px) {
+    .responsive-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .responsive-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  @container (min-width: 1280px) {
+    .responsive-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Auto-fit responsive grid for flexible layouts */
+  .auto-fit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  @container (min-width: 640px) {
+    .auto-fit-grid {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+  }
+
+  /* Fluid Typography with Container Queries */
+  .text-fluid {
+    font-size: clamp(0.875rem, 2cqw, 1rem);
+  }
+
+  .text-fluid-lg {
+    font-size: clamp(1rem, 3cqw, 1.25rem);
+  }
+
+  .text-fluid-xl {
+    font-size: clamp(1.25rem, 4cqw, 1.5rem);
+  }
+
+  .text-fluid-2xl {
+    font-size: clamp(1.5rem, 5cqw, 2rem);
+  }
+
+  /* Modern Spacing with Container Units */
+  .space-fluid {
+    gap: clamp(0.5rem, 2cqw, 1.5rem);
+  }
+
+  .padding-fluid {
+    padding: clamp(1rem, 3cqw, 2rem);
+  }
+
+  .margin-fluid {
+    margin: clamp(0.5rem, 2cqw, 1rem);
+  }
+
+  /* Advanced Component Layouts */
+  .card-adaptive {
+    background: white;
+    border-radius: clamp(0.5rem, 2cqw, 1rem);
+    padding: clamp(1rem, 3cqw, 2rem);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+  }
+
+  @container (min-width: 400px) {
+    .card-adaptive {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+  }
+
+  @container (min-width: 600px) {
+    .card-adaptive {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  /* Responsive Table with Container Queries */
+  .table-responsive {
+    container-type: inline-size;
+    overflow-x: auto;
+  }
+
+  @container (max-width: 640px) {
+    .table-responsive table {
+      display: block;
+    }
+
+    .table-responsive thead {
+      display: none;
+    }
+
+    .table-responsive tbody,
+    .table-responsive tr,
+    .table-responsive td {
+      display: block;
+    }
+
+    .table-responsive tr {
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+    }
+
+    .table-responsive td {
+      border: none;
+      position: relative;
+      padding-left: 50%;
+      text-align: right;
+    }
+
+    .table-responsive td:before {
+      content: attr(data-label);
+      position: absolute;
+      left: 6px;
+      width: 45%;
+      text-align: left;
+      font-weight: 600;
+    }
+  }
+
+  /* Progressive Enhancement Helpers */
+  .enhanced-only {
+    display: none;
+  }
+
+  @supports (container-type: inline-size) {
+    .enhanced-only {
+      display: initial;
+    }
+
+    .fallback-only {
+      display: none;
+    }
+  }
+
+  /* Modern Color Mixing */
+  .color-adaptive {
+    background: color-mix(
+      in srgb,
+      var(--primary-color, #3b82f6) 10%,
+      transparent
+    );
+  }
+
+  .hover-adaptive:hover {
+    background: color-mix(
+      in srgb,
+      var(--primary-color, #3b82f6) 20%,
+      transparent
+    );
+  }
+
+  /* Responsive Grid with Subgrid Support */
+  .subgrid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  @supports (grid-template-columns: subgrid) {
+    .subgrid-row {
+      display: grid;
+      grid-template-columns: subgrid;
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* Stacking Context Management */
+  .stack-context {
+    isolation: isolate;
+    pointer-events: none;
+  }
+
+  .stack-context > * {
+    pointer-events: initial;
+  }
+
+  .stack-context:hover {
+    z-index: 1;
+  }
+
+  .stack-context:focus-within {
+    z-index: 2;
+  }
+
+  /* Responsive container with optimal widths */
+  .responsive-container {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @container (min-width: 640px) {
+    .responsive-container {
+      max-width: 640px;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @container (min-width: 768px) {
+    .responsive-container {
+      max-width: 768px;
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .responsive-container {
+      max-width: 1024px;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @container (min-width: 1280px) {
+    .responsive-container {
+      max-width: 1280px;
+    }
+  }
+
+  /* Custom scrollbar styles for better mobile experience */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Touch-friendly interactions */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  /* Improved tap highlights */
+  .tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Better mobile viewport handling */
+  .mobile-viewport {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  }
+
+  /* Safe area insets for mobile devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Responsive text scaling */
+  .text-responsive {
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
+  }
+  .text-responsive-lg {
+    font-size: clamp(1.125rem, 3vw, 1.25rem);
+  }
+  .text-responsive-xl {
+    font-size: clamp(1.25rem, 4vw, 1.5rem);
+  }
+  .text-responsive-2xl {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+  }
+
+  /* Flexible aspect ratios */
+  .aspect-responsive {
+    aspect-ratio: 16 / 9;
+  }
+  @media (max-width: 640px) {
+    .aspect-responsive {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  /* Performance optimizations */
+  .will-change-transform {
+    will-change: transform;
+  }
+  .will-change-auto {
+    will-change: auto;
+  }
+
+  /* GPU acceleration for smooth animations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* Responsive flexbox utilities */
+  .flex-responsive {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* 3 * 4dp baseline */
+  }
+
+  @container (min-width: 640px) {
+    .flex-responsive {
+      flex-direction: row;
+      align-items: center;
+      gap: 16px; /* 4 * 4dp baseline */
+    }
+  }
+
+  .flex-responsive-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  @container (min-width: 640px) {
+    .flex-responsive-center {
+      flex-direction: row;
+      justify-content: center;
+      gap: 16px;
+    }
+  }
+
+  /* Responsive spacing */
+  .space-responsive > * + * {
+    margin-top: 16px; /* 4 * 4dp */
+  }
+
+  @container (min-width: 640px) {
+    .space-responsive > * + * {
+      margin-top: 24px; /* 6 * 4dp */
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .space-responsive > * + * {
+      margin-top: 32px; /* 8 * 4dp */
+    }
+  }
+
+  /* Modern responsive card layout */
+  .card-responsive {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    padding: 16px; /* 4 * 4dp */
+    transition: all 0.2s ease-in-out;
+  }
+
+  @container (min-width: 640px) {
+    .card-responsive {
+      padding: 24px; /* 6 * 4dp */
+      border-radius: 1rem;
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .card-responsive {
+      padding: 32px; /* 8 * 4dp */
+    }
+  }
+
+  .card-responsive:hover {
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* Dark mode support for responsive elements */
+  @media (prefers-color-scheme: dark) {
+    .card-responsive,
+    .card-adaptive {
+      background: rgb(31 41 55);
+      color: white;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .card-responsive,
+    .card-adaptive {
+      border: 2px solid;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .card-responsive,
+    .card-adaptive,
+    .gpu-accelerated {
+      transition: none;
+      transform: none;
+      animation: none;
+    }
+  }
+
+  /* Print styles for responsive design */
+  @media print {
+    .hide-print {
+      display: none !important;
+    }
+
+    .responsive-container {
+      max-width: none;
+      padding: 0;
+    }
+
+    .card-responsive,
+    .card-adaptive {
+      box-shadow: none;
+      border: 1px solid #e5e7eb;
+      break-inside: avoid;
+    }
+  }
+}
+
+/* Base responsive typography improvements */
+@layer base {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Better mobile button styles with proper spacing */
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px; /* Minimum touch target */
+  }
+
+  /* Improved form elements for mobile */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Better mobile link handling */
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
