@@ -444,6 +444,11 @@ export default function AdminLeaveRequests() {
           icon={<DocumentTextIcon className="w-8 h-8" />}
           color="blue"
           subtitle="Alle verlofaanvragen"
+          trend={{
+            value: 0,
+            isPositive: true,
+            label: "baseline",
+          }}
         />
 
         <MetricCard
@@ -452,15 +457,11 @@ export default function AdminLeaveRequests() {
           icon={<ClockIcon className="w-8 h-8" />}
           color="orange"
           subtitle="Wachten op goedkeuring"
-          trend={
-            pendingCount > 0
-              ? {
-                  value: 2,
-                  isPositive: false,
-                  label: "vs vorige week",
-                }
-              : undefined
-          }
+          trend={{
+            value: 2,
+            isPositive: false,
+            label: "vs vorige week",
+          }}
         />
 
         <MetricCard
@@ -482,6 +483,11 @@ export default function AdminLeaveRequests() {
           icon={<XCircleIcon className="w-8 h-8" />}
           color="red"
           subtitle="Geweigerde aanvragen"
+          trend={{
+            value: 0,
+            isPositive: true,
+            label: "stabiel",
+          }}
         />
 
         <MetricCard

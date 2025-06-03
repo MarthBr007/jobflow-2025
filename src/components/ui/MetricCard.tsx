@@ -222,21 +222,27 @@ export default function MetricCard({
             </div>
 
             {/* Trend */}
-            {trend && !loading && (
-              <div className={`flex items-center space-x-1 ${getTrendColor()}`}>
-                {getTrendIcon()}
-                <span className={`${sizeStyles[size].trendText} font-medium`}>
-                  {Math.abs(trend.value)}%
-                </span>
-                {trend.label && (
-                  <span
-                    className={`${sizeStyles[size].trendText} text-gray-500 dark:text-gray-400`}
-                  >
-                    {trend.label}
+            <div className="h-6 flex items-center">
+              {trend && !loading ? (
+                <div
+                  className={`flex items-center space-x-1 ${getTrendColor()}`}
+                >
+                  {getTrendIcon()}
+                  <span className={`${sizeStyles[size].trendText} font-medium`}>
+                    {Math.abs(trend.value)}%
                   </span>
-                )}
-              </div>
-            )}
+                  {trend.label && (
+                    <span
+                      className={`${sizeStyles[size].trendText} text-gray-500 dark:text-gray-400`}
+                    >
+                      {trend.label}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="h-4"></div>
+              )}
+            </div>
           </div>
 
           {/* Icon */}
