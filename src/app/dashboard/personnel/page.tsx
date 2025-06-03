@@ -25,6 +25,7 @@ import {
   ExclamationTriangleIcon,
   ArchiveBoxIcon,
   ClipboardDocumentIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
@@ -890,143 +891,126 @@ function PersonnelContent() {
                     .map((employee) => (
                       <div
                         key={employee.id}
-                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 cursor-pointer group"
-                        onClick={() => openEditModal(employee)}
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-500"
                       >
-                        <div className="flex items-start space-x-4">
-                          {/* Avatar */}
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-200">
-                              <span className="text-white font-bold text-lg">
-                                {employee.name.charAt(0).toUpperCase()}
-                              </span>
+                        <div className="p-6 h-full flex flex-col">
+                          <div className="flex items-start space-x-4 flex-1">
+                            <div className="flex-shrink-0">
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+                                <span className="text-white font-bold text-lg">
+                                  {employee.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-
-                          {/* Employee Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-2">
+                            <div className="flex-1 min-w-0">
                               <h4 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                                 {employee.name}
                               </h4>
-                              {employee.hasContract && (
-                                <div
-                                  className="h-2 w-2 bg-green-500 rounded-full"
-                                  title="Heeft contract"
-                                ></div>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate mb-3">
-                              {employee.email}
-                            </p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-3">
+                                {employee.email}
+                              </p>
 
-                            {/* Role and Type Badges */}
-                            <div className="flex items-center space-x-2 mb-3">
-                              <span
-                                className={`px-2 py-1 rounded-lg text-xs font-semibold ${getRoleBadgeColor(
-                                  employee.role
-                                )}`}
-                              >
-                                {getRoleDisplayName(employee.role)}
-                              </span>
-                              <span
-                                className={`px-2 py-1 rounded-lg text-xs font-semibold ${getEmployeeTypeColor(
-                                  employee.employeeType || ""
-                                )}`}
-                              >
-                                {getEmployeeTypeText(
-                                  employee.employeeType || ""
-                                )}
-                              </span>
-                            </div>
+                              <div className="flex flex-wrap items-center gap-2 mb-4">
+                                <span
+                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${getRoleColor(
+                                    employee.role
+                                  )}`}
+                                >
+                                  {getRoleText(employee.role)}
+                                </span>
+                                <span
+                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${getEmployeeTypeColor(
+                                    employee.employeeType || ""
+                                  )}`}
+                                >
+                                  {getEmployeeTypeText(
+                                    employee.employeeType || ""
+                                  )}
+                                </span>
+                              </div>
 
-                            {/* Contact Info */}
-                            <div className="space-y-2 text-sm">
-                              {employee.phone && (
-                                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                                  <PhoneIcon className="h-4 w-4" />
-                                  <span className="truncate">
-                                    {employee.phone}
-                                  </span>
-                                </div>
-                              )}
-                              {employee.company && (
-                                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                                  <BuildingOfficeIcon className="h-4 w-4" />
+                              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="flex items-center space-x-2">
+                                  <BuildingOfficeIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                                   <span className="truncate">
                                     {employee.company}
                                   </span>
                                 </div>
-                              )}
-                              {(employee.hourlyRate || employee.hourlyWage) && (
-                                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                                  <CurrencyEuroIcon className="h-4 w-4" />
-                                  <span>
-                                    €
-                                    {employee.hourlyRate || employee.hourlyWage}
-                                    /uur
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Work Types */}
-                            {employee.workTypes &&
-                              employee.workTypes.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                                  <div className="flex flex-wrap gap-1">
-                                    {employee.workTypes
-                                      .slice(0, 2)
-                                      .map((workType, index) => (
-                                        <span
-                                          key={index}
-                                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs rounded-md"
-                                        >
-                                          {workType}
-                                        </span>
-                                      ))}
-                                    {employee.workTypes.length > 2 && (
-                                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md">
-                                        +{employee.workTypes.length - 2} meer
-                                      </span>
-                                    )}
+                                {employee.phone && (
+                                  <div className="flex items-center space-x-2">
+                                    <PhoneIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                    <span>{employee.phone}</span>
                                   </div>
-                                </div>
-                              )}
-
-                            {/* Action Buttons */}
-                            <div className="mt-4 flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    router.push(
-                                      `/dashboard/personnel/edit/${employee.id}`
-                                    );
-                                  }}
-                                  variant="primary"
-                                  size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                                  title="Medewerker beheren"
-                                >
-                                  <UserGroupIcon className="h-4 w-4 mr-1" />
-                                  Beheren
-                                </Button>
-                              </div>
-
-                              <div className="text-xs text-gray-400 dark:text-gray-500">
-                                {employee.hireDate && (
-                                  <>
-                                    Sinds{" "}
-                                    {format(
-                                      new Date(employee.hireDate),
-                                      "MMM yyyy",
-                                      { locale: nl }
-                                    )}
-                                  </>
+                                )}
+                                {(employee.hourlyRate ||
+                                  employee.hourlyWage) && (
+                                  <div className="flex items-center space-x-2">
+                                    <BanknotesIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                    <span>
+                                      €
+                                      {employee.hourlyRate ||
+                                        employee.hourlyWage}
+                                      /uur
+                                    </span>
+                                  </div>
                                 )}
                               </div>
+
+                              {employee.workTypes &&
+                                employee.workTypes.length > 0 && (
+                                  <div className="mt-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      {employee.workTypes
+                                        .slice(0, 2)
+                                        .map((workType, index) => (
+                                          <span
+                                            key={index}
+                                            className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs rounded-md"
+                                          >
+                                            {workType}
+                                          </span>
+                                        ))}
+                                      {employee.workTypes.length > 2 && (
+                                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md">
+                                          +{employee.workTypes.length - 2} meer
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                          </div>
+
+                          {/* Fixed Bottom Section - Consistent Button Position */}
+                          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <Button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/dashboard/personnel/edit/${employee.id}`
+                                );
+                              }}
+                              variant="primary"
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm w-full sm:w-auto min-h-[36px]"
+                              title="Medewerker beheren"
+                            >
+                              <UserGroupIcon className="h-4 w-4 mr-2" />
+                              Beheren
+                            </Button>
+
+                            <div className="text-xs text-gray-400 dark:text-gray-500 ml-3">
+                              {employee.hireDate && (
+                                <>
+                                  Sinds{" "}
+                                  {format(
+                                    new Date(employee.hireDate),
+                                    "MMM yyyy",
+                                    { locale: nl }
+                                  )}
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1070,57 +1054,59 @@ function PersonnelContent() {
                       .map((employee) => (
                         <div
                           key={employee.id}
-                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-300 dark:border-gray-600 p-6 opacity-75"
+                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-300 dark:border-gray-600 opacity-75"
                         >
-                          <div className="flex items-start space-x-4">
-                            <div className="flex-shrink-0">
-                              <div className="w-12 h-12 bg-gray-400 rounded-xl flex items-center justify-center">
-                                <span className="text-white font-bold text-lg">
-                                  {employee.name.charAt(0).toUpperCase()}
-                                </span>
+                          <div className="p-6 h-full flex flex-col">
+                            <div className="flex items-start space-x-4 flex-1">
+                              <div className="flex-shrink-0">
+                                <div className="w-12 h-12 bg-gray-400 rounded-xl flex items-center justify-center">
+                                  <span className="text-white font-bold text-lg">
+                                    {employee.name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 truncate">
-                                {employee.name}
-                              </h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
-                                {employee.email}
-                              </p>
-                              <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 truncate">
+                                  {employee.name}
+                                </h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+                                  {employee.email}
+                                </p>
                                 <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-lg">
                                   Gearchiveerd
                                 </span>
-                                <div className="flex items-center space-x-2">
-                                  <Button
-                                    type="button"
-                                    onClick={() =>
-                                      router.push(
-                                        `/dashboard/personnel/edit/${employee.id}`
-                                      )
-                                    }
-                                    variant="primary"
-                                    size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                                    title="Medewerker beheren"
-                                  >
-                                    <UserGroupIcon className="h-4 w-4 mr-1" />
-                                    Beheren
-                                  </Button>
-                                  <Button
-                                    onClick={() =>
-                                      handleUnarchiveEmployee(employee)
-                                    }
-                                    variant="primary"
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                                    title="Medewerker herstellen"
-                                  >
-                                    <CheckCircleIcon className="h-4 w-4 mr-1" />
-                                    Herstel
-                                  </Button>
-                                </div>
                               </div>
+                            </div>
+
+                            {/* Fixed Bottom Section - Consistent Button Position */}
+                            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600 flex items-center justify-between gap-2">
+                              <Button
+                                type="button"
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/personnel/edit/${employee.id}`
+                                  )
+                                }
+                                variant="primary"
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm flex-1 min-h-[36px]"
+                                title="Medewerker beheren"
+                              >
+                                <UserGroupIcon className="h-4 w-4 mr-2" />
+                                Beheren
+                              </Button>
+                              <Button
+                                onClick={() =>
+                                  handleUnarchiveEmployee(employee)
+                                }
+                                variant="primary"
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white shadow-sm flex-1 min-h-[36px]"
+                                title="Medewerker herstellen"
+                              >
+                                <CheckCircleIcon className="h-4 w-4 mr-2" />
+                                Herstel
+                              </Button>
                             </div>
                           </div>
                         </div>
