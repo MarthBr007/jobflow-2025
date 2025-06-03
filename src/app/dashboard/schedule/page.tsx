@@ -1182,111 +1182,141 @@ export default function SchedulePage() {
                                       Array.isArray(shift.breaks) &&
                                       shift.breaks.length > 0 && (
                                         <div className="mt-3">
-                                          {/* Pauze samenvatting - klikbaar */}
-                                          <div
-                                            className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all duration-200"
-                                            onClick={() =>
-                                              toggleBreaksExpansion(shift.id)
-                                            }
-                                          >
-                                            <div className="flex items-center space-x-3">
-                                              <div className="flex-shrink-0">
-                                                <div className="h-8 w-8 bg-amber-100 dark:bg-amber-800 rounded-lg flex items-center justify-center">
-                                                  <PauseIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                </div>
-                                              </div>
-                                              <div>
-                                                <div className="flex items-center space-x-2">
-                                                  <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                                                    {shift.breaks.length}{" "}
-                                                    {shift.breaks.length === 1
-                                                      ? "Pauze"
-                                                      : "Pauzes"}
-                                                  </span>
-                                                  <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-800 px-2 py-1 rounded-full">
-                                                    {getTotalBreakTime(
-                                                      shift.breaks
-                                                    )}{" "}
-                                                    min totaal
-                                                  </span>
-                                                </div>
-                                                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                                  Klik om details te bekijken
-                                                </div>
-                                              </div>
-                                            </div>
-                                            <div className="flex-shrink-0">
-                                              {expandedBreaks.has(shift.id) ? (
-                                                <ChevronUpIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                              ) : (
-                                                <ChevronDownIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                              )}
-                                            </div>
-                                          </div>
-
-                                          {/* Uitvouwbare pauze details */}
-                                          {expandedBreaks.has(shift.id) && (
-                                            <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                              {shift.breaks.map(
-                                                (breakItem, index) => (
-                                                  <div
-                                                    key={index}
-                                                    className="flex items-center justify-between bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 rounded-lg p-3 shadow-sm"
-                                                  >
-                                                    <div className="flex items-center space-x-3">
-                                                      <div className="flex-shrink-0">
-                                                        <div className="h-6 w-6 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
-                                                          <ClockIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                                                        </div>
-                                                      </div>
-                                                      <div>
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                          Pauze {index + 1}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                          {breakItem.startTime}{" "}
-                                                          - {breakItem.endTime}
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                        {breakItem.duration ||
-                                                          formatBreakDuration(
-                                                            breakItem.startTime,
-                                                            breakItem.endTime
-                                                          )}{" "}
-                                                        min
-                                                      </div>
-                                                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Duur
-                                                      </div>
-                                                    </div>
+                                          {/* Desktop view - Complex expandable break details */}
+                                          <div className="hidden md:block">
+                                            <div
+                                              className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all duration-200"
+                                              onClick={() =>
+                                                toggleBreaksExpansion(shift.id)
+                                              }
+                                            >
+                                              <div className="flex items-center space-x-3">
+                                                <div className="flex-shrink-0">
+                                                  <div className="h-8 w-8 bg-amber-100 dark:bg-amber-800 rounded-lg flex items-center justify-center">
+                                                    <PauseIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                                   </div>
-                                                )
-                                              )}
-
-                                              {/* Pauze statistieken */}
-                                              <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
-                                                <div className="flex items-center justify-between text-sm">
+                                                </div>
+                                                <div>
                                                   <div className="flex items-center space-x-2">
-                                                    <div className="h-5 w-5 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
-                                                      <CheckCircleIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                                    </div>
-                                                    <span className="font-medium text-green-900 dark:text-green-100">
-                                                      Totale pauzetijd
+                                                    <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                                                      {shift.breaks.length}{" "}
+                                                      {shift.breaks.length === 1
+                                                        ? "Pauze"
+                                                        : "Pauzes"}
+                                                    </span>
+                                                    <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-800 px-2 py-1 rounded-full">
+                                                      {getTotalBreakTime(
+                                                        shift.breaks
+                                                      )}{" "}
+                                                      min totaal
                                                     </span>
                                                   </div>
-                                                  <span className="font-bold text-green-700 dark:text-green-300">
-                                                    {getTotalBreakTime(
-                                                      shift.breaks
-                                                    )}{" "}
-                                                    minuten
-                                                  </span>
+                                                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                                    Klik om details te bekijken
+                                                  </div>
                                                 </div>
                                               </div>
+                                              <div className="flex-shrink-0">
+                                                {expandedBreaks.has(
+                                                  shift.id
+                                                ) ? (
+                                                  <ChevronUpIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                ) : (
+                                                  <ChevronDownIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                )}
+                                              </div>
                                             </div>
-                                          )}
+
+                                            {/* Expandable break details - Desktop only */}
+                                            {expandedBreaks.has(shift.id) && (
+                                              <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                                {shift.breaks.map(
+                                                  (breakItem, index) => (
+                                                    <div
+                                                      key={index}
+                                                      className="flex items-center justify-between bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 rounded-lg p-3 shadow-sm"
+                                                    >
+                                                      <div className="flex items-center space-x-3">
+                                                        <div className="flex-shrink-0">
+                                                          <div className="h-6 w-6 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
+                                                            <ClockIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                                          </div>
+                                                        </div>
+                                                        <div>
+                                                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                            Pauze {index + 1}
+                                                          </div>
+                                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                            {
+                                                              breakItem.startTime
+                                                            }{" "}
+                                                            -{" "}
+                                                            {breakItem.endTime}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="text-right">
+                                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                          {breakItem.duration ||
+                                                            formatBreakDuration(
+                                                              breakItem.startTime,
+                                                              breakItem.endTime
+                                                            )}{" "}
+                                                          min
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                          Duur
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )
+                                                )}
+
+                                                {/* Break statistics */}
+                                                <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
+                                                  <div className="flex items-center justify-between text-sm">
+                                                    <div className="flex items-center space-x-2">
+                                                      <div className="h-5 w-5 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                                                        <CheckCircleIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                                      </div>
+                                                      <span className="font-medium text-green-900 dark:text-green-100">
+                                                        Totale pauzetijd
+                                                      </span>
+                                                    </div>
+                                                    <span className="font-bold text-green-700 dark:text-green-300">
+                                                      {getTotalBreakTime(
+                                                        shift.breaks
+                                                      )}{" "}
+                                                      minuten
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Mobile view - Simplified break info */}
+                                          <div className="block md:hidden">
+                                            <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-2">
+                                              <div className="flex items-center space-x-2">
+                                                <div className="h-6 w-6 bg-amber-100 dark:bg-amber-800 rounded-md flex items-center justify-center">
+                                                  <PauseIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                                </div>
+                                                <span className="text-xs font-medium text-amber-900 dark:text-amber-100">
+                                                  {shift.breaks.length} pauze
+                                                  {shift.breaks.length > 1
+                                                    ? "s"
+                                                    : ""}
+                                                </span>
+                                              </div>
+                                              <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-800 px-2 py-1 rounded-full font-medium">
+                                                {getTotalBreakTime(
+                                                  shift.breaks
+                                                )}
+                                                min
+                                              </span>
+                                            </div>
+                                          </div>
                                         </div>
                                       )}
                                   </div>
