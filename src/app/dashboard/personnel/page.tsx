@@ -24,6 +24,7 @@ import {
   ArrowUpTrayIcon,
   ExclamationTriangleIcon,
   ArchiveBoxIcon,
+  ClipboardDocumentIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
@@ -34,6 +35,7 @@ import AdvancedFilters, {
   FilterCriteria,
 } from "@/components/ui/AdvancedFilters";
 import PermissionGuard from "@/components/ui/PermissionGuard";
+import { ExportUtils } from "@/utils/exportUtils";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -64,6 +66,7 @@ interface Employee {
   archived: boolean;
   hireDate?: string;
   phoneNumber?: string;
+  isActive?: boolean;
 }
 
 interface WorkType {
@@ -277,8 +280,11 @@ function PersonnelContent() {
   };
 
   const handleDeleteEmployee = (id: string) => {
-    setEmployees(employees.filter((emp) => emp.id !== id));
-    console.log("Medewerker succesvol verwijderd");
+    const employee = employees.find((emp) => emp.id === id);
+    if (employee) {
+      setEmployeeToArchive(employee);
+      setShowArchiveModal(true);
+    }
   };
 
   const openEditModal = (employee: Employee) => {
@@ -287,10 +293,11 @@ function PersonnelContent() {
   };
 
   const archiveEmployee = (id: string) => {
-    setEmployees(
-      employees.map((emp) => (emp.id === id ? { ...emp, archived: true } : emp))
-    );
-    console.log("Medewerker succesvol gearchiveerd");
+    const employee = employees.find((emp) => emp.id === id);
+    if (employee) {
+      setEmployeeToArchive(employee);
+      setShowArchiveModal(true);
+    }
   };
 
   const handleArchiveEmployee = async (): Promise<void> => {
@@ -509,6 +516,81 @@ function PersonnelContent() {
     // Implementation of tableColumns function
   ];
 
+  // CSV Export functionality
+  const createCSVExport = () => {
+    const headers = [
+      "Naam",
+      "Email",
+      "Rol",
+      "Type",
+      "Bedrijf",
+      "Telefoon",
+      "Adres",
+      "Uurloon",
+      "Status",
+      "Werksoorten",
+    ];
+
+    const csvData = filteredEmployees.map((emp) => [
+      emp.name,
+      emp.email,
+      getRoleDisplayName(emp.role),
+      getEmployeeTypeText(emp.employeeType || ""),
+      emp.company,
+      emp.phone || "",
+      emp.address || "",
+      emp.hourlyRate || emp.hourlyWage || "",
+      emp.status === "active" ? "Actief" : "Inactief",
+      emp.workTypes?.join("; ") || "",
+    ]);
+
+    return [headers, ...csvData]
+      .map((row) =>
+        row
+          .map((cell) => `"${(cell || "").toString().replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
+  };
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob(["\uFEFF" + content], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Contract Generation Function
+  const generateContract = (employee: Employee) => {
+    try {
+      ExportUtils.generateEmployeeContract(employee);
+    } catch (error) {
+      console.error("Error generating contract:", error);
+      setError("Fout bij het genereren van het contract");
+    }
+  };
+
+  const handleGenerateContract = (employee: Employee) => {
+    setEmployeeForContract(employee);
+    setShowContractModal(true);
+  };
+
+  const confirmGenerateContract = () => {
+    if (employeeForContract) {
+      generateContract(employeeForContract);
+      setShowContractModal(false);
+      setEmployeeForContract(null);
+      console.log("Contract gegenereerd voor:", employeeForContract.name);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -518,75 +600,150 @@ function PersonnelContent() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 header-spacing">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-            👥 Personeel Beheer
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Beheer medewerkers, freelancers en hun gegevens
-          </p>
+    <div className="space-y-6">
+      {/* Modern Header Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 px-6 py-8 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <UserGroupIcon className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Personeel Beheer
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Beheer medewerkers, freelancers en hun gegevens
+                </p>
+                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center space-x-1">
+                    <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                    <span>
+                      {employees.filter((e) => !e.archived).length} Actief
+                    </span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
+                    <span>
+                      {employees.filter((e) => e.role === "EMPLOYEE").length}{" "}
+                      Vast
+                    </span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span className="h-2 w-2 bg-purple-500 rounded-full"></span>
+                    <span>
+                      {employees.filter((e) => e.role === "FREELANCER").length}{" "}
+                      Freelancers
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons with improved spacing */}
+            <div className="button-group-loose flex-wrap sm:flex-nowrap">
+              {selectedEmployees.length > 0 && (
+                <Button
+                  onClick={handleBulkDelete}
+                  variant="destructive"
+                  size="md"
+                  leftIcon={<TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  className="touch-target-sm"
+                >
+                  <span className="sm:hidden">
+                    {selectedEmployees.length} verwijderen
+                  </span>
+                  <span className="hidden sm:inline">
+                    {selectedEmployees.length} verwijderen
+                  </span>
+                </Button>
+              )}
+              <Button
+                onClick={() => setShowImportModal(true)}
+                leftIcon={
+                  <DocumentArrowUpIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                }
+                variant="outline"
+                size="md"
+                className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-blue-900/20 touch-target-sm"
+              >
+                <span className="sm:hidden">Excel Import</span>
+                <span className="hidden sm:inline">Excel Import</span>
+              </Button>
+              <Button
+                onClick={() => {
+                  const csvContent = createCSVExport();
+                  downloadCSV(
+                    csvContent,
+                    `personnel-export-${format(new Date(), "yyyy-MM-dd")}.csv`
+                  );
+                }}
+                leftIcon={<ArrowUpTrayIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                variant="outline"
+                size="md"
+                className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20 touch-target-sm"
+              >
+                <span className="sm:hidden">Export CSV</span>
+                <span className="hidden sm:inline">Export CSV</span>
+              </Button>
+              <Button
+                onClick={() => setShowAddModal(true)}
+                leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                variant="primary"
+                size="md"
+                className="touch-target-sm shadow-lg"
+              >
+                <span className="sm:hidden">Nieuwe Medewerker</span>
+                <span className="hidden sm:inline">Nieuwe Medewerker</span>
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="button-group button-group-mobile-row">
-          {selectedEmployees.length > 0 && (
-            <Button
-              onClick={handleBulkDelete}
-              variant="destructive"
-              size="md"
-              leftIcon={<TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-              className="touch-target-sm"
-            >
-              <span className="sm:hidden">
-                {selectedEmployees.length} verwijderen
+
+        {/* Advanced Filters Section */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+          <AdvancedFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableWorkTypes={availableWorkTypes}
+            availableCompanies={availableCompanies}
+          />
+        </div>
+
+        {/* Quick Stats Bar */}
+        <div className="px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-6 text-gray-600 dark:text-gray-400">
+              <span className="flex items-center space-x-2">
+                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                <span>
+                  <strong>{filteredEmployees.length}</strong> medewerkers
+                  gevonden
+                </span>
               </span>
-              <span className="hidden sm:inline">
-                {selectedEmployees.length} verwijderen
-              </span>
-            </Button>
-          )}
-          <Button
-            onClick={() => setShowImportModal(true)}
-            leftIcon={<DocumentArrowUpIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-            variant="outline"
-            size="md"
-            className="touch-target-sm"
-          >
-            <span className="sm:hidden">Import</span>
-            <span className="hidden sm:inline">Excel Import</span>
-          </Button>
-          <Button
-            onClick={() => router.push("/dashboard/contracts")}
-            leftIcon={<DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-            variant="outline"
-            size="md"
-            className="touch-target-sm text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
-          >
-            <span className="sm:hidden">Contracten</span>
-            <span className="hidden sm:inline">Alle Contracten</span>
-          </Button>
-          <Button
-            onClick={() => setShowAddModal(true)}
-            leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-            variant="primary"
-            size="md"
-            className="touch-target-sm"
-          >
-            <span className="sm:hidden">Toevoegen</span>
-            <span className="hidden sm:inline">Nieuwe Medewerker</span>
-          </Button>
+              {selectedEmployees.length > 0 && (
+                <span className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+                  <CheckCircleIcon className="h-4 w-4" />
+                  <span>
+                    <strong>{selectedEmployees.length}</strong> geselecteerd
+                  </span>
+                </span>
+              )}
+            </div>
+            <label className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeArchived}
+                onChange={(e) => setIncludeArchived(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm font-medium">Toon gearchiveerd</span>
+              <ArchiveBoxIcon className="h-4 w-4" />
+            </label>
+          </div>
         </div>
       </div>
-
-      {/* Advanced Filters */}
-      <AdvancedFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        availableWorkTypes={availableWorkTypes}
-        availableCompanies={availableCompanies}
-        className="mb-6"
-      />
 
       {/* Results Summary */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
@@ -647,19 +804,6 @@ function PersonnelContent() {
             )}
           </div>
         </div>
-
-        {/* Archive Toggle */}
-        <div className="flex items-center space-x-2">
-          <label className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-            <input
-              type="checkbox"
-              checked={includeArchived}
-              onChange={(e) => setIncludeArchived(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <span>Toon gearchiveerd</span>
-          </label>
-        </div>
       </div>
 
       {/* Loading State */}
@@ -712,40 +856,48 @@ function PersonnelContent() {
       )}
 
       {!loading && !error && filteredEmployees.length > 0 && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Active Employees Section */}
           {filteredEmployees.filter((emp) => !emp.archived).length > 0 && (
-            <div className="container-query bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="padding-fluid border-b border-gray-200 dark:border-gray-700">
-                <div className="flex-responsive-center justify-between">
-                  <h3 className="text-fluid-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                    <UserGroupIcon className="h-5 w-5 mr-2 text-green-600" />
-                    Actieve Medewerkers (
-                    {filteredEmployees.filter((emp) => !emp.archived).length})
-                  </h3>
-                  <div className="enhanced-only">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Container optimized view
-                    </span>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center">
+                      <UserGroupIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Actieve Medewerkers
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {
+                          filteredEmployees.filter((emp) => !emp.archived)
+                            .length
+                        }{" "}
+                        medewerkers actief
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Container Query Responsive Employee Grid */}
-              <div className="padding-fluid">
-                <div className="auto-fit-grid">
+              {/* Employee Grid */}
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredEmployees
                     .filter((emp) => !emp.archived)
                     .map((employee) => (
                       <div
                         key={employee.id}
-                        className="card-adaptive stack-context hover-adaptive"
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 cursor-pointer group"
+                        onClick={() => openEditModal(employee)}
                       >
-                        <div className="flex-responsive gap-3">
+                        <div className="flex items-start space-x-4">
                           {/* Avatar */}
                           <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-semibold text-fluid">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-200">
+                              <span className="text-white font-bold text-lg">
                                 {employee.name.charAt(0).toUpperCase()}
                               </span>
                             </div>
@@ -753,101 +905,130 @@ function PersonnelContent() {
 
                           {/* Employee Info */}
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-fluid-lg font-semibold text-gray-900 dark:text-white truncate">
-                              {employee.name}
-                            </h4>
-                            <p className="text-fluid text-gray-500 dark:text-gray-400 truncate">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h4 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                                {employee.name}
+                              </h4>
+                              {employee.hasContract && (
+                                <div
+                                  className="h-2 w-2 bg-green-500 rounded-full"
+                                  title="Heeft contract"
+                                ></div>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate mb-3">
                               {employee.email}
                             </p>
-                          </div>
-                        </div>
 
-                        {/* Enhanced Employee Details */}
-                        <div className="enhanced-only">
-                          <div className="space-fluid mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                            <div className="flex-responsive text-fluid">
-                              <span className="font-medium text-gray-600 dark:text-gray-300">
-                                Rol:
-                              </span>
+                            {/* Role and Type Badges */}
+                            <div className="flex items-center space-x-2 mb-3">
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                                className={`px-2 py-1 rounded-lg text-xs font-semibold ${getRoleBadgeColor(
                                   employee.role
                                 )}`}
                               >
                                 {getRoleDisplayName(employee.role)}
                               </span>
+                              <span
+                                className={`px-2 py-1 rounded-lg text-xs font-semibold ${getEmployeeTypeColor(
+                                  employee.employeeType || ""
+                                )}`}
+                              >
+                                {getEmployeeTypeText(
+                                  employee.employeeType || ""
+                                )}
+                              </span>
                             </div>
-                            <div className="flex-responsive text-fluid">
-                              <span className="font-medium text-gray-600 dark:text-gray-300">
-                                Telefoon:
-                              </span>
-                              <span className="text-gray-900 dark:text-white">
-                                {employee.phoneNumber || "Niet ingevuld"}
-                              </span>
+
+                            {/* Contact Info */}
+                            <div className="space-y-2 text-sm">
+                              {employee.phone && (
+                                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                                  <PhoneIcon className="h-4 w-4" />
+                                  <span className="truncate">
+                                    {employee.phone}
+                                  </span>
+                                </div>
+                              )}
+                              {employee.company && (
+                                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                                  <BuildingOfficeIcon className="h-4 w-4" />
+                                  <span className="truncate">
+                                    {employee.company}
+                                  </span>
+                                </div>
+                              )}
+                              {(employee.hourlyRate || employee.hourlyWage) && (
+                                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                                  <CurrencyEuroIcon className="h-4 w-4" />
+                                  <span>
+                                    €
+                                    {employee.hourlyRate || employee.hourlyWage}
+                                    /uur
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex-responsive text-fluid">
-                              <span className="font-medium text-gray-600 dark:text-gray-300">
-                                Gestart:
-                              </span>
-                              <span className="text-gray-900 dark:text-white">
-                                {employee.hireDate
-                                  ? format(
+
+                            {/* Work Types */}
+                            {employee.workTypes &&
+                              employee.workTypes.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                  <div className="flex flex-wrap gap-1">
+                                    {employee.workTypes
+                                      .slice(0, 2)
+                                      .map((workType, index) => (
+                                        <span
+                                          key={index}
+                                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs rounded-md"
+                                        >
+                                          {workType}
+                                        </span>
+                                      ))}
+                                    {employee.workTypes.length > 2 && (
+                                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md">
+                                        +{employee.workTypes.length - 2} meer
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                            {/* Action Buttons */}
+                            <div className="mt-4 flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(
+                                      `/dashboard/personnel/edit/${employee.id}`
+                                    );
+                                  }}
+                                  variant="primary"
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                  title="Medewerker beheren"
+                                >
+                                  <UserGroupIcon className="h-4 w-4 mr-1" />
+                                  Beheren
+                                </Button>
+                              </div>
+
+                              <div className="text-xs text-gray-400 dark:text-gray-500">
+                                {employee.hireDate && (
+                                  <>
+                                    Sinds{" "}
+                                    {format(
                                       new Date(employee.hireDate),
-                                      "dd/MM/yyyy",
+                                      "MMM yyyy",
                                       { locale: nl }
-                                    )
-                                  : "Onbekend"}
-                              </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Fallback for older browsers */}
-                        <div className="fallback-only mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                          <div className="grid grid-cols-1 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-600 dark:text-gray-300">
-                                Rol:{" "}
-                              </span>
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                                  employee.role
-                                )}`}
-                              >
-                                {getRoleDisplayName(employee.role)}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600 dark:text-gray-300">
-                                Telefoon:{" "}
-                              </span>
-                              <span className="text-gray-900 dark:text-white">
-                                {employee.phoneNumber || "Niet ingevuld"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex-responsive space-fluid mt-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            leftIcon={<PencilIcon className="h-4 w-4" />}
-                            onClick={() => openEditModal(employee)}
-                            className="flex-1 sm:flex-none"
-                          >
-                            Bewerken
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            leftIcon={<ArchiveBoxIcon className="h-4 w-4" />}
-                            onClick={() => archiveEmployee(employee.id)}
-                            className="flex-1 sm:flex-none text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-orange-900/20"
-                          >
-                            Archiveren
-                          </Button>
                         </div>
                       </div>
                     ))}
@@ -857,102 +1038,97 @@ function PersonnelContent() {
           )}
 
           {/* Archived Employees Section */}
-          {filteredEmployees.filter((emp) => emp.archived).length > 0 && (
-            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                    <TrashIcon className="h-5 w-5 mr-2 text-gray-600" />
-                    Oud Medewerkers (
-                    {filteredEmployees.filter((emp) => emp.archived).length})
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Medewerkers die uit dienst zijn
-                  </p>
-                </div>
-              </div>
-
-              {/* Mobile Card Layout for Archived */}
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredEmployees
-                  .filter((emp) => emp.archived)
-                  .map((employee) => (
-                    <div
-                      key={employee.id}
-                      className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700 opacity-75 transition-colors duration-200 cursor-pointer"
-                      onClick={() =>
-                        router.push(`/dashboard/personnel/edit/${employee.id}`)
-                      }
-                    >
-                      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                        {/* Employee Info */}
-                        <div className="flex items-center space-x-4">
-                          <div className="flex-shrink-0">
-                            <div className="h-12 w-12 sm:h-10 sm:w-10 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center">
-                              <UserGroupIcon className="h-6 w-6 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-400" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-base font-medium text-gray-500 dark:text-gray-400 line-through truncate sm:text-sm">
-                              {employee.name}
-                              <span className="ml-2 px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full">
-                                Gearchiveerd
-                              </span>
-                            </div>
-                            <div className="text-sm text-gray-400 dark:text-gray-500 truncate">
-                              {employee.email}
-                            </div>
-                            {employee.company && (
-                              <div className="text-sm text-gray-500 dark:text-gray-400 truncate sm:hidden">
-                                {employee.company}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Tags and Actions */}
-                        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-                          <div className="flex flex-wrap gap-2">
-                            <span
-                              className={`px-2 py-1 text-xs rounded-full font-medium opacity-60 ${getEmployeeTypeColor(
-                                employee.employeeType || ""
-                              )}`}
-                            >
-                              {getEmployeeTypeText(employee.employeeType || "")}
-                            </span>
-                            {employee.company && (
-                              <span className="hidden sm:inline-flex px-2 py-1 text-xs bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-full opacity-60">
-                                {employee.company}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUnarchiveEmployee(employee);
-                              }}
-                              leftIcon={<CheckCircleIcon className="h-4 w-4" />}
-                              className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 w-full sm:w-auto"
-                            >
-                              <span className="sm:hidden">
-                                Weer in dienst nemen
-                              </span>
-                              <span className="hidden sm:inline">
-                                Terugzetten
-                              </span>
-                            </Button>
-                          </div>
-                        </div>
+          {includeArchived &&
+            filteredEmployees.filter((emp) => emp.archived).length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-8 w-8 bg-gray-500 rounded-lg flex items-center justify-center">
+                        <ArchiveBoxIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          Gearchiveerde Medewerkers
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {
+                            filteredEmployees.filter((emp) => emp.archived)
+                              .length
+                          }{" "}
+                          gearchiveerd
+                        </p>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredEmployees
+                      .filter((emp) => emp.archived)
+                      .map((employee) => (
+                        <div
+                          key={employee.id}
+                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-300 dark:border-gray-600 p-6 opacity-75"
+                        >
+                          <div className="flex items-start space-x-4">
+                            <div className="flex-shrink-0">
+                              <div className="w-12 h-12 bg-gray-400 rounded-xl flex items-center justify-center">
+                                <span className="text-white font-bold text-lg">
+                                  {employee.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 truncate">
+                                {employee.name}
+                              </h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+                                {employee.email}
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-lg">
+                                  Gearchiveerd
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    type="button"
+                                    onClick={() =>
+                                      router.push(
+                                        `/dashboard/personnel/edit/${employee.id}`
+                                      )
+                                    }
+                                    variant="primary"
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                    title="Medewerker beheren"
+                                  >
+                                    <UserGroupIcon className="h-4 w-4 mr-1" />
+                                    Beheren
+                                  </Button>
+                                  <Button
+                                    onClick={() =>
+                                      handleUnarchiveEmployee(employee)
+                                    }
+                                    variant="primary"
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                                    title="Medewerker herstellen"
+                                  >
+                                    <CheckCircleIcon className="h-4 w-4 mr-1" />
+                                    Herstel
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       )}
 
@@ -1078,7 +1254,7 @@ function PersonnelContent() {
             <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <CurrencyEuroIcon className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
-                💰 Financiële Gegevens
+                Financiële Gegevens
               </h3>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {newEmployee.employeeType === "FREELANCER" ? (
@@ -1163,7 +1339,7 @@ function PersonnelContent() {
                 newEmployee.hourlyRate && (
                   <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
                     <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                      💡 Kostenberekening per dag (8 uur)
+                      Kostenberekening per dag (8 uur)
                     </h4>
                     <p className="text-sm text-blue-800 dark:text-blue-200">
                       €{(parseFloat(newEmployee.hourlyRate) * 8).toFixed(2)} per
@@ -1176,7 +1352,7 @@ function PersonnelContent() {
                 newEmployee.hourlyWage && (
                   <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
                     <h4 className="text-sm font-medium text-orange-900 dark:text-orange-100 mb-2">
-                      💡 Kostenberekening per dag (8 uur)
+                      Kostenberekening per dag (8 uur)
                     </h4>
                     <p className="text-sm text-orange-800 dark:text-orange-200">
                       €{(parseFloat(newEmployee.hourlyWage) * 8).toFixed(2)} per
@@ -1192,7 +1368,7 @@ function PersonnelContent() {
                 newEmployee.monthlySalary && (
                   <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                     <h4 className="text-sm font-medium text-green-900 dark:text-green-100 mb-2">
-                      💡 Kostenberekening per dag (o.b.v. 22 werkdagen)
+                      Kostenberekening per dag (o.b.v. 22 werkdagen)
                     </h4>
                     <p className="text-sm text-green-800 dark:text-green-200">
                       €{(parseFloat(newEmployee.monthlySalary) / 22).toFixed(2)}{" "}
@@ -1773,7 +1949,7 @@ function PersonnelContent() {
                 setEmployeeToArchive(null);
               }}
             >
-              ❌ Annuleren
+              Annuleren
             </Button>
             <Button
               type="button"
@@ -1782,7 +1958,129 @@ function PersonnelContent() {
               leftIcon={<TrashIcon className="h-4 w-4" />}
               className="bg-orange-600 hover:bg-orange-700 text-white border-orange-600 hover:border-orange-700"
             >
-              📁 Archiveren
+              Archiveren
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Contract Generation Confirmation Modal */}
+      <Modal
+        isOpen={showContractModal}
+        onClose={() => {
+          setShowContractModal(false);
+          setEmployeeForContract(null);
+        }}
+        title="📋 Contract Genereren"
+        description={`Contract genereren voor ${employeeForContract?.name}`}
+        size="md"
+        type="info"
+      >
+        <div className="space-y-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <ClipboardDocumentIcon className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                  Contract wordt gegenereerd
+                </h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Er wordt een professioneel contract aangemaakt voor{" "}
+                  <strong>{employeeForContract?.name}</strong> met de volgende
+                  gegevens:
+                </p>
+                <ul className="mt-2 text-sm text-blue-700 dark:text-blue-300 list-disc list-inside space-y-1">
+                  <li>Persoonlijke gegevens en contactinformatie</li>
+                  <li>Functieomschrijving en werkzaamheden</li>
+                  <li>Salaris en arbeidsvoorwaarden</li>
+                  <li>Standaard contractuele bepalingen</li>
+                  <li>JobFlow branding en vormgeving</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {employeeForContract && (
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                  <UserGroupIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                    {employeeForContract.name}
+                  </h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {employeeForContract.email}
+                  </p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${getRoleColor(
+                        employeeForContract.role
+                      )}`}
+                    >
+                      {getRoleText(employeeForContract.role)}
+                    </span>
+                    {employeeForContract.employeeType && (
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${getEmployeeTypeColor(
+                          employeeForContract.employeeType
+                        )}`}
+                      >
+                        {getEmployeeTypeText(employeeForContract.employeeType)}
+                      </span>
+                    )}
+                    {(employeeForContract.hourlyRate ||
+                      employeeForContract.hourlyWage) && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                        €
+                        {employeeForContract.hourlyRate ||
+                          employeeForContract.hourlyWage}
+                        /uur
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <DocumentTextIcon className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  Het contract wordt als PDF bestand gedownload. Controleer de
+                  gegevens en laat het contract ondertekenen door beide
+                  partijen.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowContractModal(false);
+                setEmployeeForContract(null);
+              }}
+            >
+              Annuleren
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={confirmGenerateContract}
+              leftIcon={<ClipboardDocumentIcon className="h-4 w-4" />}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Contract Genereren
             </Button>
           </div>
         </div>

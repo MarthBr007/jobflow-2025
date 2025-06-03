@@ -21,6 +21,13 @@ import PermissionGuard from "@/components/ui/PermissionGuard";
 
 const settingsCategories = [
   {
+    title: "Document Templates",
+    description: "Beheer briefpapier, logo's en document templates",
+    icon: DocumentTextIcon,
+    href: "/dashboard/admin/document-templates",
+    color: "bg-cyan-500",
+  },
+  {
     title: "Email Instellingen",
     description: "Beheer e-mail configuratie en notificaties",
     icon: EnvelopeIcon,

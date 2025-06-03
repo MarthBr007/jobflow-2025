@@ -141,6 +141,61 @@ export default function SchedulePage() {
 
   const { confirm, ConfirmModal } = useConfirm();
 
+  // Export functions - simplified with better branding
+  const handleExportPDF = async () => {
+    if (!schedule?.shifts || schedule.shifts.length === 0) {
+      alert("Geen diensten om te exporteren");
+      return;
+    }
+
+    try {
+      await ExportUtils.exportScheduleToPDF(schedule.shifts, selectedDate, {
+        title: `Werkrooster ${format(new Date(selectedDate), "dd MMMM yyyy", {
+          locale: nl,
+        })}`,
+        companyName: "JobFlow Solutions",
+        includeBreaks: true,
+        includeNotes: true,
+        theme: "professional",
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      alert("Fout bij het exporteren naar PDF");
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!schedule?.shifts || schedule.shifts.length === 0) {
+      alert("Geen diensten om te exporteren");
+      return;
+    }
+
+    try {
+      ExportUtils.exportScheduleToExcel(schedule.shifts, selectedDate, {
+        title: `Werkrooster ${format(new Date(selectedDate), "dd MMMM yyyy", {
+          locale: nl,
+        })}`,
+        companyName: "JobFlow Solutions",
+        includeBreaks: true,
+        includeNotes: true,
+        includeMetadata: true,
+        theme: "professional",
+      });
+    } catch (error) {
+      console.error("Excel export error:", error);
+      alert("Fout bij het exporteren naar Excel");
+    }
+  };
+
+  // Export functions - quick export simplified
+  const handleQuickExport = (format: "pdf" | "excel") => {
+    if (format === "pdf") {
+      handleExportPDF();
+    } else {
+      handleExportExcel();
+    }
+  };
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/");
@@ -426,21 +481,47 @@ export default function SchedulePage() {
     return grouped;
   };
 
-  // Get work type emoji
-  const getWorkTypeEmoji = (workType: string) => {
-    const emojiMap: Record<string, string> = {
-      wasstraat: "🚗",
-      orderpicker: "📦",
-      chauffeur: "🚚",
-      "op en afbouw werkzaamheden": "🔧",
-      magazijn: "🏭",
-      administratie: "📋",
-      klantenservice: "🎧",
-      "technische dienst": "⚙️",
-      beveiliging: "🛡️",
-      schoonmaak: "🧹",
+  // Get work type icon
+  const getWorkTypeIcon = (workType: string) => {
+    const iconMap: Record<string, string> = {
+      graafwerk: "G",
+      schilderwerk: "S",
+      keukenplaatsing: "K",
+      badkamerplaatsing: "B",
+      tegelwerk: "T",
+      verhuis: "V",
+      event_decoratie: "E",
+      warehouse: "W",
+      kantoor: "K",
+      administratie: "A",
+      cleaning: "C",
+      onderhoud: "O",
     };
-    return emojiMap[workType.toLowerCase()] || "💼";
+
+    return iconMap[workType.toLowerCase()] || "W";
+  };
+
+  const getLeaveIcon = (leaveType: string) => {
+    const iconMap: Record<string, string> = {
+      vacation: "V",
+      sick_leave: "Z",
+      personal_leave: "P",
+      time_off_in_lieu: "T",
+      doctor_visit: "D",
+      dentist_visit: "T",
+      special_leave: "S",
+      calamity_leave: "C",
+      bereavement_leave: "R",
+      moving_day: "V",
+      maternity_leave: "Z",
+      paternity_leave: "V",
+      study_leave: "S",
+      emergency_leave: "N",
+      unpaid_leave: "O",
+      compensatory_leave: "C",
+    };
+
+    return iconMap[leaveType.toLowerCase()] || "V";
   };
 
   // Calculate total hours for a work type group
@@ -448,32 +529,8 @@ export default function SchedulePage() {
     return shifts.reduce((total, shift) => {
       const start = new Date(shift.startTime);
       const end = new Date(shift.endTime);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      return total + hours;
+      return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
     }, 0);
-  };
-
-  // Utility functions for leave types
-  const getLeaveEmoji = (leaveType: string) => {
-    const leaveTypes: Record<string, string> = {
-      VACATION: "🏖️",
-      SICK_LEAVE: "🤒",
-      PERSONAL_LEAVE: "👤",
-      TIME_OFF_IN_LIEU: "⏰",
-      DOCTOR_VISIT: "👨‍⚕️",
-      DENTIST_VISIT: "🦷",
-      SPECIAL_LEAVE: "✨",
-      CALAMITY_LEAVE: "🚨",
-      BEREAVEMENT_LEAVE: "🖤",
-      MOVING_DAY: "📦",
-      MATERNITY_LEAVE: "🤱",
-      PATERNITY_LEAVE: "👨‍👶",
-      STUDY_LEAVE: "📚",
-      EMERGENCY_LEAVE: "🆘",
-      UNPAID_LEAVE: "💸",
-      COMPENSATORY_LEAVE: "⚖️",
-    };
-    return leaveTypes[leaveType] || "📝";
   };
 
   const getLeaveLabel = (leaveType: string) => {
@@ -563,51 +620,6 @@ export default function SchedulePage() {
     }, 0);
   };
 
-  // Export functions
-  const handleExportPDF = async () => {
-    if (!schedule?.shifts || schedule.shifts.length === 0) {
-      alert("Geen diensten om te exporteren");
-      return;
-    }
-
-    try {
-      await ExportUtils.exportScheduleToPDF(schedule.shifts, selectedDate, {
-        title: `Rooster ${format(new Date(selectedDate), "dd MMMM yyyy", {
-          locale: nl,
-        })}`,
-        companyName: "JobFlow Solutions",
-        includeBreaks: true,
-        includeNotes: true,
-        includeMetadata: true,
-      });
-    } catch (error) {
-      console.error("PDF export error:", error);
-      alert("PDF export mislukt");
-    }
-  };
-
-  const handleExportExcel = () => {
-    if (!schedule?.shifts || schedule.shifts.length === 0) {
-      alert("Geen diensten om te exporteren");
-      return;
-    }
-
-    try {
-      ExportUtils.exportScheduleToExcel(schedule.shifts, selectedDate, {
-        title: `Rooster ${format(new Date(selectedDate), "dd MMMM yyyy", {
-          locale: nl,
-        })}`,
-        companyName: "JobFlow Solutions",
-        includeBreaks: true,
-        includeNotes: true,
-        includeMetadata: true,
-      });
-    } catch (error) {
-      console.error("Excel export error:", error);
-      alert("Excel export mislukt");
-    }
-  };
-
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -642,15 +654,15 @@ export default function SchedulePage() {
       <Card variant="elevated" padding="lg" className="mb-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
           <div className="flex-1">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
-              📅 Rooster Beheer
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-2xl">
+              Rooster Beheer
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 sm:mt-2">
               Plan en beheer werkdiensten voor je team
             </p>
           </div>
 
-          <div className="button-group button-group-mobile-row">
+          <div className="button-group-loose flex-wrap sm:flex-nowrap">
             {/* Export buttons - show for admin/manager when shifts exist */}
             {(session?.user?.role === "ADMIN" ||
               session?.user?.role === "MANAGER") &&
@@ -658,26 +670,26 @@ export default function SchedulePage() {
               schedule.shifts.length > 0 && (
                 <>
                   <Button
-                    onClick={handleExportPDF}
+                    onClick={() => handleQuickExport("pdf")}
                     variant="outline"
                     size="md"
                     leftIcon={
-                      <DocumentArrowDownIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <DocumentArrowDownIcon className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
                     }
-                    className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20 touch-target-sm"
+                    className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 touch-target-sm"
                     title="Exporteer als PDF"
                   >
                     <span className="sm:hidden">PDF</span>
                     <span className="hidden sm:inline">PDF Export</span>
                   </Button>
                   <Button
-                    onClick={handleExportExcel}
+                    onClick={() => handleQuickExport("excel")}
                     variant="outline"
                     size="md"
                     leftIcon={
-                      <TableCellsIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <TableCellsIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                     }
-                    className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20 touch-target-sm"
+                    className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 touch-target-sm"
                     title="Exporteer als Excel"
                   >
                     <span className="sm:hidden">Excel</span>
@@ -693,8 +705,10 @@ export default function SchedulePage() {
                 onClick={() => setShowAutoGenerateModal(true)}
                 variant="outline"
                 size="md"
-                leftIcon={<SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-                className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 touch-target-sm"
+                leftIcon={
+                  <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                }
+                className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 touch-target-sm"
               >
                 <span className="sm:hidden">Auto</span>
                 <span className="hidden sm:inline">Auto Genereren</span>
@@ -964,7 +978,7 @@ export default function SchedulePage() {
                                 <div className="flex-shrink-0">
                                   <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
                                     <span className="text-lg">
-                                      {getLeaveEmoji(leave.type)}
+                                      {getLeaveIcon(leave.type)}
                                     </span>
                                   </div>
                                 </div>
@@ -1062,7 +1076,7 @@ export default function SchedulePage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               <div className="text-2xl">
-                                {getWorkTypeEmoji(workType)}
+                                {getWorkTypeIcon(workType)}
                               </div>
                               <div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -1293,12 +1307,12 @@ export default function SchedulePage() {
                                               `/dashboard/schedule/shift?id=${shift.id}&date=${selectedDate}`
                                             )
                                           }
-                                          variant="ghost"
+                                          variant="primary"
                                           size="sm"
                                           leftIcon={
                                             <PencilIcon className="w-4 h-4" />
                                           }
-                                          className="w-full min-h-[40px] sm:w-auto text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+                                          className="w-full min-h-[40px] sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                                         >
                                           Bewerken
                                         </Button>
@@ -1312,12 +1326,12 @@ export default function SchedulePage() {
                                           onClick={() =>
                                             handleDeleteShift(shift.id)
                                           }
-                                          variant="ghost"
+                                          variant="primary"
                                           size="sm"
                                           leftIcon={
                                             <TrashIcon className="w-4 h-4" />
                                           }
-                                          className="w-full min-h-[40px] sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                                          className="w-full min-h-[40px] sm:w-auto bg-red-600 hover:bg-red-700 text-white shadow-sm"
                                         >
                                           Verwijderen
                                         </Button>
@@ -1382,7 +1396,7 @@ export default function SchedulePage() {
                                 <div className="flex-shrink-0">
                                   <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
                                     <span className="text-lg">
-                                      {getLeaveEmoji(leave.type)}
+                                      {getLeaveIcon(leave.type)}
                                     </span>
                                   </div>
                                 </div>
@@ -1694,7 +1708,7 @@ export default function SchedulePage() {
                             <div className="flex-shrink-0">
                               <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
                                 <span className="text-lg">
-                                  {getLeaveEmoji(leave.type)}
+                                  {getLeaveIcon(leave.type)}
                                 </span>
                               </div>
                             </div>
@@ -1785,8 +1799,8 @@ export default function SchedulePage() {
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      📅 Mijn Vaste Rooster
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Mijn Vaste Rooster
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Jouw standaard werkdagen en tijden

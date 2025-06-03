@@ -27,36 +27,41 @@
   /* Button Group Spacing */
   .button-group {
     display: flex;
-    gap: 12px; /* 3 * 4dp */
+    gap: 16px; /* 4 * 4dp - more generous spacing */
   }
 
   .button-group-tight {
     display: flex;
-    gap: 8px; /* 2 * 4dp */
+    gap: 12px; /* 3 * 4dp */
   }
 
   .button-group-loose {
     display: flex;
-    gap: 16px; /* 4 * 4dp */
+    gap: 20px; /* 5 * 4dp - even more spacing for headers */
   }
 
   .button-group-vertical {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
 
   /* Responsive Button Groups */
   @media (max-width: 640px) {
     .button-group {
       flex-direction: column;
-      gap: 8px;
+      gap: 12px; /* Increase from 8px for better touch targets */
     }
 
     .button-group-mobile-row {
       flex-direction: row;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 12px; /* Increase from 8px for better spacing */
+    }
+
+    .button-group-loose {
+      flex-direction: column;
+      gap: 14px; /* Even more spacing for important button groups */
     }
   }
 

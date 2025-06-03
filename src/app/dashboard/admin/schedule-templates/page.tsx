@@ -490,7 +490,7 @@ export default function ScheduleTemplatesPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="button-group">
                       <Button
                         variant="outline"
                         size="sm"
@@ -621,7 +621,7 @@ export default function ScheduleTemplatesPage() {
                   patronen
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="button-group-loose">
                 <input
                   type="text"
                   placeholder="Zoek medewerker..."

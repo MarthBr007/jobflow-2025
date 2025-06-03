@@ -426,7 +426,7 @@ export default function Projects() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-            📋 Projecten
+            Projecten
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {isAdminOrManager

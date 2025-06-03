@@ -46,7 +46,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       // Primary - High emphasis filled button (uinkits Filled Button)
       primary: cn(
-        "bg-blue-600 text-white shadow-sm",
+        "bg-blue-600 text-white shadow-sm font-semibold",
         "hover:bg-blue-700 hover:shadow-md active:bg-blue-800",
         "focus:ring-blue-500 active:scale-95",
         "dark:bg-blue-500 dark:hover:bg-blue-600 dark:active:bg-blue-700",
@@ -55,7 +55,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
       // Filled - High emphasis alternative (uinkits Filled Button variant)
       filled: cn(
-        "bg-blue-600 text-white shadow-sm",
+        "bg-blue-600 text-white shadow-sm font-semibold",
         "hover:bg-blue-700 hover:shadow-md active:bg-blue-800",
         "focus:ring-blue-500 active:scale-95",
         "dark:bg-blue-500 dark:hover:bg-blue-600 dark:active:bg-blue-700"
@@ -63,8 +63,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
       // Elevated - Medium emphasis (uinkits Elevated Button)
       elevated: cn(
-        "bg-white text-blue-600 shadow-md border border-gray-200",
-        "hover:bg-blue-50 hover:shadow-lg hover:border-blue-300",
+        "bg-white text-blue-700 shadow-md border border-gray-200 font-semibold",
+        "hover:bg-blue-50 hover:shadow-lg hover:border-blue-300 hover:text-blue-800",
         "focus:ring-blue-500 active:scale-95",
         "dark:bg-gray-800 dark:text-blue-400 dark:border-gray-600",
         "dark:hover:bg-gray-700 dark:hover:border-blue-500"
@@ -72,8 +72,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
       // Secondary - Medium emphasis (uinkits Filled Tonal Button)
       secondary: cn(
-        "bg-blue-50 text-blue-700 border border-blue-200",
-        "hover:bg-blue-100 hover:border-blue-300 hover:text-blue-800",
+        "bg-blue-50 text-blue-800 border border-blue-200 font-semibold",
+        "hover:bg-blue-100 hover:border-blue-300 hover:text-blue-900",
         "focus:ring-blue-500 active:scale-95",
         "dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800",
         "dark:hover:bg-blue-900/30 dark:hover:border-blue-700"
@@ -81,8 +81,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
       // Tonal - Medium emphasis alternative (uinkits Filled Tonal Button)
       tonal: cn(
-        "bg-blue-50 text-blue-700 border border-blue-200",
-        "hover:bg-blue-100 hover:border-blue-300 hover:text-blue-800",
+        "bg-blue-50 text-blue-800 border border-blue-200 font-semibold",
+        "hover:bg-blue-100 hover:border-blue-300 hover:text-blue-900",
         "focus:ring-blue-500 active:scale-95",
         "dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800",
         "dark:hover:bg-blue-900/30 dark:hover:border-blue-700"
@@ -90,49 +90,43 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
       // Outline - Medium emphasis (uinkits Outlined Button)
       outline: cn(
-        "border-2 border-blue-600 text-blue-600 bg-transparent",
-        "hover:bg-blue-600 hover:text-white hover:shadow-sm",
+        "bg-white dark:bg-gray-800 border-2 border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400 font-semibold",
+        "hover:bg-blue-600 hover:text-white hover:shadow-sm dark:hover:bg-blue-400 dark:hover:text-gray-900",
         "focus:ring-blue-500 active:scale-95",
-        "dark:border-blue-400 dark:text-blue-400",
-        "dark:hover:bg-blue-400 dark:hover:text-gray-900"
+        "transition-colors duration-200"
       ),
 
       // Tertiary - Low to medium emphasis
       tertiary: cn(
-        "bg-gray-50 text-gray-700 border border-gray-200",
-        "hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800",
-        "focus:ring-gray-500 active:scale-95",
-        "dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
-        "dark:hover:bg-gray-700 dark:hover:border-gray-600"
+        "bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 font-semibold",
+        "hover:bg-gray-100 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-gray-100",
+        "focus:ring-gray-500 active:scale-95"
       ),
 
       // Text - Low emphasis (uinkits Text Button)
       text: cn(
-        "text-blue-600 bg-transparent border-0",
-        "hover:text-blue-700 hover:bg-blue-50 hover:shadow-none",
-        "focus:ring-blue-500 active:scale-95",
-        "dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+        "text-blue-700 dark:text-blue-400 bg-transparent border-0 font-semibold",
+        "hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:shadow-none",
+        "focus:ring-blue-500 active:scale-95"
       ),
 
       // Icon - Low emphasis (uinkits Icon Button)
       icon: cn(
-        "text-gray-500 bg-transparent border-0 rounded-full",
-        "hover:text-gray-700 hover:bg-gray-100",
-        "focus:ring-gray-500 active:scale-95",
-        "dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
+        "text-gray-600 dark:text-gray-400 bg-transparent border-0 rounded-full font-semibold",
+        "hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700",
+        "focus:ring-gray-500 active:scale-95"
       ),
 
       // Ghost - Ultra minimal
       ghost: cn(
-        "text-gray-600 bg-transparent border-0",
-        "hover:text-gray-900 hover:bg-gray-50",
-        "focus:ring-gray-500 active:scale-95",
-        "dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800"
+        "text-gray-700 dark:text-gray-300 bg-transparent border-0 font-semibold",
+        "hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800",
+        "focus:ring-gray-500 active:scale-95"
       ),
 
       // Destructive - High emphasis for dangerous actions
       destructive: cn(
-        "bg-red-600 text-white shadow-sm border border-red-600",
+        "bg-red-600 text-white shadow-sm border border-red-600 font-semibold",
         "hover:bg-red-700 hover:shadow-md hover:border-red-700",
         "focus:ring-red-500 active:scale-95 active:bg-red-800",
         "dark:bg-red-500 dark:border-red-500 dark:hover:bg-red-600 dark:hover:border-red-600"
@@ -212,7 +206,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               {leftIcon}
             </span>
           )}
-          {children && <span className="font-medium">{children}</span>}
+          {children && <span className="font-semibold">{children}</span>}
           {rightIcon && (
             <span className={cn("flex-shrink-0", iconSizes[size])}>
               {rightIcon}

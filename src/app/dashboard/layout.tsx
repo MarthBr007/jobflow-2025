@@ -206,7 +206,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           width: !isMobile && sidebarCollapsed ? 80 : 280,
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-xl lg:translate-x-0 lg:static lg:inset-0"
+        className="fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-xl lg:translate-x-0 lg:static lg:inset-0 flex-shrink-0"
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -419,12 +419,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </motion.aside>
 
       {/* Main Content */}
-      <main
-        className={`flex-1 flex flex-col min-h-0 transition-all duration-300 overflow-auto`}
-        style={{
-          marginLeft: isMobile ? 0 : sidebarCollapsed ? 80 : 280,
-        }}
-      >
+      <main className="flex-1 flex flex-col min-h-0 overflow-auto">
         {/* Mobile Header - Only show hamburger when needed */}
         {isMobile && (
           <motion.div
@@ -455,8 +450,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         )}
 
         {/* Content Container */}
-        <div className={`flex-1 p-3 lg:p-4 xl:p-6 max-w-7xl mx-auto w-full`}>
-          <div className="min-h-full">{children}</div>
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
+          <div className="min-h-full max-w-7xl mx-auto">{children}</div>
         </div>
       </main>
     </div>

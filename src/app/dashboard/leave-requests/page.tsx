@@ -52,22 +52,22 @@ interface LeaveRequest {
 }
 
 const LEAVE_TYPES = [
-  { value: "VACATION", label: "Vakantie", emoji: "🏖️" },
-  { value: "SICK_LEAVE", label: "Ziekteverlof", emoji: "🤒" },
-  { value: "PERSONAL_LEAVE", label: "Persoonlijk verlof", emoji: "👤" },
-  { value: "TIME_OFF_IN_LIEU", label: "Tijd voor tijd opname", emoji: "⏰" },
-  { value: "DOCTOR_VISIT", label: "Doktersbezoek", emoji: "👨‍⚕️" },
-  { value: "DENTIST_VISIT", label: "Tandarts bezoek", emoji: "🦷" },
-  { value: "SPECIAL_LEAVE", label: "Bijzonder verlof", emoji: "✨" },
-  { value: "CALAMITY_LEAVE", label: "Calamiteitenverlof", emoji: "🚨" },
-  { value: "BEREAVEMENT_LEAVE", label: "Rouwverlof", emoji: "🖤" },
-  { value: "MOVING_DAY", label: "Verhuisdag", emoji: "📦" },
-  { value: "MATERNITY_LEAVE", label: "Zwangerschapsverlof", emoji: "🤱" },
-  { value: "PATERNITY_LEAVE", label: "Vaderschapsverlof", emoji: "👨‍👶" },
-  { value: "STUDY_LEAVE", label: "Studieverlof", emoji: "📚" },
-  { value: "EMERGENCY_LEAVE", label: "Noodverlof", emoji: "🆘" },
-  { value: "UNPAID_LEAVE", label: "Onbetaald verlof", emoji: "💸" },
-  { value: "COMPENSATORY_LEAVE", label: "Compensatieverlof", emoji: "⚖️" },
+  { value: "VACATION", label: "Vakantie" },
+  { value: "SICK_LEAVE", label: "Ziekteverlof" },
+  { value: "PERSONAL_LEAVE", label: "Persoonlijk verlof" },
+  { value: "TIME_OFF_IN_LIEU", label: "Tijd voor tijd opname" },
+  { value: "DOCTOR_VISIT", label: "Doktersbezoek" },
+  { value: "DENTIST_VISIT", label: "Tandarts bezoek" },
+  { value: "SPECIAL_LEAVE", label: "Bijzonder verlof" },
+  { value: "CALAMITY_LEAVE", label: "Calamiteitenverlof" },
+  { value: "BEREAVEMENT_LEAVE", label: "Rouwverlof" },
+  { value: "MOVING_DAY", label: "Verhuisdag" },
+  { value: "MATERNITY_LEAVE", label: "Zwangerschapsverlof" },
+  { value: "PATERNITY_LEAVE", label: "Vaderschapsverlof" },
+  { value: "STUDY_LEAVE", label: "Studieverlof" },
+  { value: "EMERGENCY_LEAVE", label: "Noodverlof" },
+  { value: "UNPAID_LEAVE", label: "Onbetaald verlof" },
+  { value: "COMPENSATORY_LEAVE", label: "Compensatieverlof" },
 ];
 
 export default function LeaveRequests() {
@@ -237,9 +237,9 @@ export default function LeaveRequests() {
     }
   };
 
-  const getLeaveTypeEmoji = (type: string) => {
-    const leaveType = LEAVE_TYPES.find((lt) => lt.value === type);
-    return leaveType ? leaveType.emoji : "📝";
+  const getLeaveTypeIcon = (type: string) => {
+    const leaveType = LEAVE_TYPES.find((t) => t.value === type);
+    return leaveType ? leaveType.label.charAt(0).toUpperCase() : "V";
   };
 
   const getLeaveTypeLabel = (type: string) => {
@@ -336,7 +336,7 @@ export default function LeaveRequests() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 text-2xl">
-                      {getLeaveTypeEmoji(request.type)}
+                      {getLeaveTypeIcon(request.type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
@@ -462,7 +462,7 @@ export default function LeaveRequests() {
                 <option value="">Selecteer type verlof</option>
                 {LEAVE_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
-                    {type.emoji} {type.label}
+                    {type.label}
                   </option>
                 ))}
               </select>
