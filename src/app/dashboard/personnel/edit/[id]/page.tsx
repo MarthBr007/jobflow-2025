@@ -2383,8 +2383,11 @@ export default function EditEmployeeTabs() {
                             <div className="text-xs text-gray-500">
                               Role: {session?.user?.role || "No role"}
                             </div>
-                            {(session?.user?.role === "ADMIN" ||
-                              session?.user?.role === "MANAGER") ? (
+                            <div className="text-xs text-gray-500">
+                              Modal: {showLeaveBalanceModal ? "OPEN" : "CLOSED"}
+                            </div>
+                            {session?.user?.role === "ADMIN" ||
+                            session?.user?.role === "MANAGER" ? (
                               <>
                                 <select
                                   value={selectedLeaveYear}
@@ -2400,7 +2403,8 @@ export default function EditEmployeeTabs() {
                                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                                 >
                                   {Array.from({ length: 5 }, (_, i) => {
-                                    const year = new Date().getFullYear() - 2 + i;
+                                    const year =
+                                      new Date().getFullYear() - 2 + i;
                                     return (
                                       <option key={year} value={year}>
                                         {year}
@@ -2412,16 +2416,44 @@ export default function EditEmployeeTabs() {
                                   variant="primary"
                                   size="sm"
                                   onClick={() => {
-                                    fetchLeaveBalance(
-                                      employee.id,
+                                    console.log(
+                                      "Saldo Bewerken button clicked!"
+                                    );
+                                    console.log("Employee ID:", employee.id);
+                                    console.log(
+                                      "Selected year:",
                                       selectedLeaveYear
                                     );
-                                    setShowLeaveBalanceModal(true);
+                                    try {
+                                      fetchLeaveBalance(
+                                        employee.id,
+                                        selectedLeaveYear
+                                      );
+                                      setShowLeaveBalanceModal(true);
+                                      console.log("Modal should be opening...");
+                                    } catch (error) {
+                                      console.error(
+                                        "Error opening modal:",
+                                        error
+                                      );
+                                      alert("Error opening modal: " + error);
+                                    }
                                   }}
                                   disabled={leaveBalanceLoading}
                                   leftIcon={<PencilIcon className="h-4 w-4" />}
                                 >
                                   Saldo Bewerken
+                                </Button>
+                                {/* Debug Test Button */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    console.log("Direct modal open test");
+                                    setShowLeaveBalanceModal(true);
+                                  }}
+                                >
+                                  Test Modal
                                 </Button>
                               </>
                             ) : (
