@@ -3522,6 +3522,69 @@ export default function EditEmployeeTabs() {
           </div>
         </div>
       </Modal>
+
+      {/* 🎯 GROTE ZICHTBARE VERLOF SALDO INSTELLING */}
+      {(session?.user?.role === "ADMIN" ||
+        session?.user?.role === "MANAGER") && (
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-8 shadow-xl border-4 border-yellow-300">
+          <div className="text-center">
+            <h3 className="text-3xl font-black mb-4">
+              🎯 VERLOF SALDO INSTELLEN
+            </h3>
+            <p className="text-blue-100 mb-6 text-xl font-semibold">
+              Hier kun je het startsaldo voor {employee.name} instellen!
+            </p>
+            <div className="bg-white/20 rounded-lg p-4 mb-6">
+              <p className="text-yellow-200 font-bold mb-2">
+                ⚡ BELANGRIJK: Hier vul je saldo&apos;s in!
+              </p>
+              <p className="text-blue-100 text-sm">
+                Voor het opzetten van CrewFlow kun je hier bestaande
+                saldo&apos;s van vorig jaar invoeren
+              </p>
+            </div>
+            <div className="flex items-center justify-center space-x-6 mb-6">
+              <div className="bg-white rounded-lg p-3">
+                <label className="block text-blue-900 font-bold mb-2">
+                  JAAR SELECTEREN:
+                </label>
+                <select
+                  value={selectedLeaveYear}
+                  onChange={(e) => {
+                    setSelectedLeaveYear(parseInt(e.target.value));
+                    fetchLeaveBalance(employee.id, parseInt(e.target.value));
+                  }}
+                  className="px-4 py-3 border-2 border-blue-600 rounded-lg bg-white text-blue-900 font-bold text-xl"
+                >
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const year = new Date().getFullYear() - 2 + i;
+                    return (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  console.log("🎯 GROTE SALDO KNOP CLICKED!");
+                  setShowLeaveBalanceModal(true);
+                }}
+                className="px-12 py-6 text-2xl font-black bg-yellow-400 text-blue-900 hover:bg-yellow-300 border-4 border-yellow-500 shadow-lg transform hover:scale-105 transition-all"
+              >
+                🔧 SALDO BEWERKEN
+              </Button>
+            </div>
+            <div className="bg-yellow-400 text-blue-900 rounded-lg p-3 font-bold">
+              👆 Klik op de gele knop hierboven om vakantiedagen, ziektedagen en
+              compensatie tijd in te stellen
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
