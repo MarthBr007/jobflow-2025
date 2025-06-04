@@ -2378,48 +2378,58 @@ export default function EditEmployeeTabs() {
                             </p>
                           </div>
                           {/* Admin Edit Button */}
-                          {(session?.user?.role === "ADMIN" ||
-                            session?.user?.role === "MANAGER") && (
-                            <div className="flex items-center space-x-3">
-                              <select
-                                value={selectedLeaveYear}
-                                onChange={(e) => {
-                                  setSelectedLeaveYear(
-                                    parseInt(e.target.value)
-                                  );
-                                  fetchLeaveBalance(
-                                    employee.id,
-                                    parseInt(e.target.value)
-                                  );
-                                }}
-                                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                              >
-                                {Array.from({ length: 5 }, (_, i) => {
-                                  const year = new Date().getFullYear() - 2 + i;
-                                  return (
-                                    <option key={year} value={year}>
-                                      {year}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => {
-                                  fetchLeaveBalance(
-                                    employee.id,
-                                    selectedLeaveYear
-                                  );
-                                  setShowLeaveBalanceModal(true);
-                                }}
-                                disabled={leaveBalanceLoading}
-                                leftIcon={<PencilIcon className="h-4 w-4" />}
-                              >
-                                Saldo Bewerken
-                              </Button>
+                          <div className="flex items-center space-x-3">
+                            {/* Debug info - remove after testing */}
+                            <div className="text-xs text-gray-500">
+                              Role: {session?.user?.role || "No role"}
                             </div>
-                          )}
+                            {(session?.user?.role === "ADMIN" ||
+                              session?.user?.role === "MANAGER") ? (
+                              <>
+                                <select
+                                  value={selectedLeaveYear}
+                                  onChange={(e) => {
+                                    setSelectedLeaveYear(
+                                      parseInt(e.target.value)
+                                    );
+                                    fetchLeaveBalance(
+                                      employee.id,
+                                      parseInt(e.target.value)
+                                    );
+                                  }}
+                                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                >
+                                  {Array.from({ length: 5 }, (_, i) => {
+                                    const year = new Date().getFullYear() - 2 + i;
+                                    return (
+                                      <option key={year} value={year}>
+                                        {year}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => {
+                                    fetchLeaveBalance(
+                                      employee.id,
+                                      selectedLeaveYear
+                                    );
+                                    setShowLeaveBalanceModal(true);
+                                  }}
+                                  disabled={leaveBalanceLoading}
+                                  leftIcon={<PencilIcon className="h-4 w-4" />}
+                                >
+                                  Saldo Bewerken
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="text-xs text-red-500">
+                                Geen ADMIN/MANAGER rechten
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="p-6">
