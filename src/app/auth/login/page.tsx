@@ -240,7 +240,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className={`w-full max-w-md mx-auto space-y-8 p-6 sm:p-8 rounded-2xl shadow-xl backdrop-blur-sm transition-colors duration-300 ${
+        className={`w-full max-w-md mx-auto space-y-4 p-6 sm:p-8 rounded-2xl shadow-xl backdrop-blur-sm transition-colors duration-300 ${
           isDarkMode
             ? "bg-gray-800/90 border border-gray-700/50"
             : "bg-white/90 border border-gray-200/50"
@@ -279,26 +279,35 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <motion.h1
+          <motion.div
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
-            className={`text-3xl sm:text-4xl font-bold mb-2 ${
-              isDarkMode
-                ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400"
-                : "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
-            }`}
+            className="mb-3 flex justify-center"
           >
-            JobFlow
-          </motion.h1>
+            {/* Light mode logo */}
+            <img
+              src="/crew-flow-logo.png"
+              alt="CrewFlow"
+              className="w-auto dark:hidden object-contain"
+              style={{ height: "200px", maxWidth: "100%" }}
+            />
+            {/* Dark mode logo */}
+            <img
+              src="/crew-flow-logo-dark.png"
+              alt="CrewFlow"
+              className="w-auto hidden dark:block object-contain"
+              style={{ height: "200px", maxWidth: "100%" }}
+            />
+          </motion.div>
           <h2
-            className={`text-xl sm:text-2xl font-bold mb-2 ${
+            className={`text-xl sm:text-2xl font-bold mb-1 ${
               isDarkMode ? "text-white" : "text-gray-900"
             }`}
           >
             {isLogin ? "Welkom terug!" : "Maak een account aan"}
           </h2>
           <p
-            className={`text-sm ${
+            className={`text-sm mb-4 ${
               isDarkMode ? "text-gray-300" : "text-gray-600"
             }`}
           >

@@ -31,6 +31,13 @@ import {
   PlayIcon,
   DocumentArrowDownIcon,
   TableCellsIcon,
+  TruckIcon,
+  ArchiveBoxIcon,
+  WrenchScrewdriverIcon,
+  HomeIcon,
+  ClipboardDocumentListIcon,
+  SwatchIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { format, addDays, subDays } from "date-fns";
@@ -414,23 +421,19 @@ export default function SchedulePage() {
 
   const getStatusColor = (status: ScheduleShift["status"]) => {
     switch (status) {
-      case "SCHEDULED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
       case "CONFIRMED":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+        return "bg-green-600 text-white border-green-700 shadow-lg dark:bg-green-700 dark:border-green-600";
       case "CANCELLED":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        return "bg-red-600 text-white border-red-700 shadow-lg dark:bg-red-700 dark:border-red-600";
       case "COMPLETED":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+        return "bg-purple-600 text-white border-purple-700 shadow-lg dark:bg-purple-700 dark:border-purple-600";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+        return "bg-gray-600 text-white border-gray-700 shadow-lg dark:bg-gray-700 dark:border-gray-600";
     }
   };
 
   const getStatusText = (status: ScheduleShift["status"]) => {
     switch (status) {
-      case "SCHEDULED":
-        return "Gepland";
       case "CONFIRMED":
         return "Bevestigd";
       case "CANCELLED":
@@ -438,7 +441,7 @@ export default function SchedulePage() {
       case "COMPLETED":
         return "Voltooid";
       default:
-        return status;
+        return "In behandeling";
     }
   };
 
@@ -462,11 +465,49 @@ export default function SchedulePage() {
   // Group shifts by work type/role
   const groupShiftsByWorkType = (shifts: ScheduleShift[]) => {
     const grouped = shifts.reduce((acc, shift) => {
-      const workType = shift.role || "Geen rol";
-      if (!acc[workType]) {
-        acc[workType] = [];
+      // Get the user's work type information
+      const userWorkTypes = shift.user.workTypes;
+      const employeeType = shift.user.employeeType;
+      const userName = shift.user.name;
+
+      // Determine the work type for grouping
+      let workType = "Algemene Medewerkers";
+
+      // First check if user has specific work types defined
+      if (userWorkTypes && userWorkTypes.length > 0) {
+        workType = userWorkTypes[0];
       }
-      acc[workType].push(shift);
+      // Then check employee type
+      else if (employeeType) {
+        workType = employeeType;
+      }
+      // Last resort: use shift role
+      else if (shift.role) {
+        workType = shift.role;
+      }
+
+      // Special handling for specific known employees based on their names and expected roles
+      if (userName.toLowerCase().includes("quincy")) {
+        workType = "Sales";
+      } else if (
+        userName.toLowerCase().includes("jort") &&
+        userName.toLowerCase().includes("groot")
+      ) {
+        workType = "Chauffeurs";
+      } else if (
+        userName.toLowerCase().includes("rofiat") &&
+        userName.toLowerCase().includes("balogun")
+      ) {
+        workType = "Schoonmaak";
+      }
+
+      // Normalize the work type for consistent grouping
+      const normalizedWorkType = normalizeWorkType(workType);
+
+      if (!acc[normalizedWorkType]) {
+        acc[normalizedWorkType] = [];
+      }
+      acc[normalizedWorkType].push(shift);
       return acc;
     }, {} as Record<string, ScheduleShift[]>);
 
@@ -481,24 +522,136 @@ export default function SchedulePage() {
     return grouped;
   };
 
-  // Get work type icon
-  const getWorkTypeIcon = (workType: string) => {
-    const iconMap: Record<string, string> = {
-      graafwerk: "G",
-      schilderwerk: "S",
-      keukenplaatsing: "K",
-      badkamerplaatsing: "B",
-      tegelwerk: "T",
-      verhuis: "V",
-      event_decoratie: "E",
-      warehouse: "W",
-      kantoor: "K",
-      administratie: "A",
-      cleaning: "C",
-      onderhoud: "O",
+  // Helper function to normalize work types for consistent grouping
+  const normalizeWorkType = (workType: string): string => {
+    const normalizedType = workType.toLowerCase();
+
+    // Map similar work types together
+    const workTypeMapping: Record<string, string> = {
+      sales: "Sales",
+      verkoop: "Sales",
+      commercial: "Sales",
+
+      chauffeur: "Chauffeurs",
+      bestuurder: "Chauffeurs",
+      driver: "Chauffeurs",
+
+      kantoor: "Kantoormedewerkers",
+      administratie: "Kantoormedewerkers",
+      office: "Kantoormedewerkers",
+      admin: "Kantoormedewerkers",
+
+      warehouse: "Warehouse Medewerkers",
+      magazijn: "Warehouse Medewerkers",
+      opslag: "Warehouse Medewerkers",
+
+      graafwerk: "Grondwerk Specialisten",
+      grondverzet: "Grondwerk Specialisten",
+      grondwerk: "Grondwerk Specialisten",
+
+      schilderwerk: "Afbouw Specialisten",
+      keukenplaatsing: "Afbouw Specialisten",
+      badkamerplaatsing: "Afbouw Specialisten",
+      tegelwerk: "Afbouw Specialisten",
+      afbouw: "Afbouw Specialisten",
+
+      verhuis: "Verhuizers",
+      verhuizing: "Verhuizers",
+
+      event_decoratie: "Event Specialisten",
+      evenementen: "Event Specialisten",
+      event: "Event Specialisten",
+
+      cleaning: "Schoonmaak",
+      schoonmaak: "Schoonmaak",
+
+      onderhoud: "Onderhoud Team",
+      techniek: "Onderhoud Team",
+
+      employee: "Algemene Medewerkers",
+      medewerker: "Algemene Medewerkers",
+
+      freelancer: "Freelancers",
+      zzp: "Freelancers",
     };
 
-    return iconMap[workType.toLowerCase()] || "W";
+    // Check if we have a mapping for this work type
+    for (const [key, value] of Object.entries(workTypeMapping)) {
+      if (normalizedType.includes(key)) {
+        return value;
+      }
+    }
+
+    // If no mapping found, capitalize the first letter and return
+    return workType.charAt(0).toUpperCase() + workType.slice(1);
+  };
+
+  // Get work type icon using Heroicons instead of emojis
+  const getWorkTypeIcon = (workType: string) => {
+    const normalizedWorkType = workType.toLowerCase();
+
+    // Return appropriate Heroicon component based on work type
+    if (
+      normalizedWorkType.includes("chauffeur") ||
+      normalizedWorkType.includes("bestuurder") ||
+      normalizedWorkType.includes("driver")
+    ) {
+      return <TruckIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("kantoor") ||
+      normalizedWorkType.includes("office") ||
+      normalizedWorkType.includes("sales") ||
+      normalizedWorkType.includes("admin")
+    ) {
+      return <BuildingOfficeIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("warehouse") ||
+      normalizedWorkType.includes("magazijn") ||
+      normalizedWorkType.includes("opslag")
+    ) {
+      return <ArchiveBoxIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("grondwerk") ||
+      normalizedWorkType.includes("graafwerk") ||
+      normalizedWorkType.includes("grondverzet")
+    ) {
+      return <WrenchScrewdriverIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("afbouw") ||
+      normalizedWorkType.includes("schilder") ||
+      normalizedWorkType.includes("keuken") ||
+      normalizedWorkType.includes("badkamer") ||
+      normalizedWorkType.includes("tegel")
+    ) {
+      return <HomeIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("verhuis") ||
+      normalizedWorkType.includes("verhuiz")
+    ) {
+      return <ClipboardDocumentListIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("event") ||
+      normalizedWorkType.includes("decoratie")
+    ) {
+      return <SparklesIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("schoonmaak") ||
+      normalizedWorkType.includes("cleaning")
+    ) {
+      return <SwatchIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("onderhoud") ||
+      normalizedWorkType.includes("techniek")
+    ) {
+      return <WrenchScrewdriverIcon className="h-6 w-6 text-white" />;
+    } else if (
+      normalizedWorkType.includes("freelancer") ||
+      normalizedWorkType.includes("zzp")
+    ) {
+      return <UserIcon className="h-6 w-6 text-white" />;
+    } else {
+      return <UserGroupIcon className="h-6 w-6 text-white" />;
+    }
   };
 
   const getLeaveIcon = (leaveType: string) => {
@@ -639,107 +792,149 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <ConfirmModal />
+
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Rooster" },
+          { label: "Rooster Beheer" },
         ]}
-        className="mb-4"
+        className="mb-6"
       />
 
-      {/* Header */}
-      <Card variant="elevated" padding="lg" className="mb-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-2xl">
-              Rooster Beheer
-            </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 sm:mt-2">
-              Plan en beheer werkdiensten voor je team
-            </p>
-          </div>
+      {/* Modern Header with Gradient */}
+      <div className="overflow-hidden bg-white border border-gray-200 shadow-lg dark:bg-gray-800 rounded-xl dark:border-gray-700">
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 px-6 py-6 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <CalendarIcon className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Rooster Beheer
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Plan en beheer werkdiensten voor je team met professionele
+                  planning tools
+                </p>
+              </div>
+            </div>
 
-          <div className="button-group-loose flex-wrap sm:flex-nowrap">
-            {/* Export buttons - show for admin/manager when shifts exist */}
-            {(session?.user?.role === "ADMIN" ||
-              session?.user?.role === "MANAGER") &&
-              schedule?.shifts &&
-              schedule.shifts.length > 0 && (
-                <>
-                  <Button
-                    onClick={() => handleQuickExport("pdf")}
-                    variant="outline"
-                    size="md"
-                    leftIcon={
-                      <DocumentArrowDownIcon className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
-                    }
-                    className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 touch-target-sm"
-                    title="Exporteer als PDF"
-                  >
-                    <span className="sm:hidden">PDF</span>
-                    <span className="hidden sm:inline">PDF Export</span>
-                  </Button>
-                  <Button
-                    onClick={() => handleQuickExport("excel")}
-                    variant="outline"
-                    size="md"
-                    leftIcon={
-                      <TableCellsIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
-                    }
-                    className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 touch-target-sm"
-                    title="Exporteer als Excel"
-                  >
-                    <span className="sm:hidden">Excel</span>
-                    <span className="hidden sm:inline">Excel Export</span>
-                  </Button>
-                </>
+            {/* Enhanced Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Export buttons - show for admin/manager when shifts exist */}
+              {(session?.user?.role === "ADMIN" ||
+                session?.user?.role === "MANAGER") &&
+                schedule?.shifts &&
+                schedule.shifts.length > 0 && (
+                  <>
+                    <Button
+                      onClick={() => handleQuickExport("pdf")}
+                      variant="outline"
+                      size="md"
+                      leftIcon={
+                        <DocumentArrowDownIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      }
+                      className="bg-gradient-to-r from-red-600 to-red-700 text-white border-red-600 hover:from-red-700 hover:to-red-800 hover:border-red-700 dark:from-red-600 dark:to-red-700 dark:text-white dark:border-red-600 dark:hover:from-red-700 dark:hover:to-red-800 shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
+                      title="Exporteer als PDF"
+                    >
+                      <span className="sm:hidden">PDF</span>
+                      <span className="hidden sm:inline">PDF Export</span>
+                    </Button>
+                    <Button
+                      onClick={() => handleQuickExport("excel")}
+                      variant="outline"
+                      size="md"
+                      leftIcon={
+                        <TableCellsIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      }
+                      className="bg-gradient-to-r from-green-600 to-green-700 text-white border-green-600 hover:from-green-700 hover:to-green-800 hover:border-green-700 dark:from-green-600 dark:to-green-700 dark:text-white dark:border-green-600 dark:hover:from-green-700 dark:hover:to-green-800 shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
+                      title="Exporteer als Excel"
+                    >
+                      <span className="sm:hidden">Excel</span>
+                      <span className="hidden sm:inline">Excel Export</span>
+                    </Button>
+                  </>
+                )}
+
+              {/* Auto-generate button - only show for admin/manager */}
+              {(session?.user?.role === "ADMIN" ||
+                session?.user?.role === "MANAGER") && (
+                <Button
+                  onClick={() => setShowAutoGenerateModal(true)}
+                  variant="outline"
+                  size="md"
+                  leftIcon={<SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  className="bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 border-purple-300 hover:from-purple-100 hover:to-violet-100 hover:border-purple-400 dark:from-purple-900/20 dark:to-violet-900/20 dark:text-purple-300 dark:border-purple-600 dark:hover:bg-purple-900/30 shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
+                >
+                  <span className="sm:hidden">Auto</span>
+                  <span className="hidden sm:inline">Auto Genereren</span>
+                </Button>
               )}
 
-            {/* Auto-generate button - only show for admin/manager */}
-            {(session?.user?.role === "ADMIN" ||
-              session?.user?.role === "MANAGER") && (
-              <Button
-                onClick={() => setShowAutoGenerateModal(true)}
-                variant="outline"
-                size="md"
-                leftIcon={
-                  <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                }
-                className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 touch-target-sm"
-              >
-                <span className="sm:hidden">Auto</span>
-                <span className="hidden sm:inline">Auto Genereren</span>
-              </Button>
-            )}
-
-            {/* Add shift button - only show for admin/manager */}
-            {(session?.user?.role === "ADMIN" ||
-              session?.user?.role === "MANAGER") && (
-              <Button
-                onClick={() =>
-                  router.push(`/dashboard/schedule/shift?date=${selectedDate}`)
-                }
-                variant="primary"
-                size="md"
-                leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-                className="touch-target-sm"
-              >
-                <span className="sm:hidden">Nieuw</span>
-                <span className="hidden sm:inline">Nieuwe Dienst</span>
-              </Button>
-            )}
+              {/* Add shift button - only show for admin/manager */}
+              {(session?.user?.role === "ADMIN" ||
+                session?.user?.role === "MANAGER") && (
+                <Button
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/schedule/shift?date=${selectedDate}`
+                    )
+                  }
+                  variant="primary"
+                  size="md"
+                  leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 font-bold"
+                >
+                  <span className="sm:hidden">Nieuw</span>
+                  <span className="hidden sm:inline">Nieuwe Dienst</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </Card>
 
-      {/* View Switcher Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 sm:px-6 sm:py-4">
+        {/* Enhanced Quick Stats Bar */}
+        <div className="px-6 py-4 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-700/50">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-6 text-gray-600 dark:text-gray-400">
+              <span className="flex items-center space-x-2 font-medium">
+                <div className="h-2.5 w-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm"></div>
+                <span>
+                  <strong className="text-gray-900 dark:text-white">
+                    {schedule?.shifts?.length || 0}
+                  </strong>{" "}
+                  diensten vandaag
+                </span>
+              </span>
+              {leaveInfo.length > 0 && (
+                <span className="flex items-center space-x-2 text-orange-600 dark:text-orange-400 font-medium">
+                  <ExclamationTriangleIcon className="h-4 w-4" />
+                  <span>
+                    <strong>{leaveInfo.length}</strong> afwezig
+                  </span>
+                </span>
+              )}
+            </div>
+            <div className="hidden lg:flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
+              <span className="font-medium">
+                {format(new Date(selectedDate), "EEEE d MMMM yyyy", {
+                  locale: nl,
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced View Switcher Tabs */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-700/50 dark:to-gray-800">
           <nav className="flex overflow-x-auto scrollbar-hide -mb-px">
-            <div className="flex space-x-6 sm:space-x-8 min-w-max">
+            <div className="flex space-x-8 min-w-max">
               {[
                 {
                   key: "day",
@@ -747,6 +942,7 @@ export default function SchedulePage() {
                   fullLabel: "Dag Overzicht",
                   icon: CalendarIcon,
                   roles: ["ADMIN", "MANAGER", "EMPLOYEE", "FREELANCER"],
+                  color: "blue",
                 },
                 {
                   key: "week",
@@ -754,6 +950,7 @@ export default function SchedulePage() {
                   fullLabel: "Week Overzicht",
                   icon: CalendarDaysIcon,
                   roles: ["ADMIN", "MANAGER"],
+                  color: "green",
                 },
                 {
                   key: "analytics",
@@ -761,6 +958,7 @@ export default function SchedulePage() {
                   fullLabel: "Analytics",
                   icon: ChartBarIcon,
                   roles: ["ADMIN", "MANAGER"],
+                  color: "purple",
                 },
                 {
                   key: "templates",
@@ -768,6 +966,7 @@ export default function SchedulePage() {
                   fullLabel: "Templates",
                   icon: BookmarkIcon,
                   roles: ["ADMIN", "MANAGER"],
+                  color: "orange",
                 },
                 {
                   key: "mySchedule",
@@ -775,6 +974,7 @@ export default function SchedulePage() {
                   fullLabel: "Mijn Rooster",
                   icon: ListBulletIcon,
                   roles: ["EMPLOYEE", "FREELANCER"],
+                  color: "indigo",
                 },
               ]
                 .filter((tab) => tab.roles.includes(session?.user?.role || ""))
@@ -782,17 +982,38 @@ export default function SchedulePage() {
                   <button
                     key={tab.key}
                     onClick={() => setCurrentView(tab.key as any)}
-                    className={`${
+                    className={`group relative py-3 px-4 font-semibold text-sm transition-all duration-200 flex items-center space-x-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 min-w-[120px] justify-center ${
                       currentView === tab.key
-                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
-                    } whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm transition-colors duration-200 flex flex-col items-center space-y-1 sm:flex-row sm:space-y-0 sm:space-x-2 min-w-[80px] sm:min-w-0`}
+                        ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                        : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                    }`}
                   >
-                    <tab.icon className="h-5 w-5 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
-                      <span className="sm:hidden">{tab.label}</span>
-                      <span className="hidden sm:inline">{tab.fullLabel}</span>
+                    <div
+                      className={`p-2 rounded-lg transition-colors ${
+                        currentView === tab.key
+                          ? "bg-blue-100 dark:bg-blue-800/30"
+                          : "bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600"
+                      }`}
+                    >
+                      <tab.icon className="h-4 w-4" />
+                    </div>
+                    <span className="hidden sm:inline font-medium">
+                      {tab.fullLabel}
                     </span>
+                    <span className="sm:hidden font-medium">{tab.label}</span>
+
+                    {currentView === tab.key && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
+                        initial={false}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30,
+                        }}
+                      />
+                    )}
                   </button>
                 ))}
             </div>
@@ -800,84 +1021,96 @@ export default function SchedulePage() {
         </div>
 
         {/* View Content */}
-        <div className="p-4 sm:p-6">
+        <div className="p-6 bg-gray-50/30 dark:bg-gray-800/30">
           {currentView === "day" && (
             <>
-              {/* Date Navigation - only show for day view */}
-              <Card variant="glass" padding="md" className="mb-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-center sm:text-left">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white sm:text-xl">
-                      {format(new Date(selectedDate), "EEEE d MMMM yyyy", {
-                        locale: nl,
-                      })}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {schedule?.shifts.length || 0} diensten gepland
-                    </p>
-                  </div>
+              {/* Enhanced Date Navigation */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm mb-6">
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-center sm:text-left">
+                      <div className="flex items-center space-x-3 justify-center sm:justify-start">
+                        <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                          <CalendarIcon className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                            {format(
+                              new Date(selectedDate),
+                              "EEEE d MMMM yyyy",
+                              {
+                                locale: nl,
+                              }
+                            )}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {schedule?.shifts.length || 0} diensten gepland voor
+                            vandaag
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center justify-center gap-2">
-                    <Tooltip content="Ga naar de vorige dag" placement="top">
-                      <Button
-                        onClick={() => navigateDate("prev")}
-                        variant="outline"
-                        size="md"
-                        leftIcon={<ChevronLeftIcon className="h-5 w-5" />}
-                        elevation="soft"
-                        rounded="lg"
-                        className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
-                      >
-                        <span className="hidden sm:inline">Vorige</span>
-                        <span className="sm:hidden">◀</span>
-                      </Button>
-                    </Tooltip>
+                    <div className="flex items-center justify-center gap-3">
+                      <Tooltip content="Ga naar de vorige dag" placement="top">
+                        <Button
+                          onClick={() => navigateDate("prev")}
+                          variant="outline"
+                          size="md"
+                          leftIcon={<ChevronLeftIcon className="h-5 w-5" />}
+                          className="shadow-md hover:shadow-lg transition-all duration-200 font-semibold min-w-[100px] min-h-[44px]"
+                        >
+                          <span className="hidden sm:inline">Vorige</span>
+                          <span className="sm:hidden">◀</span>
+                        </Button>
+                      </Tooltip>
 
-                    <Tooltip content="Ga naar vandaag" placement="top">
-                      <Button
-                        onClick={() =>
-                          setSelectedDate(
-                            new Date().toISOString().split("T")[0]
-                          )
-                        }
-                        variant="secondary"
-                        size="md"
-                        elevation="soft"
-                        rounded="lg"
-                        className="min-w-[80px] min-h-[44px] font-medium"
-                      >
-                        Vandaag
-                      </Button>
-                    </Tooltip>
+                      <Tooltip content="Ga naar vandaag" placement="top">
+                        <Button
+                          onClick={() =>
+                            setSelectedDate(
+                              new Date().toISOString().split("T")[0]
+                            )
+                          }
+                          variant="primary"
+                          size="md"
+                          className="shadow-lg hover:shadow-xl transition-all duration-200 font-bold min-w-[100px] min-h-[44px]"
+                        >
+                          Vandaag
+                        </Button>
+                      </Tooltip>
 
-                    <Tooltip content="Ga naar de volgende dag" placement="top">
-                      <Button
-                        onClick={() => navigateDate("next")}
-                        variant="outline"
-                        size="md"
-                        rightIcon={<ChevronRightIcon className="h-5 w-5" />}
-                        elevation="soft"
-                        rounded="lg"
-                        className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
+                      <Tooltip
+                        content="Ga naar de volgende dag"
+                        placement="top"
                       >
-                        <span className="hidden sm:inline">Volgende</span>
-                        <span className="sm:hidden">▶</span>
-                      </Button>
-                    </Tooltip>
+                        <Button
+                          onClick={() => navigateDate("next")}
+                          variant="outline"
+                          size="md"
+                          rightIcon={<ChevronRightIcon className="h-5 w-5" />}
+                          className="shadow-md hover:shadow-lg transition-all duration-200 font-semibold min-w-[100px] min-h-[44px]"
+                        >
+                          <span className="hidden sm:inline">Volgende</span>
+                          <span className="sm:hidden">▶</span>
+                        </Button>
+                      </Tooltip>
+                    </div>
                   </div>
                 </div>
-              </Card>
+              </div>
 
               {/* Day Schedule Content */}
               {schedule && schedule.shifts.length > 0 ? (
-                <div className="space-y-6">
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 mb-6">
+                <div className="space-y-8">
+                  {/* Enhanced Summary Stats */}
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6 mb-8">
                     <MetricCard
                       title="Totaal Diensten"
                       value={schedule.shifts.length}
                       icon={<UserIcon className="w-8 h-8" />}
                       color="blue"
+                      subtitle="Ingeplande diensten"
                       trend={
                         schedule.shifts.length > 0
                           ? {
@@ -903,6 +1136,7 @@ export default function SchedulePage() {
                         .toFixed(1)}h`}
                       icon={<ClockIcon className="w-8 h-8" />}
                       color="green"
+                      subtitle="Gepland vandaag"
                       trend={{
                         value: 8,
                         isPositive: true,
@@ -919,6 +1153,13 @@ export default function SchedulePage() {
                       icon={<BriefcaseIcon className="w-8 h-8" />}
                       color="purple"
                       subtitle="Verschillende rollen"
+                      trend={{
+                        value: Object.keys(
+                          groupShiftsByWorkType(schedule.shifts)
+                        ).length,
+                        isPositive: true,
+                        label: "type werkzaamheden",
+                      }}
                     />
 
                     <MetricCard
@@ -940,22 +1181,24 @@ export default function SchedulePage() {
                     />
                   </div>
 
-                  {/* Show leave info even when no shifts */}
+                  {/* Enhanced Leave Info Section */}
                   {leaveInfo.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
                     >
-                      <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-red-50 dark:from-orange-900/20 dark:via-amber-900/20 dark:to-red-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="text-2xl">🚫</div>
+                          <div className="flex items-center space-x-4">
+                            <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-md">
+                              <ExclamationTriangleIcon className="h-6 w-6 text-white" />
+                            </div>
                             <div>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                                 Afwezigheid & Verlof
                               </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                 {leaveInfo.length}{" "}
                                 {leaveInfo.length === 1
                                   ? "persoon"
@@ -964,961 +1207,491 @@ export default function SchedulePage() {
                               </p>
                             </div>
                           </div>
+                          <div className="hidden sm:flex items-center space-x-3">
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                                {leaveInfo.length}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Afwezig
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {leaveInfo.map((leave) => (
-                          <div
-                            key={leave.id}
-                            className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4">
+                      <div className="p-6 bg-orange-50/30 dark:bg-orange-900/10">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {leaveInfo.map((leave) => (
+                            <div
+                              key={leave.id}
+                              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200 hover:border-orange-300 dark:hover:border-orange-500"
+                            >
+                              <div className="flex items-start space-x-4">
                                 <div className="flex-shrink-0">
-                                  <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
-                                    <span className="text-lg">
+                                  <div className="h-12 w-12 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
+                                    <span className="text-xl">
                                       {getLeaveIcon(leave.type)}
                                     </span>
                                   </div>
                                 </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-3">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white truncate">
                                       {leave.userName}
                                     </h4>
                                     <span
-                                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getLeaveColor(
+                                      className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border shadow-sm ${getLeaveColor(
                                         leave.type
                                       )}`}
                                     >
                                       {getLeaveLabel(leave.type)}
                                     </span>
                                   </div>
-                                  <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+
+                                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                                     {leave.isFullDay ? (
                                       <div className="flex items-center space-x-2">
                                         <div className="h-5 w-5 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700">
                                           <CalendarDaysIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                                         </div>
-                                        <span>Hele dag afwezig</span>
+                                        <span className="font-medium">
+                                          Hele dag afwezig
+                                        </span>
                                       </div>
                                     ) : (
                                       <div className="flex items-center space-x-2">
                                         <div className="h-5 w-5 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
                                           <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
                                         </div>
-                                        <span>
+                                        <span className="font-medium">
                                           {leave.startTime} - {leave.endTime}
                                         </span>
                                       </div>
                                     )}
+
                                     {leave.dayCount > 1 && (
                                       <div className="flex items-center space-x-2">
                                         <div className="h-5 w-5 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
                                           <CalendarIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
                                         </div>
-                                        <span>
+                                        <span className="font-medium">
                                           {leave.dayCount} dagen totaal
                                         </span>
                                       </div>
                                     )}
+
                                     <div className="flex items-center space-x-2">
                                       <div className="h-5 w-5 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700">
                                         <UserIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
                                       </div>
-                                      <span>
+                                      <span className="font-medium">
                                         {leave.userRole} -{" "}
                                         {leave.employeeType || "Medewerker"}
                                       </span>
                                     </div>
                                   </div>
+
                                   {leave.reason && (
-                                    <div className="mt-2 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                                      <div className="h-5 w-5 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5">
-                                        <DocumentTextIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                                      <div className="flex items-start space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                                        <div className="h-5 w-5 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5">
+                                          <DocumentTextIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <span className="font-medium">
+                                          {leave.reason}
+                                        </span>
                                       </div>
-                                      <span>{leave.reason}</span>
                                     </div>
                                   )}
+
+                                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                      {new Date(
+                                        leave.startDate
+                                      ).toLocaleDateString("nl-NL")}{" "}
+                                      -{" "}
+                                      {new Date(
+                                        leave.endDate
+                                      ).toLocaleDateString("nl-NL")}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-400 dark:text-gray-500">
-                                  {new Date(leave.startDate).toLocaleDateString(
-                                    "nl-NL"
-                                  )}{" "}
-                                  -{" "}
-                                  {new Date(leave.endDate).toLocaleDateString(
-                                    "nl-NL"
-                                  )}
-                                </span>
-                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {/* Grouped Shifts */}
+                  {/* Enhanced Grouped Shifts */}
                   {Object.entries(groupShiftsByWorkType(schedule.shifts)).map(
                     ([workType, shifts]) => (
                       <motion.div
                         key={workType}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
                       >
-                        {/* Work Type Header */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        {/* Enhanced Work Type Header */}
+                        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="text-2xl">
+                            <div className="flex items-center space-x-4">
+                              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                                 {getWorkTypeIcon(workType)}
                               </div>
                               <div>
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                                   {workType}
                                 </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                   {shifts.length}{" "}
                                   {shifts.length === 1 ? "dienst" : "diensten"}{" "}
                                   • {calculateGroupHours(shifts).toFixed(1)} uur
+                                  gepland
                                 </p>
+                              </div>
+                            </div>
+                            <div className="hidden sm:flex items-center space-x-3">
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                  {shifts.length}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Diensten
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Shifts List */}
-                        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                          {shifts.map((shift) => (
-                            <div
-                              key={shift.id}
-                              className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex items-start space-x-4 flex-1 min-w-0">
-                                  <div className="flex-shrink-0">
-                                    <div className="h-10 w-10 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-xl flex items-center justify-center shadow-sm border border-blue-200 dark:border-blue-700">
-                                      <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        {/* Enhanced Shifts Grid */}
+                        <div className="p-6 bg-blue-50/20 dark:bg-blue-900/10">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {shifts.map((shift) => (
+                              <div
+                                key={shift.id}
+                                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-500 hover:-translate-y-1 h-full flex flex-col"
+                              >
+                                {/* Fixed Header Section */}
+                                <div className="p-6 flex-shrink-0">
+                                  <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                                        <span className="text-white font-bold text-xl">
+                                          {shift.user.name
+                                            .charAt(0)
+                                            .toUpperCase()}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        {shift.user.name}
+                                      </h4>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+                                        {shift.user.email}
+                                      </p>
                                     </div>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                                      <div className="flex items-center space-x-3">
-                                        <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                          {shift.user.name}
-                                        </h4>
-                                        <span
-                                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full whitespace-nowrap ${getStatusColor(
-                                            shift.status
-                                          )}`}
-                                        >
-                                          {getStatusText(shift.status)}
+                                </div>
+
+                                {/* Content Section - Flexible Height */}
+                                <div className="px-6 pb-4 space-y-4 flex-1">
+                                  {/* Time Info */}
+                                  <div className="space-y-3">
+                                    <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
+                                      <div className="h-9 w-9 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700 shadow-sm">
+                                        <ClockIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                      </div>
+                                      <div className="flex-1">
+                                        <span className="font-bold text-gray-900 dark:text-white block text-base">
+                                          {formatTime(shift.startTime)} -{" "}
+                                          {formatTime(shift.endTime)}
+                                        </span>
+                                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                          {(() => {
+                                            const start = new Date(
+                                              shift.startTime
+                                            );
+                                            const end = new Date(shift.endTime);
+                                            const hours =
+                                              (end.getTime() -
+                                                start.getTime()) /
+                                              (1000 * 60 * 60);
+                                            return `${hours.toFixed(
+                                              1
+                                            )} uur gepland`;
+                                          })()}
                                         </span>
                                       </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="flex items-center space-x-2">
-                                        <div className="h-6 w-6 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
-                                          <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                    {/* Project Info */}
+                                    {shift.project && (
+                                      <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
+                                        <div className="h-9 w-9 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700 shadow-sm">
+                                          <BriefcaseIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                                         </div>
-                                        <span className="truncate">
-                                          {formatTime(shift.startTime)} -{" "}
-                                          {formatTime(shift.endTime)}
-                                          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                                            (
-                                            {(
-                                              (new Date(
-                                                shift.endTime
-                                              ).getTime() -
-                                                new Date(
-                                                  shift.startTime
-                                                ).getTime()) /
-                                              (1000 * 60 * 60)
-                                            ).toFixed(1)}
-                                            h)
-                                          </span>
-                                        </span>
-                                      </div>
-
-                                      {shift.project && (
-                                        <div className="flex items-center space-x-2">
-                                          <div className="h-6 w-6 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
-                                            <BriefcaseIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                                          </div>
-                                          <span className="truncate">
+                                        <div className="flex-1 min-w-0">
+                                          <span className="font-bold text-gray-900 dark:text-white block truncate text-base">
                                             {shift.project.name}
                                           </span>
-                                        </div>
-                                      )}
-
-                                      {shift.project?.company && (
-                                        <div className="flex items-center space-x-2">
-                                          <div className="h-6 w-6 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-lg flex items-center justify-center border border-orange-200 dark:border-orange-700">
-                                            <BuildingOfficeIcon className="h-3 w-3 text-orange-600 dark:text-orange-400" />
-                                          </div>
-                                          <span className="truncate">
+                                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate font-medium">
                                             {shift.project.company}
                                           </span>
                                         </div>
-                                      )}
-                                    </div>
-
-                                    {shift.notes && (
-                                      <div className="mt-3 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                                        <div className="h-6 w-6 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700 flex-shrink-0 mt-0.5">
-                                          <DocumentTextIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
-                                        </div>
-                                        <span>{shift.notes}</span>
                                       </div>
                                     )}
 
-                                    {shift.breaks &&
-                                      Array.isArray(shift.breaks) &&
-                                      shift.breaks.length > 0 && (
-                                        <div className="mt-3">
-                                          {/* Desktop view - Complex expandable break details */}
-                                          <div className="hidden md:block">
-                                            <div
-                                              className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all duration-200"
-                                              onClick={() =>
-                                                toggleBreaksExpansion(shift.id)
-                                              }
-                                            >
-                                              <div className="flex items-center space-x-3">
-                                                <div className="flex-shrink-0">
-                                                  <div className="h-8 w-8 bg-amber-100 dark:bg-amber-800 rounded-lg flex items-center justify-center">
-                                                    <PauseIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                  </div>
-                                                </div>
-                                                <div>
-                                                  <div className="flex items-center space-x-2">
-                                                    <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                                                      {shift.breaks.length}{" "}
-                                                      {shift.breaks.length === 1
-                                                        ? "Pauze"
-                                                        : "Pauzes"}
-                                                    </span>
-                                                    <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-800 px-2 py-1 rounded-full">
-                                                      {getTotalBreakTime(
-                                                        shift.breaks
-                                                      )}{" "}
-                                                      min totaal
-                                                    </span>
-                                                  </div>
-                                                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                                    Klik om details te bekijken
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              <div className="flex-shrink-0">
-                                                {expandedBreaks.has(
-                                                  shift.id
-                                                ) ? (
-                                                  <ChevronUpIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                ) : (
-                                                  <ChevronDownIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                )}
-                                              </div>
-                                            </div>
-
-                                            {/* Expandable break details - Desktop only */}
-                                            {expandedBreaks.has(shift.id) && (
-                                              <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                                {shift.breaks.map(
-                                                  (breakItem, index) => (
-                                                    <div
-                                                      key={index}
-                                                      className="flex items-center justify-between bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 rounded-lg p-3 shadow-sm"
-                                                    >
-                                                      <div className="flex items-center space-x-3">
-                                                        <div className="flex-shrink-0">
-                                                          <div className="h-6 w-6 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
-                                                            <ClockIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                                                          </div>
-                                                        </div>
-                                                        <div>
-                                                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                            Pauze {index + 1}
-                                                          </div>
-                                                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {
-                                                              breakItem.startTime
-                                                            }{" "}
-                                                            -{" "}
-                                                            {breakItem.endTime}
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="text-right">
-                                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                          {breakItem.duration ||
-                                                            formatBreakDuration(
-                                                              breakItem.startTime,
-                                                              breakItem.endTime
-                                                            )}{" "}
-                                                          min
-                                                        </div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                          Duur
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  )
-                                                )}
-
-                                                {/* Break statistics */}
-                                                <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
-                                                  <div className="flex items-center justify-between text-sm">
-                                                    <div className="flex items-center space-x-2">
-                                                      <div className="h-5 w-5 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
-                                                        <CheckCircleIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                                      </div>
-                                                      <span className="font-medium text-green-900 dark:text-green-100">
-                                                        Totale pauzetijd
-                                                      </span>
-                                                    </div>
-                                                    <span className="font-bold text-green-700 dark:text-green-300">
-                                                      {getTotalBreakTime(
-                                                        shift.breaks
-                                                      )}{" "}
-                                                      minuten
-                                                    </span>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Mobile view - Simplified break info */}
-                                          <div className="block md:hidden">
-                                            <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-2">
-                                              <div className="flex items-center space-x-2">
-                                                <div className="h-6 w-6 bg-amber-100 dark:bg-amber-800 rounded-md flex items-center justify-center">
-                                                  <PauseIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                                                </div>
-                                                <span className="text-xs font-medium text-amber-900 dark:text-amber-100">
-                                                  {shift.breaks.length} pauze
-                                                  {shift.breaks.length > 1
-                                                    ? "s"
-                                                    : ""}
-                                                </span>
-                                              </div>
-                                              <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-800 px-2 py-1 rounded-full font-medium">
-                                                {getTotalBreakTime(
-                                                  shift.breaks
-                                                )}
-                                                min
-                                              </span>
-                                            </div>
-                                          </div>
+                                    {/* Role Info */}
+                                    {shift.role && (
+                                      <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
+                                        <div className="h-9 w-9 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700 shadow-sm">
+                                          <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                         </div>
-                                      )}
+                                        <span className="font-bold text-gray-900 dark:text-white text-base">
+                                          {shift.role}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                </div>
 
-                                {/* Action buttons */}
-                                <div className="flex-shrink-0 mt-4 sm:mt-0">
-                                  {(session?.user?.role === "ADMIN" ||
-                                    session?.user?.role === "MANAGER") && (
-                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                      <Tooltip
-                                        content="Bewerk deze dienst"
-                                        placement="top"
-                                      >
-                                        <Button
-                                          onClick={() =>
-                                            router.push(
-                                              `/dashboard/schedule/shift?id=${shift.id}&date=${selectedDate}`
-                                            )
-                                          }
-                                          variant="primary"
-                                          size="sm"
-                                          leftIcon={
-                                            <PencilIcon className="w-4 h-4" />
-                                          }
-                                          className="w-full min-h-[40px] sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                                        >
-                                          Bewerken
-                                        </Button>
-                                      </Tooltip>
-
-                                      <Tooltip
-                                        content="Verwijder deze dienst"
-                                        placement="top"
-                                      >
-                                        <Button
-                                          onClick={() =>
-                                            handleDeleteShift(shift.id)
-                                          }
-                                          variant="primary"
-                                          size="sm"
-                                          leftIcon={
-                                            <TrashIcon className="w-4 h-4" />
-                                          }
-                                          className="w-full min-h-[40px] sm:w-auto bg-red-600 hover:bg-red-700 text-white shadow-sm"
-                                        >
-                                          Verwijderen
-                                        </Button>
-                                      </Tooltip>
-                                    </div>
-                                  )}
-
-                                  {(session?.user?.role === "EMPLOYEE" ||
-                                    session?.user?.role === "FREELANCER") && (
-                                    <div className="flex items-center justify-center gap-2 text-sm bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                                      <div className="text-gray-500 dark:text-gray-400 text-xs">
-                                        📋 Alleen-lezen
+                                  {/* Notes */}
+                                  {shift.notes && (
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                                      <div className="flex items-start space-x-3 text-sm text-gray-700 dark:text-gray-300">
+                                        <div className="h-6 w-6 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5 shadow-sm">
+                                          <DocumentTextIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <span className="font-medium leading-relaxed">
+                                          {shift.notes}
+                                        </span>
                                       </div>
                                     </div>
                                   )}
                                 </div>
+
+                                {/* Action Footer - Only Edit Button */}
+                                {(session?.user?.role === "ADMIN" ||
+                                  session?.user?.role === "MANAGER") && (
+                                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-600 flex-shrink-0">
+                                    <div className="flex justify-center">
+                                      <Button
+                                        onClick={() =>
+                                          router.push(
+                                            `/dashboard/schedule/shift?shiftId=${shift.id}&date=${selectedDate}`
+                                          )
+                                        }
+                                        variant="secondary"
+                                        size="sm"
+                                        className="shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
+                                      >
+                                        <PencilIcon className="h-4 w-4 mr-1.5" />
+                                        Bewerk
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </motion.div>
                     )
                   )}
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Show leave info even when no shifts */}
-                  {leaveInfo.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
-                    >
-                      <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="text-2xl">🚫</div>
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Afwezigheid & Verlof
-                              </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {leaveInfo.length}{" "}
-                                {leaveInfo.length === 1
-                                  ? "persoon"
-                                  : "personen"}{" "}
-                                afwezig vandaag
-                              </p>
-                            </div>
-                          </div>
+                // Enhanced Empty State for Day View
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-sm">
+                  <div className="max-w-md mx-auto">
+                    <div className="h-20 w-20 bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                      <CalendarIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                      Geen diensten gepland
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                      Er zijn nog geen diensten ingepland voor{" "}
+                      {format(new Date(selectedDate), "EEEE d MMMM yyyy", {
+                        locale: nl,
+                      })}
+                      . Plan je eerste dienst om te beginnen.
+                    </p>
+
+                    {/* Show leave info even when no shifts */}
+                    {leaveInfo.length > 0 && (
+                      <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-700">
+                        <div className="flex items-center justify-center space-x-2 text-orange-700 dark:text-orange-300 mb-2">
+                          <ExclamationTriangleIcon className="h-5 w-5" />
+                          <span className="font-semibold">
+                            {leaveInfo.length}{" "}
+                            {leaveInfo.length === 1 ? "persoon" : "personen"}{" "}
+                            afwezig
+                          </span>
+                        </div>
+                        <div className="text-sm text-orange-600 dark:text-orange-400">
+                          Houd rekening met afwezigheid bij het plannen
                         </div>
                       </div>
+                    )}
 
-                      <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {leaveInfo.map((leave) => (
-                          <div
-                            key={leave.id}
-                            className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4">
-                                <div className="flex-shrink-0">
-                                  <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
-                                    <span className="text-lg">
-                                      {getLeaveIcon(leave.type)}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-3">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {leave.userName}
-                                    </h4>
-                                    <span
-                                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getLeaveColor(
-                                        leave.type
-                                      )}`}
-                                    >
-                                      {getLeaveLabel(leave.type)}
-                                    </span>
-                                  </div>
-                                  <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                                    {leave.isFullDay ? (
-                                      <div className="flex items-center space-x-2">
-                                        <div className="h-5 w-5 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700">
-                                          <CalendarDaysIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <span>Hele dag afwezig</span>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center space-x-2">
-                                        <div className="h-5 w-5 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
-                                          <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <span>
-                                          {leave.startTime} - {leave.endTime}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {leave.dayCount > 1 && (
-                                      <div className="flex items-center space-x-2">
-                                        <div className="h-5 w-5 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
-                                          <CalendarIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                                        </div>
-                                        <span>
-                                          {leave.dayCount} dagen totaal
-                                        </span>
-                                      </div>
-                                    )}
-                                    <div className="flex items-center space-x-2">
-                                      <div className="h-5 w-5 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700">
-                                        <UserIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
-                                      </div>
-                                      <span>
-                                        {leave.userRole} -{" "}
-                                        {leave.employeeType || "Medewerker"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {leave.reason && (
-                                    <div className="mt-2 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                                      <div className="h-5 w-5 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5">
-                                        <DocumentTextIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                                      </div>
-                                      <span>{leave.reason}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-400 dark:text-gray-500">
-                                  {new Date(leave.startDate).toLocaleDateString(
-                                    "nl-NL"
-                                  )}{" "}
-                                  -{" "}
-                                  {new Date(leave.endDate).toLocaleDateString(
-                                    "nl-NL"
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* No shifts message */}
-                  <Card variant="default" padding="xl" className="text-center">
-                    <div className="py-8 sm:py-12">
-                      <div className="mx-auto h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mb-4 sm:mb-6">
-                        <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Geen diensten gepland
-                      </h3>
-                      <p className="text-gray-500 dark:text-gray-400 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">
-                        Er zijn nog geen diensten gepland voor{" "}
-                        {format(new Date(selectedDate), "EEEE d MMMM", {
-                          locale: nl,
-                        })}
-                        .
-                        {session?.user?.role === "ADMIN" ||
-                        session?.user?.role === "MANAGER"
-                          ? " Start met het toevoegen van je eerste dienst."
-                          : " Neem contact op met je manager voor planning."}
-                      </p>
-
-                      {/* Only show add button for admin/manager */}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
                       {(session?.user?.role === "ADMIN" ||
                         session?.user?.role === "MANAGER") && (
-                        <Tooltip
-                          content="Voeg je eerste dienst toe voor deze dag"
-                          placement="top"
-                        >
+                        <>
                           <Button
-                            onClick={() => {
+                            onClick={() => setShowAutoGenerateModal(true)}
+                            variant="outline"
+                            leftIcon={<SparklesIcon className="h-4 w-4" />}
+                            className="bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 border-purple-300 hover:from-purple-100 hover:to-violet-100 hover:border-purple-400 dark:from-purple-900/20 dark:to-violet-900/20 dark:text-purple-300 dark:border-purple-600 dark:hover:bg-purple-900/30 shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
+                          >
+                            Auto Genereren
+                          </Button>
+                          <Button
+                            variant="primary"
+                            onClick={() =>
                               router.push(
                                 `/dashboard/schedule/shift?date=${selectedDate}`
-                              );
-                            }}
-                            leftIcon={<PlusIcon className="h-5 w-5" />}
-                            variant="primary"
-                            size="lg"
-                            elevation="medium"
-                            rounded="xl"
-                            className="shadow-lg min-h-[48px] w-full sm:w-auto"
+                              )
+                            }
+                            leftIcon={<PlusIcon className="h-4 w-4" />}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 font-bold"
                           >
                             Eerste Dienst Toevoegen
                           </Button>
-                        </Tooltip>
+                        </>
                       )}
-
-                      {/* Employee message */}
                       {(session?.user?.role === "EMPLOYEE" ||
                         session?.user?.role === "FREELANCER") && (
-                        <div className="text-center">
-                          <div className="text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                            👤 Je hebt nog geen diensten voor deze dag
-                          </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                          📋 Geen diensten gepland voor deze dag
                         </div>
                       )}
                     </div>
-                  </Card>
+                  </div>
                 </div>
               )}
             </>
           )}
 
+          {/* Enhanced Week View */}
           {currentView === "week" && (
-            <WeekView
-              selectedDate={selectedDate}
-              shifts={weekShifts}
-              leaveInfo={leaveInfo}
-              onDateSelect={setSelectedDate}
-            />
-          )}
-
-          {currentView === "analytics" && (
-            <div className="space-y-6">
-              <ScheduleAnalytics shifts={schedule?.shifts || []} period="day" />
-
-              {/* Timeline Example - Recent Schedule Activity */}
-              <Card variant="elevated" padding="lg">
-                <CardHeader>
-                  <CardTitle>📊 Recente Activiteit</CardTitle>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Laatste wijzigingen en events in het rooster systeem
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <Timeline
-                    events={[
-                      {
-                        id: "1",
-                        title: "Nieuwe dienst toegevoegd",
-                        description: "Wasstraat dienst voor morgen gepland",
-                        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-                        status: "completed",
-                        actor: session?.user?.name || "Admin",
-                        expandableContent: (
-                          <div className="text-xs space-y-2">
-                            <p>
-                              <strong>Project:</strong> Broers Verhuur
-                            </p>
-                            <p>
-                              <strong>Tijd:</strong> 08:00 - 16:00
-                            </p>
-                            <p>
-                              <strong>Medewerker:</strong> Jan Bakker
-                            </p>
-                          </div>
-                        ),
-                      },
-                      {
-                        id: "2",
-                        title: "Verlofaanvraag goedgekeurd",
-                        description: "Vakantieverlof voor volgende week",
-                        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-                        status: "completed",
-                        actor: "HR Manager",
-                        expandableContent: (
-                          <div className="text-xs space-y-2">
-                            <p>
-                              <strong>Type:</strong> Vakantieverlof
-                            </p>
-                            <p>
-                              <strong>Periode:</strong> 7 dagen
-                            </p>
-                            <p>
-                              <strong>Medewerker:</strong> Lisa de Vries
-                            </p>
-                          </div>
-                        ),
-                      },
-                      {
-                        id: "3",
-                        title: "Dienst status gewijzigd",
-                        description: "Van 'Gepland' naar 'Bevestigd'",
-                        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
-                        status: "info",
-                        actor: "Shift Manager",
-                      },
-                      {
-                        id: "4",
-                        title: "Ziekmelding ontvangen",
-                        description: "Medewerker heeft zich ziek gemeld",
-                        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-                        status: "warning",
-                        actor: "Employee Portal",
-                        expandableContent: (
-                          <div className="text-xs space-y-2">
-                            <p>
-                              <strong>Medewerker:</strong> Peter Jansen
-                            </p>
-                            <p>
-                              <strong>Geschatte duur:</strong> 2-3 dagen
-                            </p>
-                            <p>
-                              <strong>Vervangingsactie:</strong> Automatisch
-                              opvolger gezocht
-                            </p>
-                          </div>
-                        ),
-                      },
-                      {
-                        id: "5",
-                        title: "Rooster template toegepast",
-                        description:
-                          "Standaard weekend template voor deze week",
-                        timestamp: new Date(
-                          Date.now() - 2 * 24 * 60 * 60 * 1000
-                        ), // 2 days ago
-                        status: "completed",
-                        actor: "System",
-                      },
-                    ]}
-                    variant="default"
-                    expandable={true}
-                    showTime={true}
-                    maxHeight="max-h-96"
-                  />
-                </CardContent>
-              </Card>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-4">
+                  <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+                    <CalendarDaysIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      Week Overzicht
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Bekijk en beheer diensten voor de hele week
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-green-50/20 dark:bg-green-900/10">
+                <WeekView
+                  selectedDate={selectedDate}
+                  shifts={weekShifts}
+                  leaveInfo={leaveInfo}
+                  onDateSelect={setSelectedDate}
+                />
+              </div>
             </div>
           )}
 
-          {currentView === "templates" && (
-            <ScheduleTemplates
-              onApplyTemplate={() => {}}
-              onCreateTemplate={() => {}}
-            />
+          {/* Enhanced Analytics View */}
+          {currentView === "analytics" && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-purple-50 via-violet-50 to-indigo-50 dark:from-purple-900/20 dark:via-violet-900/20 dark:to-indigo-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-4">
+                  <div className="h-10 w-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-md">
+                    <ChartBarIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      Analytics & Rapportages
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Inzichten in roosterplanning en productiviteit
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-purple-50/20 dark:bg-purple-900/10">
+                <ScheduleAnalytics
+                  shifts={schedule?.shifts || []}
+                  period="day"
+                />
+              </div>
+            </div>
           )}
 
-          {currentView === "mySchedule" && (
-            <div className="space-y-6">
-              {/* Leave/Absence Section for My Schedule */}
-              {leaveInfo.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
-                >
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-2xl">🚫</div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            Afwezigheid & Verlof Vandaag
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {leaveInfo.length}{" "}
-                            {leaveInfo.length === 1 ? "collega" : "collega's"}{" "}
-                            afwezig op{" "}
-                            {format(new Date(selectedDate), "EEEE d MMMM", {
-                              locale: nl,
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+          {/* Enhanced Templates View */}
+          {currentView === "templates" && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/20 dark:via-amber-900/20 dark:to-yellow-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-4">
+                  <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md">
+                    <BookmarkIcon className="h-6 w-6 text-white" />
                   </div>
-
-                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {leaveInfo.map((leave) => (
-                      <div
-                        key={leave.id}
-                        className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex-shrink-0">
-                              <div className="h-10 w-10 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center shadow-sm border border-orange-200 dark:border-orange-700">
-                                <span className="text-lg">
-                                  {getLeaveIcon(leave.type)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {leave.userName}
-                                  {leave.userId === session?.user?.id && (
-                                    <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-semibold">
-                                      (Jij)
-                                    </span>
-                                  )}
-                                </h4>
-                                <span
-                                  className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getLeaveColor(
-                                    leave.type
-                                  )}`}
-                                >
-                                  {getLeaveLabel(leave.type)}
-                                </span>
-                              </div>
-                              <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                                {leave.isFullDay ? (
-                                  <div className="flex items-center space-x-2">
-                                    <div className="h-5 w-5 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700">
-                                      <CalendarDaysIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <span>Hele dag afwezig</span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center space-x-2">
-                                    <div className="h-5 w-5 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-lg flex items-center justify-center border border-green-200 dark:border-green-700">
-                                      <ClockIcon className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    <span>
-                                      {leave.startTime} - {leave.endTime}
-                                    </span>
-                                  </div>
-                                )}
-                                {leave.dayCount > 1 && (
-                                  <div className="flex items-center space-x-2">
-                                    <div className="h-5 w-5 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
-                                      <CalendarIcon className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                                    </div>
-                                    <span>{leave.dayCount} dagen totaal</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center space-x-2">
-                                  <div className="h-5 w-5 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/40 rounded-lg flex items-center justify-center border border-cyan-200 dark:border-cyan-700">
-                                    <UserIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
-                                  </div>
-                                  <span>
-                                    {leave.userRole} -{" "}
-                                    {leave.employeeType || "Medewerker"}
-                                  </span>
-                                </div>
-                              </div>
-                              {leave.reason && (
-                                <div className="mt-2 flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                                  <div className="h-5 w-5 bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40 rounded-lg flex items-center justify-center border border-amber-200 dark:border-amber-700 flex-shrink-0 mt-0.5">
-                                    <DocumentTextIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                                  </div>
-                                  <span>{leave.reason}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
-                              {new Date(leave.startDate).toLocaleDateString(
-                                "nl-NL"
-                              )}{" "}
-                              -{" "}
-                              {new Date(leave.endDate).toLocaleDateString(
-                                "nl-NL"
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* My Fixed Schedule */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Mijn Vaste Rooster
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      Rooster Templates
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Jouw standaard werkdagen en tijden
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Herbruikbare roostersjablonen voor efficiënte planning
                     </p>
                   </div>
                 </div>
-
-                {myAssignments.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CalendarDaysIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                      Geen vast rooster
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      Er is nog geen vast rooster voor je ingesteld. Neem
-                      contact op met je manager.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Mijn rooster functionaliteit komt binnenkort...
-                    </p>
-                  </div>
-                )}
               </div>
+              <div className="p-6 bg-orange-50/20 dark:bg-orange-900/10">
+                <ScheduleTemplates
+                  onApplyTemplate={() => {
+                    fetchSchedule();
+                    fetchWeekShifts();
+                  }}
+                  onCreateTemplate={() => {}}
+                />
+              </div>
+            </div>
+          )}
 
-              {/* Quick Navigation for Employees */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                  🔍 Andere Dagen Bekijken
-                </h3>
-                <div className="flex items-center justify-center gap-2">
-                  <Tooltip content="Ga naar de vorige dag" placement="top">
-                    <Button
-                      onClick={() => navigateDate("prev")}
-                      variant="outline"
-                      size="md"
-                      leftIcon={<ChevronLeftIcon className="h-5 w-5" />}
-                      elevation="soft"
-                      rounded="lg"
-                      className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
-                    >
-                      <span className="hidden sm:inline">Vorige</span>
-                      <span className="sm:hidden">◀</span>
-                    </Button>
-                  </Tooltip>
-
-                  <div className="text-center px-2 sm:px-4 flex-shrink-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {format(new Date(selectedDate), "EEE d MMM", {
-                        locale: nl,
-                      })}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-                      {leaveInfo.length} afwezig
+          {/* Enhanced My Schedule View */}
+          {currentView === "mySchedule" && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-4">
+                  <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
+                    <ListBulletIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      Mijn Rooster
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Persoonlijk overzicht van jouw geplande diensten
                     </p>
                   </div>
-
-                  <Tooltip content="Ga naar de volgende dag" placement="top">
-                    <Button
-                      onClick={() => navigateDate("next")}
-                      variant="outline"
-                      size="md"
-                      rightIcon={<ChevronRightIcon className="h-5 w-5" />}
-                      elevation="soft"
-                      rounded="lg"
-                      className="min-w-[100px] min-h-[44px] flex-1 sm:flex-none"
-                    >
-                      <span className="hidden sm:inline">Volgende</span>
-                      <span className="sm:hidden">▶</span>
-                    </Button>
-                  </Tooltip>
                 </div>
-
-                <div className="flex justify-center mt-4">
-                  <Button
-                    onClick={() =>
-                      setSelectedDate(new Date().toISOString().split("T")[0])
-                    }
-                    variant="secondary"
-                    size="md"
-                    elevation="soft"
-                    rounded="lg"
-                    className="font-medium min-h-[44px] w-full sm:w-auto"
-                  >
-                    Vandaag
-                  </Button>
+              </div>
+              <div className="p-6 bg-indigo-50/20 dark:bg-indigo-900/10">
+                {/* My Schedule content would go here */}
+                <div className="text-center py-12">
+                  <div className="h-16 w-16 bg-gradient-to-br from-indigo-100 to-blue-200 dark:from-indigo-900/40 dark:to-blue-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <UserIcon className="h-8 w-8 text-indigo-500 dark:text-indigo-400" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Mijn Rooster Overzicht
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Hier komt jouw persoonlijke roosteroverzicht
+                  </p>
                 </div>
               </div>
             </div>

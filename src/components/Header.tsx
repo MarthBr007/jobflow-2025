@@ -139,13 +139,24 @@ export default function Header({
           {/* Logo - hidden on mobile, hamburger menu will take this spot */}
           <div className="flex-shrink-0 hidden md:block">
             <Link href="/dashboard" className="flex items-center">
-              <motion.span
+              <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent"
+                className="relative h-8 w-auto"
               >
-                JobFlow
-              </motion.span>
+                {/* Light mode logo */}
+                <img
+                  src="/crew-flow-logo.png"
+                  alt="CrewFlow"
+                  className="h-10 w-auto dark:hidden"
+                />
+                {/* Dark mode logo */}
+                <img
+                  src="/crew-flow-logo-dark.png"
+                  alt="CrewFlow"
+                  className="h-10 w-auto hidden dark:block"
+                />
+              </motion.div>
             </Link>
           </div>
 

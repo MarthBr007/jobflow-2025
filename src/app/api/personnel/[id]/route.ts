@@ -290,4 +290,97 @@ export async function DELETE(
             { status: 500 }
         );
     }
+}
+
+// GET /api/personnel/:id
+export async function GET(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({
+            where: { id: params.id },
+        });
+
+        if (!existingUser) {
+            return NextResponse.json(
+                { error: 'User not found' },
+                { status: 404 }
+            );
+        }
+
+        // In the GET function, add work pattern assignments to the response
+        const employee = await prisma.user.findUnique({
+            where: { id: params.id },
+            include: {
+                workPatternAssignments: {
+                    where: { isActive: true },
+                    include: {
+                        pattern: {
+                            select: {
+                                id: true,
+                                name: true,
+                                type: true,
+                                totalHoursPerWeek: true,
+                                workDays: true,
+                                color: true,
+                                icon: true,
+                                description: true,
+                            },
+                        },
+                        assignedBy: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                            },
+                        },
+                    },
+                    orderBy: {
+                        startDate: 'desc',
+                    },
+                },
+                UserWorkType: {
+                    include: {
+                        workType: true,
+                    },
+                },
+            },
+        });
+
+        if (!employee) {
+            return NextResponse.json(
+                { error: 'Employee not found' },
+                { status: 404 }
+            );
+        }
+
+        // Transform the data to match the frontend interface
+        const transformedUser = {
+            ...employee,
+            workTypes: employee.UserWorkType.map((uwt: any) => uwt.workType.name),
+            workPatternAssignments: employee.workPatternAssignments.map((assignment: any) => ({
+                ...assignment.pattern,
+                assignedBy: assignment.assignedBy,
+                startDate: assignment.startDate,
+                endDate: assignment.endDate,
+            }))
+        };
+
+        console.log('Returning updated user:', transformedUser.email);
+        return NextResponse.json(transformedUser);
+    } catch (error) {
+        console.error('Error fetching employee:', error);
+        console.error('Error stack:', (error as Error).stack);
+        return NextResponse.json(
+            { error: `Internal Server Error: ${(error as Error).message}` },
+            { status: 500 }
+        );
+    }
 } 

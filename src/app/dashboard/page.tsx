@@ -430,78 +430,120 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-6">
+    <div className="space-y-8">
       {/* Breadcrumbs */}
-      <Breadcrumbs items={[{ label: "Dashboard" }]} className="mb-1 sm:mb-4" />
+      <Breadcrumbs items={[{ label: "Dashboard" }]} className="mb-6" />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Welkom terug, {session.user.name}
-          </p>
-        </div>
-        <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4">
-          <div className="text-right">
-            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              {format(currentTime, "EEEE d MMMM yyyy", { locale: nl })}
+      {/* Modern Header with Gradient */}
+      <div className="overflow-hidden bg-white border border-gray-200 shadow-lg dark:bg-gray-800 rounded-xl dark:border-gray-700">
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 px-6 py-6 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <ChartBarIcon className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Dashboard
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Welkom terug, {session.user.name} - Overzicht van je werk en
+                  activiteiten
+                </p>
+              </div>
             </div>
-            <div className="text-lg sm:text-xl font-mono font-semibold text-gray-900 dark:text-white">
-              {formatTime(currentTime)}
+
+            {/* Enhanced Time Display */}
+            <div className="flex items-center space-x-4">
+              <div className="text-center lg:text-right">
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  {format(currentTime, "EEEE d MMMM yyyy", { locale: nl })}
+                </div>
+                <div className="text-xl font-mono font-bold text-gray-900 dark:text-white bg-white/70 dark:bg-gray-700/70 px-3 py-1 rounded-lg shadow-sm">
+                  {formatTime(currentTime)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Quick Stats Bar */}
+        <div className="px-6 py-4 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-700/50">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-6 text-gray-600 dark:text-gray-400">
+              <span className="flex items-center space-x-2 font-medium">
+                <div className="h-2.5 w-2.5 bg-gradient-to-r from-green-500 to-green-600 rounded-full shadow-sm"></div>
+                <span>
+                  Status:{" "}
+                  <strong className="text-gray-900 dark:text-white">
+                    Actief
+                  </strong>
+                </span>
+              </span>
+              <span className="flex items-center space-x-2 font-medium">
+                <div className="h-2.5 w-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm"></div>
+                <span>
+                  Rol:{" "}
+                  <strong className="text-gray-900 dark:text-white">
+                    {session.user.role}
+                  </strong>
+                </span>
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Enhanced Stats Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {getStatsForRole().map((item, index) => (
-          <MetricCard
-            key={item.name}
-            title={item.name}
-            value={item.value}
-            icon={<item.icon className="w-8 h-8" />}
-            color={
-              item.name.includes("Uren") || item.name.includes("Time")
-                ? "green"
-                : item.name.includes("Projects") ||
-                  item.name.includes("Projecten")
-                ? "blue"
-                : item.name.includes("Shift") || item.name.includes("Dienst")
-                ? "purple"
-                : item.name.includes("Active") || item.name.includes("Actief")
-                ? "orange"
-                : "gray"
-            }
-            trend={
-              index % 2 === 0
-                ? {
-                    value: Math.floor(Math.random() * 20) + 5,
-                    isPositive: Math.random() > 0.5,
-                    label: "vs vorige week",
-                  }
-                : undefined
-            }
-            status={
-              (item.name.includes("Uren") && parseFloat(item.value) > 40) ||
-              (item.name.includes("Time") && parseFloat(item.value) > 40)
-                ? "warning"
-                : "normal"
-            }
-            subtitle={
-              item.name.includes("Uren")
-                ? "Deze week"
-                : item.name.includes("Time")
-                ? "This week"
-                : item.name.includes("Projects") ||
-                  item.name.includes("Projecten")
-                ? "Actieve projecten"
-                : undefined
-            }
-          />
+          <div key={item.name} className="h-full">
+            <MetricCard
+              title={item.name}
+              value={item.value}
+              icon={<item.icon className="w-8 h-8" />}
+              color={
+                item.name.includes("Uren") || item.name.includes("Time")
+                  ? "green"
+                  : item.name.includes("Projects") ||
+                    item.name.includes("Projecten")
+                  ? "blue"
+                  : item.name.includes("Shift") || item.name.includes("Dienst")
+                  ? "purple"
+                  : item.name.includes("Active") || item.name.includes("Actief")
+                  ? "orange"
+                  : "gray"
+              }
+              trend={
+                index % 2 === 0
+                  ? {
+                      value: Math.floor(Math.random() * 20) + 5,
+                      isPositive: Math.random() > 0.5,
+                      label: "vs vorige week",
+                    }
+                  : undefined
+              }
+              status={
+                (item.name.includes("Uren") && parseFloat(item.value) > 40) ||
+                (item.name.includes("Time") && parseFloat(item.value) > 40)
+                  ? "warning"
+                  : "normal"
+              }
+              subtitle={
+                item.name.includes("Uren")
+                  ? "Deze week"
+                  : item.name.includes("Time")
+                  ? "This week"
+                  : item.name.includes("Projects") ||
+                    item.name.includes("Projecten")
+                  ? "Actieve projecten"
+                  : item.name.includes("Shift") || item.name.includes("Dienst")
+                  ? "Geplande diensten"
+                  : undefined
+              }
+              className="h-full"
+            />
+          </div>
         ))}
       </div>
 
@@ -738,55 +780,76 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Admin/Manager Dashboard */}
+      {/* Enhanced Admin/Manager Dashboard */}
       {(session.user.role === "ADMIN" || session.user.role === "MANAGER") && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
-              Beheer Overzicht
-            </h3>
-            <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              Snelle toegang tot belangrijke beheer functies
-            </p>
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-lg dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-4">
+              <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
+                <Cog6ToothIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Beheer Overzicht
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Snelle toegang tot belangrijke beheer functies en
+                  systeembeheer
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+          <div className="p-6 bg-indigo-50/30 dark:bg-indigo-900/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <motion.div
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/personnel")}
-                className="group relative cursor-pointer"
+                className="group relative cursor-pointer h-full"
               >
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-blue-100 dark:hover:shadow-blue-900/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-shrink-0">
-                      <div className="bg-blue-500 rounded-lg p-2.5">
+                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-500 h-full flex flex-col min-h-[160px]">
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                         <UserGroupIcon className="w-6 h-6 text-white" />
                       </div>
-                    </div>
-                    <div className="text-blue-500 dark:text-blue-400 opacity-20 group-hover:opacity-40 transition-opacity">
-                      <svg
-                        className="w-8 h-8"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      <div className="text-blue-500 dark:text-blue-400 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        Personeel
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Beheer medewerkers en freelancers, contracten en
+                        personeelsinformatie
+                      </p>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
-                    Personeel
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Beheer medewerkers en freelancers
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 to-indigo-600/0 group-hover:from-blue-600/5 group-hover:to-indigo-600/5 transition-all duration-300"></div>
+                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">
+                        {dashboardStats.totalPersonnel} personen
+                      </span>
+                      <span className="text-blue-500 dark:text-blue-400 font-semibold">
+                        Beheren →
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
@@ -794,38 +857,48 @@ export default function Dashboard() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/work-types")}
-                className="group relative cursor-pointer"
+                className="group relative cursor-pointer h-full"
               >
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-50 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-purple-100 dark:hover:shadow-purple-900/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-shrink-0">
-                      <div className="bg-purple-500 rounded-lg p-2.5">
+                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:border-purple-300 dark:hover:border-purple-500 h-full flex flex-col min-h-[160px]">
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                         <WrenchScrewdriverIcon className="w-6 h-6 text-white" />
                       </div>
-                    </div>
-                    <div className="text-purple-500 dark:text-purple-400 opacity-20 group-hover:opacity-40 transition-opacity">
-                      <svg
-                        className="w-8 h-8"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      <div className="text-purple-500 dark:text-purple-400 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                        Werkzaamheden
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Beheer types werkzaamheden, vaardigheden en
+                        specialisaties
+                      </p>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
-                    Werkzaamheden
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Beheer types werkzaamheden
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/0 to-pink-600/0 group-hover:from-purple-600/5 group-hover:to-pink-600/5 transition-all duration-300"></div>
+                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">Werk types</span>
+                      <span className="text-purple-500 dark:text-purple-400 font-semibold">
+                        Beheren →
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
@@ -833,38 +906,49 @@ export default function Dashboard() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/schedule")}
-                className="group relative cursor-pointer"
+                className="group relative cursor-pointer h-full"
               >
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-green-100 dark:hover:shadow-green-900/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-shrink-0">
-                      <div className="bg-green-500 rounded-lg p-2.5">
+                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:border-green-300 dark:hover:border-green-500 h-full flex flex-col min-h-[160px]">
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                         <CalendarIcon className="w-6 h-6 text-white" />
                       </div>
-                    </div>
-                    <div className="text-green-500 dark:text-green-400 opacity-20 group-hover:opacity-40 transition-opacity">
-                      <svg
-                        className="w-8 h-8"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      <div className="text-green-500 dark:text-green-400 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                        Rooster
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Plan en beheer werkdiensten, shifts en roostertemplates
+                      </p>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
-                    Rooster
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Plan en beheer werkdiensten
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-600/0 to-emerald-600/0 group-hover:from-green-600/5 group-hover:to-emerald-600/5 transition-all duration-300"></div>
+                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">
+                        {dashboardStats.scheduledShifts} diensten
+                      </span>
+                      <span className="text-green-500 dark:text-green-400 font-semibold">
+                        Plannen →
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
@@ -872,38 +956,49 @@ export default function Dashboard() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/projects")}
-                className="group relative cursor-pointer"
+                className="group relative cursor-pointer h-full"
               >
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-orange-100 dark:hover:shadow-orange-900/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-shrink-0">
-                      <div className="bg-orange-500 rounded-lg p-2.5">
+                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:border-orange-300 dark:hover:border-orange-500 h-full flex flex-col min-h-[160px]">
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                         <ClipboardDocumentListIcon className="w-6 h-6 text-white" />
                       </div>
-                    </div>
-                    <div className="text-orange-500 dark:text-orange-400 opacity-20 group-hover:opacity-40 transition-opacity">
-                      <svg
-                        className="w-8 h-8"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      <div className="text-orange-500 dark:text-orange-400 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                        Projecten
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Beheer klussen en opdrachten, deadlines en voortgang
+                      </p>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
-                    Projecten
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Beheer klussen en opdrachten
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-600/0 to-red-600/0 group-hover:from-orange-600/5 group-hover:to-red-600/5 transition-all duration-300"></div>
+                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">
+                        {dashboardStats.activeProjects} actief
+                      </span>
+                      <span className="text-orange-500 dark:text-orange-400 font-semibold">
+                        Beheren →
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
@@ -911,38 +1006,47 @@ export default function Dashboard() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/availability")}
-                className="group relative cursor-pointer"
+                className="group relative cursor-pointer h-full"
               >
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-cyan-50 to-blue-100 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-100 dark:hover:shadow-cyan-900/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-shrink-0">
-                      <div className="bg-cyan-500 rounded-lg p-2.5">
+                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:border-cyan-300 dark:hover:border-cyan-500 h-full flex flex-col min-h-[160px]">
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                         <ChartBarIcon className="w-6 h-6 text-white" />
                       </div>
-                    </div>
-                    <div className="text-cyan-500 dark:text-cyan-400 opacity-20 group-hover:opacity-40 transition-opacity">
-                      <svg
-                        className="w-8 h-8"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      <div className="text-cyan-500 dark:text-cyan-400 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                        Beschikbaarheid
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Overzicht personeel planning en beschikbaarheid beheer
+                      </p>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
-                    Beschikbaarheid
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Overzicht personeel planning
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/0 to-blue-600/0 group-hover:from-cyan-600/5 group-hover:to-blue-600/5 transition-all duration-300"></div>
+                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">Planning</span>
+                      <span className="text-cyan-500 dark:text-cyan-400 font-semibold">
+                        Bekijken →
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
@@ -950,38 +1054,47 @@ export default function Dashboard() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/kiosk")}
-                className="group relative cursor-pointer"
+                className="group relative cursor-pointer h-full"
               >
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-700/50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-100 dark:hover:shadow-indigo-900/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-shrink-0">
-                      <div className="bg-indigo-500 rounded-lg p-2.5">
+                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:border-indigo-300 dark:hover:border-indigo-500 h-full flex flex-col min-h-[160px]">
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                         <ComputerDesktopIcon className="w-6 h-6 text-white" />
                       </div>
-                    </div>
-                    <div className="text-indigo-500 dark:text-indigo-400 opacity-20 group-hover:opacity-40 transition-opacity">
-                      <svg
-                        className="w-8 h-8"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      <div className="text-indigo-500 dark:text-indigo-400 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        Kiosk Dashboard
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Inklok systeem voor medewerkers en real-time status
+                      </p>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
-                    Kiosk Dashboard
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Inklok systeem voor medewerkers
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/0 to-purple-600/0 group-hover:from-indigo-600/5 group-hover:to-purple-600/5 transition-all duration-300"></div>
+                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">Kiosk modus</span>
+                      <span className="text-indigo-500 dark:text-indigo-400 font-semibold">
+                        Openen →
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -989,30 +1102,38 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Employee/Freelancer Quick Actions */}
+      {/* Enhanced Employee/Freelancer Quick Actions */}
       {session.user.role !== "ADMIN" && session.user.role !== "MANAGER" && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
-              Snelle Acties
-            </h3>
-            <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              Veelgebruikte functies binnen handbereik
-            </p>
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-lg dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-4">
+              <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+                <UserIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Snelle Acties
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Veelgebruikte functies binnen handbereik voor jouw werkdag
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+          <div className="p-6 bg-green-50/30 dark:bg-green-900/10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Button
                 onClick={() => router.push("/dashboard/projects")}
                 variant="outline"
                 size="lg"
                 leftIcon={<ClipboardDocumentListIcon className="w-5 h-5" />}
-                className="h-16 sm:h-20 flex-col space-y-1 sm:space-y-2 touch-manipulation rounded-xl"
+                className="h-20 flex-col space-y-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300 group"
               >
-                <span className="font-medium text-sm sm:text-base">
+                <span className="font-bold text-base text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   Mijn Projecten
                 </span>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   Bekijk toegewezen klussen
                 </span>
               </Button>
@@ -1022,12 +1143,12 @@ export default function Dashboard() {
                 variant="outline"
                 size="lg"
                 leftIcon={<CalendarIcon className="w-5 h-5" />}
-                className="h-16 sm:h-20 flex-col space-y-1 sm:space-y-2 touch-manipulation rounded-xl"
+                className="h-20 flex-col space-y-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-500 hover:shadow-lg transition-all duration-300 group"
               >
-                <span className="font-medium text-sm sm:text-base">
+                <span className="font-bold text-base text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                   Beschikbaarheid
                 </span>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   Stel je beschikbaarheid in
                 </span>
               </Button>
@@ -1037,12 +1158,12 @@ export default function Dashboard() {
                 variant="outline"
                 size="lg"
                 leftIcon={<ClockIcon className="w-5 h-5" />}
-                className="h-16 sm:h-20 flex-col space-y-1 sm:space-y-2 touch-manipulation rounded-xl"
+                className="h-20 flex-col space-y-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 hover:shadow-lg transition-all duration-300 group"
               >
-                <span className="font-medium text-sm sm:text-base">
+                <span className="font-bold text-base text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                   Mijn Rooster
                 </span>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   Bekijk geplande diensten
                 </span>
               </Button>

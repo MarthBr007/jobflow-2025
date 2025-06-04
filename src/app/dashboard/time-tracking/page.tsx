@@ -11,10 +11,22 @@ import {
   XCircleIcon,
   UserGroupIcon,
   EyeIcon,
+  UserIcon,
+  ChartBarIcon,
+  PlayIcon,
+  StopIcon,
+  CalendarDaysIcon,
+  ChevronRightIcon,
+  ExclamationTriangleIcon,
+  DocumentTextIcon,
+  ClockIcon as TimeIcon,
+  BuildingOfficeIcon,
+  BriefcaseIcon,
 } from "@heroicons/react/24/outline";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import MetricCard from "@/components/ui/MetricCard";
 
 interface TimeEntry {
   id: string;
@@ -170,7 +182,7 @@ export default function TimeTrackingAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
       </div>
     );
@@ -183,185 +195,209 @@ export default function TimeTrackingAdmin() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Tijdsregistratie Beheer" },
         ]}
-        className="mb-2 sm:mb-4"
+        className="mb-4"
       />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-            ⏰ Tijdsregistratie Beheer
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Overzicht van alle tijdsregistraties en goedkeuringen
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <Button
-            onClick={() =>
-              (window.location.href = "/dashboard/time-tracking/personal")
-            }
-            variant="outline"
-            size="md"
-            className="w-full sm:w-auto touch-manipulation"
-          >
-            <span className="sm:hidden">Mijn Tijden</span>
-            <span className="hidden sm:inline">Mijn Tijdsregistratie</span>
-          </Button>
+      {/* Modern Header Card */}
+      <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+        <div className="px-6 py-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-indigo-900/20 dark:border-gray-700">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                <ClockIcon className="text-white h-7 w-7" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Tijdsregistratie Beheer
+                </h1>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Overzicht van alle tijdsregistraties en real-time monitoring
+                </p>
+                <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center space-x-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span>{clockedInUsers.length} Ingeklokt</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                    <span>{forgottenClockOuts.length} Vergeten</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span>{pendingApprovals.length} Ter goedkeuring</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                onClick={() =>
+                  (window.location.href = "/dashboard/time-tracking/personal")
+                }
+                variant="outline"
+                size="md"
+                leftIcon={<UserIcon className="w-4 h-4" />}
+                className="font-semibold text-white bg-gray-700 border-gray-600 shadow-sm hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 dark:border-gray-500 dark:text-white"
+              >
+                Mijn Tijdsregistratie
+              </Button>
+              <Button
+                onClick={() =>
+                  (window.location.href = "/dashboard/time-approval")
+                }
+                variant="primary"
+                size="md"
+                leftIcon={<CheckCircleIcon className="w-4 h-4" />}
+                className="font-semibold text-white bg-blue-600 shadow-md hover:bg-blue-700"
+              >
+                Uren Goedkeuring
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ClockIcon className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
-              </div>
-              <div className="ml-4 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Ingeklokt
-                  </dt>
-                  <dd className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                    {clockedInUsers.length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Statistics Dashboard */}
+      <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          title="Ingeklokt Nu"
+          value={clockedInUsers.length}
+          icon={<PlayIcon className="w-8 h-8" />}
+          color="green"
+          subtitle="Momenteel werkend"
+          trend={
+            clockedInUsers.length > 0
+              ? {
+                  value: 15,
+                  isPositive: true,
+                  label: "vs gisteren",
+                }
+              : undefined
+          }
+        />
 
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ExclamationCircleIcon className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
-              </div>
-              <div className="ml-4 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Vergeten uit te klokken
-                  </dt>
-                  <dd className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                    {forgottenClockOuts.length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          title="Vergeten Uitklokken"
+          value={forgottenClockOuts.length}
+          icon={<ExclamationTriangleIcon className="w-8 h-8" />}
+          color="orange"
+          subtitle="Actie vereist"
+          trend={
+            forgottenClockOuts.length > 0
+              ? {
+                  value: forgottenClockOuts.length,
+                  isPositive: false,
+                  label: "open items",
+                }
+              : undefined
+          }
+        />
 
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CheckCircleIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-              </div>
-              <div className="ml-4 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Wacht op goedkeuring
-                  </dt>
-                  <dd className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                    {pendingApprovals.length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          title="Te Goedkeuren"
+          value={pendingApprovals.length}
+          icon={<CheckCircleIcon className="w-8 h-8" />}
+          color="blue"
+          subtitle="Wachten op review"
+          trend={{
+            value: 8,
+            isPositive: true,
+            label: "nieuw vandaag",
+          }}
+        />
 
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserGroupIcon className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
-              </div>
-              <div className="ml-4 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Vandaag gewerkt
-                  </dt>
-                  <dd className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                    {recentEntries.length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          title="Vandaag Gewerkt"
+          value={recentEntries.length}
+          icon={<UserGroupIcon className="w-8 h-8" />}
+          color="purple"
+          subtitle="Voltooide entries"
+          trend={{
+            value: 25,
+            isPositive: true,
+            label: "vs vorige week",
+          }}
+        />
       </div>
 
       {/* Currently Clocked In Users */}
       {clockedInUsers.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white flex items-center">
-              <ClockIcon className="h-5 w-5 text-green-600 mr-2" />
-              Momenteel ingeklokt ({clockedInUsers.length})
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600">
+            <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+              <PlayIcon className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
+              Momenteel Ingeklokt
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
+                {clockedInUsers.length}
+              </span>
             </h3>
           </div>
-          <div className="p-4 sm:p-6">
-            <div className="grid gap-3 sm:gap-4">
+          <div className="p-6">
+            <div className="grid gap-4">
               {clockedInUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
+                  className="flex flex-col justify-between p-4 transition-shadow border border-green-200 shadow-sm sm:flex-row sm:items-center bg-green-50 dark:bg-green-900/20 rounded-xl dark:border-green-700 hover:shadow-md"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <div className="flex items-center flex-1 min-w-0 space-x-4">
+                    <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 shadow-sm bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
+                      <span className="text-lg font-bold text-white">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
                           {user.name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {user.email}
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                          <span className="text-gray-600 dark:text-gray-300">
-                            Sinds:{" "}
-                            {format(new Date(user.startTime), "HH:mm", {
-                              locale: nl,
-                            })}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {user.email}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-200">
+                          <TimeIcon className="w-3 h-3 mr-1" />
+                          Sinds:{" "}
+                          {format(new Date(user.startTime), "HH:mm", {
+                            locale: nl,
+                          })}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-lg dark:bg-blue-900/20 dark:text-blue-200">
+                          <ClockIcon className="w-3 h-3 mr-1" />
+                          {formatDuration(user.duration)}
+                        </span>
+                        {user.project && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-800 bg-purple-100 rounded-lg dark:bg-purple-900/20 dark:text-purple-200">
+                            <BriefcaseIcon className="w-3 h-3 mr-1" />
+                            {user.project}
                           </span>
-                          <span className="text-gray-600 dark:text-gray-300">
-                            Duur: {formatDuration(user.duration)}
+                        )}
+                        {user.isWarehouse && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-800 bg-orange-100 rounded-lg dark:bg-orange-900/20 dark:text-orange-200">
+                            <BuildingOfficeIcon className="w-3 h-3 mr-1" />
+                            Magazijn
                           </span>
-                          {user.project && (
-                            <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">
-                              {user.project}
-                            </span>
-                          )}
-                          {user.isWarehouse && (
-                            <span className="inline-flex px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full">
-                              Warehouse
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 sm:mt-0 sm:ml-4 flex-shrink-0">
+                  <div className="flex-shrink-0 mt-3 sm:mt-0 sm:ml-4">
                     <Button
                       onClick={() => handleForceClockOut(user.id)}
-                      variant="outline"
+                      variant="primary"
                       size="sm"
-                      className="w-full sm:w-auto touch-manipulation"
+                      leftIcon={<StopIcon className="w-4 h-4" />}
+                      className="w-full text-white bg-red-600 shadow-sm sm:w-auto hover:bg-red-700"
                     >
-                      <span className="sm:hidden">Uitklokken</span>
-                      <span className="hidden sm:inline">
-                        Forceer uitklokken
-                      </span>
+                      Uitklokken
                     </Button>
                   </div>
                 </div>
@@ -373,60 +409,69 @@ export default function TimeTrackingAdmin() {
 
       {/* Forgotten Clock Outs */}
       {forgottenClockOuts.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white flex items-center">
-              <ExclamationCircleIcon className="h-5 w-5 text-yellow-600 mr-2" />
-              Vergeten uit te klokken ({forgottenClockOuts.length})
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600">
+            <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+              <ExclamationTriangleIcon className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
+              Vergeten Uit Te Klokken
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200">
+                {forgottenClockOuts.length}
+              </span>
             </h3>
           </div>
-          <div className="p-4 sm:p-6">
-            <div className="grid gap-3 sm:gap-4">
+          <div className="p-6">
+            <div className="grid gap-4">
               {forgottenClockOuts.map((user) => (
                 <div
                   key={user.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
+                  className="flex flex-col justify-between p-4 transition-shadow border border-orange-200 shadow-sm sm:flex-row sm:items-center bg-orange-50 dark:bg-orange-900/20 rounded-xl dark:border-orange-700 hover:shadow-md"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3 flex-shrink-0"></div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <div className="flex items-center flex-1 min-w-0 space-x-4">
+                    <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 shadow-sm bg-gradient-to-br from-orange-500 to-red-600 rounded-xl">
+                      <span className="text-lg font-bold text-white">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
                           {user.name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {user.email}
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                          <span className="text-gray-600 dark:text-gray-300">
-                            Laatste klok in:{" "}
-                            {format(new Date(user.lastClockIn), "dd/MM HH:mm", {
-                              locale: nl,
-                            })}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {user.email}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-200">
+                          <CalendarDaysIcon className="w-3 h-3 mr-1" />
+                          Laatste:{" "}
+                          {format(new Date(user.lastClockIn), "dd/MM HH:mm", {
+                            locale: nl,
+                          })}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-lg dark:bg-red-900/20 dark:text-red-200">
+                          <ClockIcon className="w-3 h-3 mr-1" />
+                          {formatDuration(user.duration)}
+                        </span>
+                        {user.project && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-800 bg-purple-100 rounded-lg dark:bg-purple-900/20 dark:text-purple-200">
+                            <BriefcaseIcon className="w-3 h-3 mr-1" />
+                            {user.project}
                           </span>
-                          <span className="text-gray-600 dark:text-gray-300">
-                            Duur: {formatDuration(user.duration)}
-                          </span>
-                          {user.project && (
-                            <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">
-                              {user.project}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 sm:mt-0 sm:ml-4 flex-shrink-0">
+                  <div className="flex-shrink-0 mt-3 sm:mt-0 sm:ml-4">
                     <Button
                       onClick={() => handleForceClockOut(user.id)}
-                      variant="outline"
+                      variant="primary"
                       size="sm"
-                      className="w-full sm:w-auto touch-manipulation"
+                      leftIcon={<StopIcon className="w-4 h-4" />}
+                      className="w-full text-white bg-orange-600 shadow-sm sm:w-auto hover:bg-orange-700"
                     >
-                      <span className="sm:hidden">Uitklokken</span>
-                      <span className="hidden sm:inline">
-                        Forceer uitklokken
-                      </span>
+                      Uitklokken
                     </Button>
                   </div>
                 </div>
@@ -437,13 +482,13 @@ export default function TimeTrackingAdmin() {
       )}
 
       {/* Time Entries List */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+          <h3 className="mb-4 text-lg font-medium leading-6 text-gray-900 dark:text-white">
             Recente Tijdsregistraties
           </h3>
           {recentEntries.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+            <p className="py-4 text-center text-gray-500 dark:text-gray-400">
               Geen recente tijdsregistraties
             </p>
           ) : (
@@ -451,27 +496,27 @@ export default function TimeTrackingAdmin() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Medewerker
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Start Tijd
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Eind Tijd
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Project
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Duur
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Status
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                   {recentEntries.map((entry) => {
                     const duration =
                       entry.duration ||
@@ -493,7 +538,7 @@ export default function TimeTrackingAdmin() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                           {format(
                             new Date(entry.startTime),
                             "dd MMM yyyy HH:mm",
@@ -502,7 +547,7 @@ export default function TimeTrackingAdmin() {
                             }
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                           {entry.endTime
                             ? format(
                                 new Date(entry.endTime),
@@ -513,12 +558,12 @@ export default function TimeTrackingAdmin() {
                               )
                             : "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                           {entry.isWarehouse
                             ? "Warehouse"
                             : entry.project || "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                           {duration ? formatDuration(duration) : "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -543,14 +588,14 @@ export default function TimeTrackingAdmin() {
       </div>
 
       {/* Pending Approvals */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4 flex items-center">
-            <ClockIcon className="h-5 w-5 mr-2 text-blue-500" />
+          <h3 className="flex items-center mb-4 text-lg font-medium leading-6 text-gray-900 dark:text-white">
+            <ClockIcon className="w-5 h-5 mr-2 text-blue-500" />
             Uren Te Goedkeuren ({pendingApprovals.length})
           </h3>
           {pendingApprovals.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+            <p className="py-4 text-center text-gray-500 dark:text-gray-400">
               Geen uren wachtend op goedkeuring
             </p>
           ) : (
@@ -558,27 +603,27 @@ export default function TimeTrackingAdmin() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Medewerker
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Datum
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Tijd
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Duur
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Project
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                       Acties
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                   {pendingApprovals.map((entry) => (
                     <tr key={entry.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -591,12 +636,12 @@ export default function TimeTrackingAdmin() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                         {format(new Date(entry.startTime), "dd MMM yyyy", {
                           locale: nl,
                         })}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                         {format(new Date(entry.startTime), "HH:mm", {
                           locale: nl,
                         })}{" "}
@@ -607,20 +652,21 @@ export default function TimeTrackingAdmin() {
                             })
                           : "Lopend"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                         {entry.duration ? formatDuration(entry.duration) : "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
                         {entry.isWarehouse
                           ? "Warehouse"
                           : entry.project || "Geen project"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      <td className="px-6 py-4 space-x-2 text-sm font-medium whitespace-nowrap">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => showEntryDetails(entry)}
-                          leftIcon={<EyeIcon className="h-4 w-4" />}
+                          leftIcon={<EyeIcon className="w-4 h-4" />}
+                          className="font-semibold text-blue-700 border-blue-300 shadow-sm hover:bg-blue-50 hover:border-blue-400 dark:text-blue-300 dark:border-blue-600 dark:hover:bg-blue-900/20"
                         >
                           Details
                         </Button>
@@ -628,8 +674,8 @@ export default function TimeTrackingAdmin() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleApproveTimeEntry(entry.id)}
-                          leftIcon={<CheckCircleIcon className="h-4 w-4" />}
-                          className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
+                          leftIcon={<CheckCircleIcon className="w-4 h-4" />}
+                          className="font-semibold text-green-600 border-green-300 shadow-sm hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
                         >
                           Goedkeuren
                         </Button>
@@ -637,8 +683,8 @@ export default function TimeTrackingAdmin() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleRejectTimeEntry(entry.id)}
-                          leftIcon={<XCircleIcon className="h-4 w-4" />}
-                          className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
+                          leftIcon={<XCircleIcon className="w-4 h-4" />}
+                          className="font-semibold text-red-600 border-red-300 shadow-sm hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
                         >
                           Afwijzen
                         </Button>
@@ -731,10 +777,11 @@ export default function TimeTrackingAdmin() {
               </div>
             )}
 
-            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-end pt-4 space-x-3 border-t border-gray-200 dark:border-gray-700">
               <Button
                 variant="outline"
                 onClick={() => setShowDetailsModal(false)}
+                className="font-semibold text-gray-700 border-gray-300 shadow-sm hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50"
               >
                 Sluiten
               </Button>
@@ -744,8 +791,8 @@ export default function TimeTrackingAdmin() {
                   handleApproveTimeEntry(selectedEntry.id);
                   setShowDetailsModal(false);
                 }}
-                leftIcon={<CheckCircleIcon className="h-4 w-4" />}
-                className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
+                leftIcon={<CheckCircleIcon className="w-4 h-4" />}
+                className="font-semibold text-green-600 border-green-300 shadow-sm hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
               >
                 Goedkeuren
               </Button>
@@ -755,8 +802,8 @@ export default function TimeTrackingAdmin() {
                   handleRejectTimeEntry(selectedEntry.id);
                   setShowDetailsModal(false);
                 }}
-                leftIcon={<XCircleIcon className="h-4 w-4" />}
-                className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
+                leftIcon={<XCircleIcon className="w-4 h-4" />}
+                className="font-semibold text-red-600 border-red-300 shadow-sm hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
               >
                 Afwijzen
               </Button>

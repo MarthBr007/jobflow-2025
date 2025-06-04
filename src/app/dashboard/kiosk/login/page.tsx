@@ -41,13 +41,26 @@ export default function KioskLogin() {
       <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto h-24 w-24 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <ComputerDesktopIcon className="h-12 w-12 text-white" />
+          <div className="mx-auto mb-6 flex justify-center">
+            {/* Light mode logo */}
+            <img
+              src="/crew-flow-logo.png"
+              alt="CrewFlow"
+              className="w-auto dark:hidden object-contain"
+              style={{ height: "300px", maxWidth: "100%" }}
+            />
+            {/* Dark mode logo */}
+            <img
+              src="/crew-flow-logo-dark.png"
+              alt="CrewFlow"
+              className="w-auto hidden dark:block object-contain"
+              style={{ height: "300px", maxWidth: "100%" }}
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Kiosk Dashboard
           </h1>
-          <p className="text-gray-600">JobFlow 2025 - Aanwezigheid Systeem</p>
+          <p className="text-gray-600">CrewFlow 2025 - Aanwezigheid Systeem</p>
         </div>
 
         {/* Login Form */}

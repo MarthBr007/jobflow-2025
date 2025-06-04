@@ -39,6 +39,8 @@ import PermissionGuard from "@/components/ui/PermissionGuard";
 import { ExportUtils } from "@/utils/exportUtils";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import MetricCard from "@/components/ui/MetricCard";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
 
 interface Employee {
   id: string;
@@ -68,6 +70,7 @@ interface Employee {
   hireDate?: string;
   phoneNumber?: string;
   isActive?: boolean;
+  workPatternAssignments?: any[];
 }
 
 interface WorkType {
@@ -602,55 +605,102 @@ function PersonnelContent() {
 
   return (
     <div className="space-y-6">
-      {/* Modern Header Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 px-6 py-8 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Personeel Beheer" },
+        ]}
+        className="mb-4"
+      />
+
+      {/* Statistics Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <MetricCard
+          title="Totaal Medewerkers"
+          value={employees.filter((e) => !e.archived).length}
+          icon={<UserGroupIcon className="w-8 h-8" />}
+          color="blue"
+          subtitle="Actieve personeelsleden"
+          trend={{
+            value: 2,
+            isPositive: true,
+            label: "deze maand",
+          }}
+        />
+
+        <MetricCard
+          title="Vaste Medewerkers"
+          value={
+            employees.filter((e) => e.role === "EMPLOYEE" && !e.archived).length
+          }
+          icon={<BriefcaseIcon className="w-8 h-8" />}
+          color="green"
+          subtitle="In vaste dienst"
+          trend={{
+            value: 3,
+            isPositive: true,
+            label: "vs vorige maand",
+          }}
+        />
+
+        <MetricCard
+          title="Freelancers"
+          value={
+            employees.filter((e) => e.role === "FREELANCER" && !e.archived)
+              .length
+          }
+          icon={<BuildingOfficeIcon className="w-8 h-8" />}
+          color="purple"
+          subtitle="Externe medewerkers"
+          trend={{
+            value: 4,
+            isPositive: true,
+            label: "actieve projecten",
+          }}
+        />
+
+        <MetricCard
+          title="Contracten"
+          value={employees.filter((e) => e.hasContract && !e.archived).length}
+          icon={<DocumentTextIcon className="w-8 h-8" />}
+          color="orange"
+          subtitle="Ondertekende contracten"
+          trend={{
+            value: 95,
+            isPositive: true,
+            label: "% compleet",
+          }}
+        />
+      </div>
+
+      {/* Action Bar */}
+      <div className="overflow-hidden bg-white border border-gray-200 shadow-lg dark:bg-gray-800 rounded-xl dark:border-gray-700 mb-8">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white dark:from-gray-700/50 dark:to-gray-800 dark:border-gray-600">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <UserGroupIcon className="h-7 w-7 text-white" />
+              <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                <UserGroupIcon className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                   Personeel Beheer
-                </h1>
+                </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Beheer medewerkers, freelancers en hun gegevens
+                  Beheer en organiseer je team effectief
                 </p>
-                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center space-x-1">
-                    <span className="h-2 w-2 bg-green-500 rounded-full"></span>
-                    <span>
-                      {employees.filter((e) => !e.archived).length} Actief
-                    </span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
-                    <span>
-                      {employees.filter((e) => e.role === "EMPLOYEE").length}{" "}
-                      Vast
-                    </span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <span className="h-2 w-2 bg-purple-500 rounded-full"></span>
-                    <span>
-                      {employees.filter((e) => e.role === "FREELANCER").length}{" "}
-                      Freelancers
-                    </span>
-                  </span>
-                </div>
               </div>
             </div>
 
-            {/* Action Buttons with improved spacing */}
-            <div className="button-group-loose flex-wrap sm:flex-nowrap">
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3">
               {selectedEmployees.length > 0 && (
                 <Button
                   onClick={handleBulkDelete}
                   variant="destructive"
                   size="md"
                   leftIcon={<TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-                  className="touch-target-sm"
+                  className="shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
                 >
                   <span className="sm:hidden">
                     {selectedEmployees.length} verwijderen
@@ -667,7 +717,7 @@ function PersonnelContent() {
                 }
                 variant="outline"
                 size="md"
-                className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-blue-900/20 touch-target-sm"
+                className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-300 hover:from-blue-100 hover:to-blue-200 hover:border-blue-400 dark:from-blue-900/20 dark:to-blue-800/20 dark:text-blue-300 dark:border-blue-600 dark:hover:bg-blue-900/30 shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
               >
                 <span className="sm:hidden">Excel Import</span>
                 <span className="hidden sm:inline">Excel Import</span>
@@ -683,7 +733,7 @@ function PersonnelContent() {
                 leftIcon={<ArrowUpTrayIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
                 variant="outline"
                 size="md"
-                className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20 touch-target-sm"
+                className="bg-gradient-to-r from-green-50 to-emerald-100 text-emerald-700 border-emerald-300 hover:from-emerald-100 hover:to-emerald-200 hover:border-emerald-400 dark:from-emerald-900/20 dark:to-emerald-800/20 dark:text-emerald-300 dark:border-emerald-600 dark:hover:bg-emerald-900/30 shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
               >
                 <span className="sm:hidden">Export CSV</span>
                 <span className="hidden sm:inline">Export CSV</span>
@@ -693,7 +743,7 @@ function PersonnelContent() {
                 leftIcon={<PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
                 variant="primary"
                 size="md"
-                className="touch-target-sm shadow-lg"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 font-bold"
               >
                 <span className="sm:hidden">Nieuwe Medewerker</span>
                 <span className="hidden sm:inline">Nieuwe Medewerker</span>
@@ -702,29 +752,12 @@ function PersonnelContent() {
           </div>
         </div>
 
-        {/* Advanced Filters Section */}
-        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
-          <AdvancedFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            availableWorkTypes={availableWorkTypes}
-            availableCompanies={availableCompanies}
-          />
-        </div>
-
-        {/* Quick Stats Bar */}
-        <div className="px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">
+        {/* Enhanced Quick Stats Bar */}
+        <div className="px-6 py-4 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-700/50">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-6 text-gray-600 dark:text-gray-400">
-              <span className="flex items-center space-x-2">
-                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                <span>
-                  <strong>{filteredEmployees.length}</strong> medewerkers
-                  gevonden
-                </span>
-              </span>
               {selectedEmployees.length > 0 && (
-                <span className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+                <span className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 font-medium">
                   <CheckCircleIcon className="h-4 w-4" />
                   <span>
                     <strong>{selectedEmployees.length}</strong> geselecteerd
@@ -732,257 +765,339 @@ function PersonnelContent() {
                 </span>
               )}
             </div>
-            <label className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 cursor-pointer">
+            <label className="flex items-center space-x-3 text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
               <input
                 type="checkbox"
                 checked={includeArchived}
                 onChange={(e) => setIncludeArchived(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shadow-sm"
               />
-              <span className="text-sm font-medium">Toon gearchiveerd</span>
+              <span className="text-sm font-semibold">Toon gearchiveerd</span>
               <ArchiveBoxIcon className="h-4 w-4" />
             </label>
           </div>
         </div>
       </div>
 
-      {/* Results Summary */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              <strong className="text-gray-900 dark:text-white">
-                {filteredEmployees.length}
-              </strong>{" "}
-              medewerkers gevonden
-            </span>
-            {filters.search && (
-              <span className="text-xs text-blue-600 dark:text-blue-400">
-                Zoekt naar: "{filters.search}"
-              </span>
-            )}
-          </div>
-
-          {/* Quick Stats */}
-          <div className="flex space-x-6 text-xs text-gray-500 dark:text-gray-400">
-            <span>
-              <strong className="text-gray-900 dark:text-white">
-                {
-                  filteredEmployees.filter(
-                    (emp) => emp.employeeType === "PERMANENT" && !emp.archived
-                  ).length
-                }
-              </strong>{" "}
-              Vast
-            </span>
-            <span>
-              <strong className="text-gray-900 dark:text-white">
-                {
-                  filteredEmployees.filter(
-                    (emp) => emp.employeeType === "FREELANCER" && !emp.archived
-                  ).length
-                }
-              </strong>{" "}
-              Freelancers
-            </span>
-            <span>
-              <strong className="text-gray-900 dark:text-white">
-                {
-                  filteredEmployees.filter(
-                    (emp) => emp.employeeType === "FLEX_WORKER" && !emp.archived
-                  ).length
-                }
-              </strong>{" "}
-              Oproep
-            </span>
-            {includeArchived && (
-              <span>
-                <strong className="text-gray-900 dark:text-white">
-                  {filteredEmployees.filter((emp) => emp.archived).length}
-                </strong>{" "}
-                Gearchiveerd
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Loading State */}
       {loading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2 text-gray-600 dark:text-gray-400">
-              Laden van personeel...
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <div className="flex">
-            <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                Fout bij laden van personeel
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 shadow-sm">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-blue-600 shadow-lg"></div>
+              <div className="absolute inset-0 rounded-full h-12 w-12 border-2 border-gray-200 dark:border-gray-700"></div>
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Laden van personeel...
               </h3>
-              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                {error}
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Even geduld, we halen de laatste gegevens op
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Personnel List */}
+      {/* Error State */}
+      {error && (
+        <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 shadow-sm">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="h-10 w-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-md">
+                <ExclamationTriangleIcon className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-red-800 dark:text-red-200 mb-2">
+                Fout bij laden van personeel
+              </h3>
+              <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+                {error}
+              </p>
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                size="sm"
+                className="text-red-700 border-red-300 hover:bg-red-100 dark:text-red-300 dark:border-red-600 dark:hover:bg-red-900/20"
+              >
+                Opnieuw proberen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
       {!loading && !error && filteredEmployees.length === 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Geen medewerkers gevonden
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Pas je filters aan of voeg een nieuwe medewerker toe.
-          </p>
-          <Button
-            variant="primary"
-            onClick={() => setShowAddModal(true)}
-            leftIcon={<PlusIcon className="h-4 w-4" />}
-          >
-            Eerste Medewerker Toevoegen
-          </Button>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-sm">
+          <div className="max-w-md mx-auto">
+            <div className="h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <UserGroupIcon className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+              Geen medewerkers gevonden
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+              {filters.search || filters.role || filters.company
+                ? "Geen medewerkers voldoen aan de huidige filterinstellingen. Pas je zoekopdracht aan of verwijder filters."
+                : "Er zijn nog geen medewerkers toegevoegd aan het systeem. Voeg je eerste medewerker toe om te beginnen."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {(filters.search || filters.role || filters.company) && (
+                <Button
+                  variant="outline"
+                  onClick={() => setFilters(defaultFilters)}
+                  leftIcon={<FunnelIcon className="h-4 w-4" />}
+                  className="shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  Filters wissen
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                onClick={() => setShowAddModal(true)}
+                leftIcon={<PlusIcon className="h-4 w-4" />}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
+              >
+                {filteredEmployees.length === 0 && !filters.search
+                  ? "Eerste Medewerker Toevoegen"
+                  : "Nieuwe Medewerker"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
       {!loading && !error && filteredEmployees.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Active Employees Section */}
           {filteredEmployees.filter((emp) => !emp.archived).length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center">
-                      <UserGroupIcon className="h-5 w-5 text-white" />
+                  <div className="flex items-center space-x-4">
+                    <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+                      <UserGroupIcon className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                         Actieve Medewerkers
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {
                           filteredEmployees.filter((emp) => !emp.archived)
                             .length
                         }{" "}
-                        medewerkers actief
+                        medewerkers beschikbaar voor projecten
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Employee Type Statistics */}
+                  <div className="hidden sm:flex items-center space-x-6 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm"></div>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {
+                          filteredEmployees.filter(
+                            (emp) =>
+                              emp.employeeType === "PERMANENT" && !emp.archived
+                          ).length
+                        }
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Vast
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-green-600 rounded-full shadow-sm"></div>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {
+                          filteredEmployees.filter(
+                            (emp) =>
+                              emp.employeeType === "FREELANCER" && !emp.archived
+                          ).length
+                        }
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Freelancers
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full shadow-sm"></div>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {
+                          filteredEmployees.filter(
+                            (emp) =>
+                              emp.employeeType === "FLEX_WORKER" &&
+                              !emp.archived
+                          ).length
+                        }
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Oproep
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Employee Grid */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gray-50/50 dark:bg-gray-800/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredEmployees
                     .filter((emp) => !emp.archived)
                     .map((employee) => (
                       <div
                         key={employee.id}
-                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-500"
+                        className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-500 hover:-translate-y-1 flex flex-col h-full"
                       >
-                        <div className="p-6 h-full flex flex-col">
-                          <div className="flex items-start space-x-4 flex-1">
+                        {/* Fixed Header Section */}
+                        <div className="p-6 flex-shrink-0">
+                          <div className="flex items-start space-x-4">
                             <div className="flex-shrink-0">
-                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-                                <span className="text-white font-bold text-lg">
+                              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                                <span className="text-white font-bold text-xl">
                                   {employee.name.charAt(0).toUpperCase()}
                                 </span>
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                              <h4 className="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                 {employee.name}
                               </h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-3">
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
                                 {employee.email}
                               </p>
-
-                              <div className="flex flex-wrap items-center gap-2 mb-4">
-                                <span
-                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${getRoleColor(
-                                    employee.role
-                                  )}`}
-                                >
-                                  {getRoleText(employee.role)}
-                                </span>
-                                <span
-                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${getEmployeeTypeColor(
-                                    employee.employeeType || ""
-                                  )}`}
-                                >
-                                  {getEmployeeTypeText(
-                                    employee.employeeType || ""
-                                  )}
-                                </span>
-                              </div>
-
-                              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                                <div className="flex items-center space-x-2">
-                                  <BuildingOfficeIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                  <span className="truncate">
-                                    {employee.company}
-                                  </span>
-                                </div>
-                                {employee.phone && (
-                                  <div className="flex items-center space-x-2">
-                                    <PhoneIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                    <span>{employee.phone}</span>
-                                  </div>
-                                )}
-                                {(employee.hourlyRate ||
-                                  employee.hourlyWage) && (
-                                  <div className="flex items-center space-x-2">
-                                    <BanknotesIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                    <span>
-                                      €
-                                      {employee.hourlyRate ||
-                                        employee.hourlyWage}
-                                      /uur
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {employee.workTypes &&
-                                employee.workTypes.length > 0 && (
-                                  <div className="mt-3">
-                                    <div className="flex flex-wrap gap-1">
-                                      {employee.workTypes
-                                        .slice(0, 2)
-                                        .map((workType, index) => (
-                                          <span
-                                            key={index}
-                                            className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs rounded-md"
-                                          >
-                                            {workType}
-                                          </span>
-                                        ))}
-                                      {employee.workTypes.length > 2 && (
-                                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md">
-                                          +{employee.workTypes.length - 2} meer
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
                             </div>
                           </div>
+                        </div>
 
-                          {/* Fixed Bottom Section - Consistent Button Position */}
-                          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        {/* Content Section - Flexible */}
+                        <div className="px-6 flex-1 space-y-4">
+                          {/* Badges */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`px-3 py-1.5 text-xs font-bold rounded-full ${getRoleColor(
+                                employee.role
+                              )} shadow-sm`}
+                            >
+                              {getRoleText(employee.role)}
+                            </span>
+                            <span
+                              className={`px-3 py-1.5 text-xs font-semibold rounded-full ${getEmployeeTypeColor(
+                                employee.employeeType || ""
+                              )} shadow-sm`}
+                            >
+                              {getEmployeeTypeText(employee.employeeType || "")}
+                            </span>
+                          </div>
+
+                          {/* Details */}
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
+                              <BuildingOfficeIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                              <span className="truncate font-medium">
+                                {employee.company}
+                              </span>
+                            </div>
+
+                            {employee.phone && (
+                              <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
+                                <PhoneIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                                <span className="font-medium">
+                                  {employee.phone}
+                                </span>
+                              </div>
+                            )}
+
+                            {(employee.hourlyRate || employee.hourlyWage) && (
+                              <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
+                                <BanknotesIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                                <span className="font-bold text-green-600 dark:text-green-400">
+                                  €{employee.hourlyRate || employee.hourlyWage}
+                                  /uur
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Work Types */}
+                          {employee.workTypes &&
+                            employee.workTypes.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {employee.workTypes
+                                    .slice(0, 3)
+                                    .map((workType, index) => (
+                                      <span
+                                        key={index}
+                                        className="px-2.5 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-700/50"
+                                      >
+                                        {workType}
+                                      </span>
+                                    ))}
+                                  {employee.workTypes.length > 3 && (
+                                    <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-600">
+                                      +{employee.workTypes.length - 3} meer
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                          <div className="space-y-2 mb-4">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              📧 {employee.email}
+                            </p>
+                            {employee.phone && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                📞 {employee.phone}
+                              </p>
+                            )}
+                            {employee.company && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                🏢 {employee.company}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Work Pattern Indicator */}
+                          {employee.workPatternAssignments &&
+                            employee.workPatternAssignments.length > 0 && (
+                              <div className="mb-4">
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                  Werkpatroon:
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {employee.workPatternAssignments
+                                    .slice(0, 2)
+                                    .map((assignment: any, index: number) => (
+                                      <span
+                                        key={index}
+                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                                      >
+                                        {assignment.icon} {assignment.name}
+                                      </span>
+                                    ))}
+                                  {employee.workPatternAssignments.length >
+                                    2 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                      +
+                                      {employee.workPatternAssignments.length -
+                                        2}{" "}
+                                      meer
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                        </div>
+
+                        {/* Fixed Footer Section */}
+                        <div className="px-6 py-4 mt-auto border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30 flex-shrink-0">
+                          <div className="flex items-center justify-between">
                             <Button
                               type="button"
                               onClick={(e) => {
@@ -993,24 +1108,30 @@ function PersonnelContent() {
                               }}
                               variant="primary"
                               size="sm"
-                              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm w-full sm:w-auto min-h-[36px]"
+                              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg transition-all duration-200 flex-1 max-w-[140px] font-semibold"
                               title="Medewerker beheren"
                             >
                               <UserGroupIcon className="h-4 w-4 mr-2" />
                               Beheren
                             </Button>
 
-                            <div className="text-xs text-gray-400 dark:text-gray-500 ml-3">
+                            <div className="flex flex-col items-end text-right ml-3">
                               {employee.hireDate && (
-                                <>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                                   Sinds{" "}
                                   {format(
                                     new Date(employee.hireDate),
                                     "MMM yyyy",
                                     { locale: nl }
                                   )}
-                                </>
+                                </div>
                               )}
+                              <div className="flex items-center space-x-1 mt-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full shadow-sm"></div>
+                                <span className="text-xs text-green-600 dark:text-green-400 font-semibold">
+                                  Actief
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1025,61 +1146,84 @@ function PersonnelContent() {
           {includeArchived &&
             filteredEmployees.filter((emp) => emp.archived).length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-8 w-8 bg-gray-500 rounded-lg flex items-center justify-center">
-                        <ArchiveBoxIcon className="h-5 w-5 text-white" />
+                    <div className="flex items-center space-x-4">
+                      <div className="h-10 w-10 bg-gradient-to-br from-gray-500 to-slate-600 rounded-xl flex items-center justify-center shadow-md">
+                        <ArchiveBoxIcon className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                           Gearchiveerde Medewerkers
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           {
                             filteredEmployees.filter((emp) => emp.archived)
                               .length
                           }{" "}
-                          gearchiveerd
+                          medewerkers in archief
                         </p>
+                      </div>
+                    </div>
+                    <div className="hidden sm:flex items-center space-x-3">
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-500 dark:text-gray-400">
+                          {
+                            filteredEmployees.filter((emp) => emp.archived)
+                              .length
+                          }
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Gearchiveerd
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="p-6 bg-gray-50/30 dark:bg-gray-800/30">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredEmployees
                       .filter((emp) => emp.archived)
                       .map((employee) => (
                         <div
                           key={employee.id}
-                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-300 dark:border-gray-600 opacity-75"
+                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-300 dark:border-gray-600 opacity-80 hover:opacity-100 transition-opacity duration-200 flex flex-col h-full"
                         >
-                          <div className="p-6 h-full flex flex-col">
-                            <div className="flex items-start space-x-4 flex-1">
+                          {/* Fixed Header Section */}
+                          <div className="p-6 flex-shrink-0">
+                            <div className="flex items-start space-x-4">
                               <div className="flex-shrink-0">
-                                <div className="w-12 h-12 bg-gray-400 rounded-xl flex items-center justify-center">
-                                  <span className="text-white font-bold text-lg">
+                                <div className="w-14 h-14 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center shadow-md">
+                                  <span className="text-white font-bold text-xl">
                                     {employee.name.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 truncate">
+                                <h4 className="text-lg font-bold text-gray-700 dark:text-gray-300 truncate">
                                   {employee.name}
                                 </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
                                   {employee.email}
                                 </p>
-                                <span className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-lg">
-                                  Gearchiveerd
-                                </span>
                               </div>
                             </div>
+                          </div>
 
-                            {/* Fixed Bottom Section - Consistent Button Position */}
-                            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600 flex items-center justify-between gap-2">
+                          {/* Content Section - Flexible */}
+                          <div className="px-6 flex-1">
+                            <div className="flex items-center justify-center">
+                              <span className="px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-xl shadow-sm border border-gray-300 dark:border-gray-600">
+                                <ArchiveBoxIcon className="h-4 w-4 inline mr-2" />
+                                Gearchiveerd
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Fixed Footer Section */}
+                          <div className="px-6 py-4 mt-auto border-t border-gray-200 dark:border-gray-600 bg-gray-100/50 dark:bg-gray-600/30 flex-shrink-0">
+                            <div className="flex items-center space-x-3">
                               <Button
                                 type="button"
                                 onClick={() =>
@@ -1089,7 +1233,7 @@ function PersonnelContent() {
                                 }
                                 variant="primary"
                                 size="sm"
-                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm flex-1 min-h-[36px]"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg transition-all duration-200 flex-1 font-semibold"
                                 title="Medewerker beheren"
                               >
                                 <UserGroupIcon className="h-4 w-4 mr-2" />
@@ -1101,7 +1245,7 @@ function PersonnelContent() {
                                 }
                                 variant="primary"
                                 size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-white shadow-sm flex-1 min-h-[36px]"
+                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all duration-200 flex-1 font-semibold"
                                 title="Medewerker herstellen"
                               >
                                 <CheckCircleIcon className="h-4 w-4 mr-2" />
@@ -1118,959 +1262,32 @@ function PersonnelContent() {
         </div>
       )}
 
-      {/* Add Employee Modal */}
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        title="👤 Medewerker Toevoegen"
-        description="Voeg een nieuwe medewerker toe aan het systeem"
-        size="xl"
-      >
-        <div className="max-h-[80vh] overflow-y-auto">
-          <form onSubmit={handleAddEmployee} className="space-y-6 sm:space-y-8">
-            {/* Personal Information Section */}
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 sm:p-6 rounded-lg">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
-                <UserGroupIcon className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-                Persoonlijke Gegevens
+      {/* Advanced Filters Section */}
+      <div className="overflow-hidden bg-white border border-gray-200 shadow-lg dark:bg-gray-800 rounded-xl dark:border-gray-700">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 dark:border-gray-600">
+          <div className="flex items-center space-x-4">
+            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+              <FunnelIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Geavanceerde Filters
               </h3>
-              <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
-                <Input
-                  label="Volledige Naam"
-                  value={newEmployee.name}
-                  onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, name: e.target.value })
-                  }
-                  leftIcon={<UserGroupIcon className="h-5 w-5" />}
-                  variant="outlined"
-                  inputSize="md"
-                  placeholder="Voor- en achternaam"
-                  required
-                  className="w-full"
-                />
-
-                <Input
-                  label="E-mailadres"
-                  type="email"
-                  value={newEmployee.email}
-                  onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, email: e.target.value })
-                  }
-                  leftIcon={<EnvelopeIcon className="h-5 w-5" />}
-                  variant="outlined"
-                  inputSize="md"
-                  placeholder="naam@bedrijf.nl"
-                  required
-                  className="w-full"
-                />
-
-                <Input
-                  label="Telefoonnummer"
-                  type="tel"
-                  value={newEmployee.phone}
-                  onChange={(e) =>
-                    setNewEmployee({
-                      ...newEmployee,
-                      phone: e.target.value,
-                    })
-                  }
-                  leftIcon={<PhoneIcon className="h-5 w-5" />}
-                  variant="outlined"
-                  inputSize="md"
-                  placeholder="+31 6 12345678"
-                  className="w-full"
-                />
-
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    📍 Woonadres
-                  </label>
-                  <div className="space-y-4">
-                    <Input
-                      label="Straat en huisnummer"
-                      value={newEmployee.street}
-                      onChange={(e) =>
-                        setNewEmployee({
-                          ...newEmployee,
-                          street: e.target.value,
-                        })
-                      }
-                      leftIcon={<HomeIcon className="h-5 w-5" />}
-                      variant="outlined"
-                      inputSize="md"
-                      placeholder="Hoofdstraat 123"
-                      className="w-full"
-                    />
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <Input
-                        label="Postcode"
-                        value={newEmployee.postalCode}
-                        onChange={(e) =>
-                          setNewEmployee({
-                            ...newEmployee,
-                            postalCode: e.target.value,
-                          })
-                        }
-                        variant="outlined"
-                        inputSize="md"
-                        placeholder="1234AB"
-                        className="w-full"
-                      />
-                      <Input
-                        label="Plaats"
-                        value={newEmployee.city}
-                        onChange={(e) =>
-                          setNewEmployee({
-                            ...newEmployee,
-                            city: e.target.value,
-                          })
-                        }
-                        variant="outlined"
-                        inputSize="md"
-                        placeholder="Amsterdam"
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Financial Information Section */}
-            <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <CurrencyEuroIcon className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
-                Financiële Gegevens
-              </h3>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {newEmployee.employeeType === "FREELANCER" ? (
-                  <Input
-                    label="Uurtarief (€)"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newEmployee.hourlyRate}
-                    onChange={(e) =>
-                      setNewEmployee({
-                        ...newEmployee,
-                        hourlyRate: e.target.value,
-                      })
-                    }
-                    leftIcon={<CurrencyEuroIcon className="h-5 w-5" />}
-                    variant="outlined"
-                    inputSize="md"
-                    placeholder="25.00"
-                    helperText="Uurtarief in euro's voor freelance werk"
-                    className="w-full"
-                  />
-                ) : newEmployee.employeeType === "FLEX_WORKER" ? (
-                  <Input
-                    label="Bruto Uurloon (€)"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newEmployee.hourlyWage}
-                    onChange={(e) =>
-                      setNewEmployee({
-                        ...newEmployee,
-                        hourlyWage: e.target.value,
-                      })
-                    }
-                    leftIcon={<CurrencyEuroIcon className="h-5 w-5" />}
-                    variant="outlined"
-                    inputSize="md"
-                    placeholder="15.50"
-                    helperText="Bruto uurloon in euro's voor oproepkrachten"
-                    className="w-full"
-                  />
-                ) : (
-                  <Input
-                    label="Bruto Maandloon (€)"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newEmployee.monthlySalary}
-                    onChange={(e) =>
-                      setNewEmployee({
-                        ...newEmployee,
-                        monthlySalary: e.target.value,
-                      })
-                    }
-                    leftIcon={<CurrencyEuroIcon className="h-5 w-5" />}
-                    variant="outlined"
-                    inputSize="md"
-                    placeholder="3500.00"
-                    helperText="Bruto maandloon in euro's voor vaste medewerkers"
-                    className="w-full"
-                  />
-                )}
-
-                <Input
-                  label="IBAN Bankrekeningnummer"
-                  value={newEmployee.iban}
-                  onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, iban: e.target.value })
-                  }
-                  leftIcon={<DocumentTextIcon className="h-5 w-5" />}
-                  variant="outlined"
-                  inputSize="md"
-                  placeholder="NL91ABNA0417164300"
-                  helperText="Voor uitbetalingen"
-                  className="w-full"
-                />
-              </div>
-
-              {/* Show cost calculation */}
-              {newEmployee.employeeType === "FREELANCER" &&
-                newEmployee.hourlyRate && (
-                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                      Kostenberekening per dag (8 uur)
-                    </h4>
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                      €{(parseFloat(newEmployee.hourlyRate) * 8).toFixed(2)} per
-                      dag
-                    </p>
-                  </div>
-                )}
-
-              {newEmployee.employeeType === "FLEX_WORKER" &&
-                newEmployee.hourlyWage && (
-                  <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
-                    <h4 className="text-sm font-medium text-orange-900 dark:text-orange-100 mb-2">
-                      Kostenberekening per dag (8 uur)
-                    </h4>
-                    <p className="text-sm text-orange-800 dark:text-orange-200">
-                      €{(parseFloat(newEmployee.hourlyWage) * 8).toFixed(2)} per
-                      dag (bruto loon)
-                    </p>
-                    <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                      Werkgeverslasten (ca. 25-30%) komen hier nog bovenop
-                    </p>
-                  </div>
-                )}
-
-              {newEmployee.employeeType === "PERMANENT" &&
-                newEmployee.monthlySalary && (
-                  <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <h4 className="text-sm font-medium text-green-900 dark:text-green-100 mb-2">
-                      Kostenberekening per dag (o.b.v. 22 werkdagen)
-                    </h4>
-                    <p className="text-sm text-green-800 dark:text-green-200">
-                      €{(parseFloat(newEmployee.monthlySalary) / 22).toFixed(2)}{" "}
-                      per dag (alleen loon, excl. werkgeverslasten)
-                    </p>
-                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                      Werkgeverslasten (ca. 25-30%) komen hier nog bovenop
-                    </p>
-                  </div>
-                )}
-            </div>
-
-            {/* Work Information Section */}
-            <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <BriefcaseIcon className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
-                🗓️ Werk Informatie
-              </h3>
-
-              {/* Available Days */}
-              <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                  Beschikbare dagen
-                </label>
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-                    {[
-                      { short: "Ma", full: "Maandag" },
-                      { short: "Di", full: "Dinsdag" },
-                      { short: "Wo", full: "Woensdag" },
-                      { short: "Do", full: "Donderdag" },
-                      { short: "Vr", full: "Vrijdag" },
-                      { short: "Za", full: "Zaterdag" },
-                      { short: "Zo", full: "Zondag" },
-                    ].map((day) => {
-                      const availableDays =
-                        newEmployee.availableDays
-                          ?.split(",")
-                          .map((d) => d.trim())
-                          .filter((d) => d) || [];
-                      const isChecked = availableDays.includes(day.short);
-
-                      return (
-                        <label
-                          key={day.short}
-                          className={`relative flex flex-col items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:bg-purple-50 dark:hover:bg-purple-900/20 ${
-                            isChecked
-                              ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm"
-                              : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              const currentDays =
-                                newEmployee.availableDays
-                                  ?.split(",")
-                                  .map((d) => d.trim())
-                                  .filter((d) => d) || [];
-                              const updatedDays = e.target.checked
-                                ? [...currentDays, day.short]
-                                : currentDays.filter((d) => d !== day.short);
-                              setNewEmployee({
-                                ...newEmployee,
-                                availableDays: updatedDays.join(", "),
-                              });
-                            }}
-                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 rounded mb-2 dark:bg-gray-700"
-                          />
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {day.short}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-                            {day.full}
-                          </span>
-                          {isChecked && (
-                            <div className="absolute top-2 right-2">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                            </div>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Work Types */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                  Werkzaamheden
-                </label>
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {workTypes.map((workType) => {
-                      const isChecked = newEmployee.workTypes?.includes(
-                        workType.name
-                      );
-
-                      return (
-                        <label
-                          key={workType.name}
-                          className={`relative flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:bg-purple-50 dark:hover:bg-purple-900/20 ${
-                            isChecked
-                              ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm"
-                              : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              const updatedWorkTypes = e.target.checked
-                                ? [
-                                    ...(newEmployee.workTypes || []),
-                                    workType.name,
-                                  ]
-                                : (newEmployee.workTypes || []).filter(
-                                    (type) => type !== workType.name
-                                  );
-                              setNewEmployee({
-                                ...newEmployee,
-                                workTypes: updatedWorkTypes,
-                              });
-                            }}
-                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 rounded mt-1 dark:bg-gray-700"
-                          />
-                          <div className="ml-3 flex flex-col">
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {workType.emoji} {workType.name}
-                            </span>
-                            <span className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              {workType.description}
-                            </span>
-                          </div>
-                          {isChecked && (
-                            <div className="absolute top-3 right-3">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                            </div>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Work Information Section - Role and Company */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <BriefcaseIcon className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-                👔 Rol & Bedrijf
-              </h3>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    Rol
-                  </label>
-                  <select
-                    value={newEmployee.role}
-                    onChange={(e) => {
-                      const newRole = e.target.value;
-                      setNewEmployee({
-                        ...newEmployee,
-                        role: newRole,
-                        // Reset KvK and BTW when not freelancer
-                        kvkNumber:
-                          newRole === "FREELANCER" ? newEmployee.kvkNumber : "",
-                        btwNumber:
-                          newRole === "FREELANCER" ? newEmployee.btwNumber : "",
-                      });
-                    }}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 text-sm font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  >
-                    <option value="">Selecteer rol</option>
-                    <option value="ADMIN">👑 Administrator</option>
-                    <option value="MANAGER">👔 Manager</option>
-                    <option value="EMPLOYEE">👷 Medewerker</option>
-                    <option value="FREELANCER">💼 Freelancer</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    Bedrijf
-                  </label>
-                  <select
-                    value={newEmployee.company}
-                    onChange={(e) =>
-                      setNewEmployee({
-                        ...newEmployee,
-                        company: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 text-sm font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  >
-                    <option value="">Selecteer bedrijf</option>
-                    <option value="Broers Verhuur">🚛 Broers Verhuur</option>
-                    <option value="DCRT Event Decorations">
-                      🎉 DCRT Event Decorations
-                    </option>
-                    <option value="DCRT in Building">
-                      🏢 DCRT in Building
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    Type Medewerker
-                  </label>
-                  <select
-                    value={newEmployee.employeeType}
-                    onChange={(e) =>
-                      setNewEmployee({
-                        ...newEmployee,
-                        employeeType: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 text-sm font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  >
-                    <option value="">Selecteer type</option>
-                    <option value="PERMANENT">🏢 Vast personeel</option>
-                    <option value="FREELANCER">💼 Freelancer</option>
-                    <option value="FLEX_WORKER">📞 Oproepkracht</option>
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Bepaalt het type arbeidsrelatie
-                  </p>
-                </div>
-
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    Status
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="active"
-                        checked={true}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        readOnly
-                      />
-                      <span className="ml-2 text-sm font-medium text-green-700">
-                        ✅ Actief
-                      </span>
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Nieuwe medewerkers worden standaard als actief aangemaakt
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Freelancer Information Section - Only for freelancers */}
-            {newEmployee.role === "FREELANCER" && (
-              <div className="bg-yellow-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <DocumentTextIcon className="h-5 w-5 mr-2 text-yellow-600" />
-                  💼 Freelancer Gegevens
-                </h3>
-
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-                  <Input
-                    label="KvK Nummer"
-                    value={newEmployee.kvkNumber || ""}
-                    onChange={(e) =>
-                      setNewEmployee({
-                        ...newEmployee,
-                        kvkNumber: e.target.value,
-                      })
-                    }
-                    leftIcon={<DocumentTextIcon className="h-5 w-5" />}
-                    variant="outlined"
-                    inputSize="md"
-                    placeholder="12345678"
-                    helperText="Verplicht voor freelancers"
-                    className="w-full"
-                    required
-                  />
-
-                  <Input
-                    label="BTW Nummer"
-                    value={newEmployee.btwNumber || ""}
-                    onChange={(e) =>
-                      setNewEmployee({
-                        ...newEmployee,
-                        btwNumber: e.target.value,
-                      })
-                    }
-                    leftIcon={<DocumentTextIcon className="h-5 w-5" />}
-                    variant="outlined"
-                    inputSize="md"
-                    placeholder="NL123456789B01"
-                    helperText="Optioneel voor freelancers"
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <DocumentTextIcon className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        💡 Contracten kunnen na aanmaken van de medewerker
-                        worden gegenereerd via het bewerkingsscherm
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-4 pt-6 border-t-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky bottom-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                onClick={() => setShowAddModal(false)}
-                className="px-6"
-              >
-                ❌ Annuleren
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                className="px-6"
-              >
-                ✅ Medewerker Toevoegen
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Modal>
-
-      {/* Password Reset Modal */}
-      <Modal
-        isOpen={showPasswordModal}
-        onClose={() => setShowPasswordModal(false)}
-        title="Wachtwoord Resetten"
-        description={`Stel een nieuw wachtwoord in voor ${selectedEmployee?.name}`}
-        size="sm"
-        type="warning"
-      >
-        <form onSubmit={handlePasswordReset} className="space-y-6">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <KeyIcon className="h-5 w-5 text-yellow-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  Het nieuwe wachtwoord wordt direct actief en de gebruiker
-                  ontvangt een e-mail met de wijziging.
-                </p>
-              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Verfijn je zoekopdracht met geavanceerde filteropties
+              </p>
             </div>
           </div>
-
-          <Input
-            label="Nieuw Wachtwoord"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            leftIcon={<KeyIcon className="h-5 w-5" />}
-            variant="outlined"
-            inputSize="md"
-            required
-            placeholder="Voer nieuw wachtwoord in"
-            helperText="Minimaal 6 karakters"
+        </div>
+        <div className="p-6 bg-gray-50/30 dark:bg-gray-800/30">
+          <AdvancedFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableWorkTypes={availableWorkTypes}
+            availableCompanies={availableCompanies}
           />
-
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowPasswordModal(false)}
-            >
-              Annuleren
-            </Button>
-            <Button type="submit" variant="primary">
-              Wachtwoord Resetten
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Permissions Modal */}
-      <Modal
-        isOpen={showPermissionsModal}
-        onClose={() => setShowPermissionsModal(false)}
-        title="Gebruikersrechten Wijzigen"
-        description={`Wijzig de rol en rechten voor ${selectedEmployee?.name}`}
-        size="sm"
-        type="info"
-      >
-        <form onSubmit={handlePermissionsUpdate} className="space-y-6">
-          {selectedEmployee?.id === session?.user?.id && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <ShieldCheckIcon className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-800 dark:text-red-200">
-                    Je kunt je eigen rol niet wijzigen om veiligheidsredenen.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nieuwe Rol
-            </label>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-              disabled={selectedEmployee?.id === session?.user?.id}
-            >
-              <option value="ADMIN">Administrator</option>
-              <option value="MANAGER">Manager</option>
-              <option value="EMPLOYEE">Medewerker</option>
-              <option value="FREELANCER">Freelancer</option>
-            </select>
-          </div>
-
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-5 w-5 text-blue-400" />
-              </div>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  Rol Beschrijvingen:
-                </h4>
-                <ul className="mt-2 text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                  <li>
-                    <strong>Administrator:</strong> Volledige toegang tot alle
-                    functies
-                  </li>
-                  <li>
-                    <strong>Manager:</strong> Kan personeel en projecten beheren
-                  </li>
-                  <li>
-                    <strong>Medewerker:</strong> Kan tijd registreren en
-                    projecten bekijken
-                  </li>
-                  <li>
-                    <strong>Freelancer:</strong> Beperkte toegang, eigen
-                    projecten
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowPermissionsModal(false)}
-            >
-              Annuleren
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={selectedEmployee?.id === session?.user?.id}
-            >
-              Rechten Wijzigen
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Excel Import Modal */}
-      <ExcelImport
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImport={handleImport}
-      />
-
-      {/* Archive Confirmation Modal */}
-      <Modal
-        isOpen={showArchiveModal}
-        onClose={() => {
-          setShowArchiveModal(false);
-          setEmployeeToArchive(null);
-        }}
-        title="📁 Medewerker Archiveren"
-        description={`Weet je zeker dat je ${employeeToArchive?.name} wilt archiveren?`}
-        size="sm"
-        type="warning"
-      >
-        <div className="space-y-6">
-          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <TrashIcon className="h-5 w-5 text-orange-400" />
-              </div>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-2">
-                  💡 De medewerker wordt gearchiveerd
-                </h4>
-                <p className="text-sm text-orange-700 dark:text-orange-300">
-                  <strong>{employeeToArchive?.name}</strong> wordt gearchiveerd
-                  maar niet verwijderd:
-                </p>
-                <ul className="mt-2 text-sm text-orange-700 dark:text-orange-300 list-disc list-inside space-y-1">
-                  <li>Alle gegevens blijven bewaard</li>
-                  <li>Historie en tijdregistratie blijven beschikbaar</li>
-                  <li>Kan later weer geactiveerd worden</li>
-                  <li>Verschijnt niet meer in actieve lijsten</li>
-                  <li>Kan niet meer inloggen</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {employeeToArchive && (
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0 h-10 w-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
-                  <UserGroupIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                    {employeeToArchive.name}
-                  </h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {employeeToArchive.email}
-                  </p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${getRoleColor(
-                        employeeToArchive.role
-                      )}`}
-                    >
-                      {getRoleText(employeeToArchive.role)}
-                    </span>
-                    {employeeToArchive.employeeType && (
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${getEmployeeTypeColor(
-                          employeeToArchive.employeeType
-                        )}`}
-                      >
-                        {getEmployeeTypeText(employeeToArchive.employeeType)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowArchiveModal(false);
-                setEmployeeToArchive(null);
-              }}
-            >
-              Annuleren
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleArchiveEmployee}
-              leftIcon={<TrashIcon className="h-4 w-4" />}
-              className="bg-orange-600 hover:bg-orange-700 text-white border-orange-600 hover:border-orange-700"
-            >
-              Archiveren
-            </Button>
-          </div>
         </div>
-      </Modal>
-
-      {/* Contract Generation Confirmation Modal */}
-      <Modal
-        isOpen={showContractModal}
-        onClose={() => {
-          setShowContractModal(false);
-          setEmployeeForContract(null);
-        }}
-        title="📋 Contract Genereren"
-        description={`Contract genereren voor ${employeeForContract?.name}`}
-        size="md"
-        type="info"
-      >
-        <div className="space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <ClipboardDocumentIcon className="h-5 w-5 text-blue-400" />
-              </div>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                  Contract wordt gegenereerd
-                </h4>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Er wordt een professioneel contract aangemaakt voor{" "}
-                  <strong>{employeeForContract?.name}</strong> met de volgende
-                  gegevens:
-                </p>
-                <ul className="mt-2 text-sm text-blue-700 dark:text-blue-300 list-disc list-inside space-y-1">
-                  <li>Persoonlijke gegevens en contactinformatie</li>
-                  <li>Functieomschrijving en werkzaamheden</li>
-                  <li>Salaris en arbeidsvoorwaarden</li>
-                  <li>Standaard contractuele bepalingen</li>
-                  <li>JobFlow branding en vormgeving</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {employeeForContract && (
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                  <UserGroupIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                    {employeeForContract.name}
-                  </h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {employeeForContract.email}
-                  </p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${getRoleColor(
-                        employeeForContract.role
-                      )}`}
-                    >
-                      {getRoleText(employeeForContract.role)}
-                    </span>
-                    {employeeForContract.employeeType && (
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${getEmployeeTypeColor(
-                          employeeForContract.employeeType
-                        )}`}
-                      >
-                        {getEmployeeTypeText(employeeForContract.employeeType)}
-                      </span>
-                    )}
-                    {(employeeForContract.hourlyRate ||
-                      employeeForContract.hourlyWage) && (
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                        €
-                        {employeeForContract.hourlyRate ||
-                          employeeForContract.hourlyWage}
-                        /uur
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-5 w-5 text-yellow-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  Het contract wordt als PDF bestand gedownload. Controleer de
-                  gegevens en laat het contract ondertekenen door beide
-                  partijen.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowContractModal(false);
-                setEmployeeForContract(null);
-              }}
-            >
-              Annuleren
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={confirmGenerateContract}
-              leftIcon={<ClipboardDocumentIcon className="h-4 w-4" />}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              Contract Genereren
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      </div>
     </div>
   );
 }

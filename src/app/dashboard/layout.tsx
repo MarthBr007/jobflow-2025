@@ -19,6 +19,7 @@ import {
   UserCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import { signOut } from "next-auth/react";
@@ -29,6 +30,11 @@ const baseNavigation = [
     name: "Tijdsregistratie",
     href: "/dashboard/time-tracking",
     icon: ClockIcon,
+  },
+  {
+    name: "Tijd voor Tijd",
+    href: "/dashboard/time-compensation",
+    icon: CalendarDaysIcon,
   },
   {
     name: "Beschikbaarheid",
@@ -73,8 +79,13 @@ const adminNavigation = [
     icon: CalendarIcon,
   },
   {
-    name: "Rooster Templates",
-    href: "/dashboard/admin/schedule-templates",
+    name: "Verlof Saldo's",
+    href: "/dashboard/admin/leave-balances",
+    icon: CalendarDaysIcon,
+  },
+  {
+    name: "Werkpatronen",
+    href: "/dashboard/admin/schedule-patterns",
     icon: CalendarIcon,
   },
   {
@@ -91,6 +102,11 @@ const adminNavigation = [
     name: "Systeeminstellingen",
     href: "/dashboard/admin/system-settings",
     icon: Cog6ToothIcon,
+  },
+  {
+    name: "Aan- en Afwezigheid",
+    href: "/dashboard/attendance",
+    icon: UserGroupIcon,
   },
 ];
 
@@ -142,7 +158,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">
-            JobFlow laden...
+            CrewFlow laden...
           </p>
         </div>
       </div>
@@ -221,24 +237,43 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 }`}
               >
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-xl">J</span>
-                  </div>
+                  {/* Logo images */}
+                  {sidebarCollapsed && !isMobile ? (
+                    // Collapsed state - show icon only
+                    <div className="flex justify-center">
+                      <img
+                        src="/crewflow-icoon.png"
+                        alt="CrewFlow"
+                        className="h-8 w-8 dark:hidden"
+                      />
+                      <img
+                        src="/crewflow-icoon.png"
+                        alt="CrewFlow"
+                        className="h-8 w-8 hidden dark:block"
+                      />
+                    </div>
+                  ) : (
+                    // Expanded state - show full logo with proper proportions
+                    <div className="flex justify-start">
+                      <img
+                        src="/crew-flow-logo.png"
+                        alt="CrewFlow"
+                        className="h-12 w-auto max-w-none dark:hidden"
+                        style={{ height: "48px", width: "auto" }}
+                      />
+                      <img
+                        src="/crew-flow-logo-dark.png"
+                        alt="CrewFlow"
+                        className="h-12 w-auto max-w-none hidden dark:block"
+                        style={{ height: "48px", width: "auto" }}
+                      />
+                    </div>
+                  )}
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-900 shadow-sm animate-pulse"></div>
                 </div>
-                {(!sidebarCollapsed || isMobile) && (
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      JobFlow
-                    </h1>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                      Professional
-                    </p>
-                  </div>
-                )}
               </Link>
 
-              {/* Close button for mobile */}
+              {/* Close button for mobile only */}
               {isMobile && (
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -395,27 +430,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* Toggle Button - Bottom of Sidebar */}
-            {!isMobile && (
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-200 z-10"
-                title={
-                  sidebarCollapsed ? "Sidebar uitklappen" : "Sidebar inklappen"
-                }
-              >
-                {sidebarCollapsed ? (
-                  <ChevronRightIcon className="h-4 w-4" />
-                ) : (
-                  <ChevronLeftIcon className="h-4 w-4" />
-                )}
-              </motion.button>
-            )}
           </div>
         </div>
+
+        {/* Toggle Button - Bottom Right of Sidebar */}
+        {!isMobile && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="absolute -right-4 bottom-4 w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-200 z-10"
+            title={
+              sidebarCollapsed ? "Sidebar uitklappen" : "Sidebar inklappen"
+            }
+          >
+            {sidebarCollapsed ? (
+              <ChevronRightIcon className="h-4 w-4" />
+            ) : (
+              <ChevronLeftIcon className="h-4 w-4" />
+            )}
+          </motion.button>
+        )}
       </motion.aside>
 
       {/* Main Content */}
@@ -437,12 +472,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <Bars3Icon className="h-6 w-6" />
               </motion.button>
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-                  <span className="text-white font-bold text-sm">J</span>
-                </div>
-                <span className="text-lg font-bold text-gray-900 dark:text-white">
-                  JobFlow
-                </span>
+                <img
+                  src="/crew-flow-logo.png"
+                  alt="CrewFlow"
+                  className="h-14 w-auto dark:hidden"
+                />
+                <img
+                  src="/crew-flow-logo-dark.png"
+                  alt="CrewFlow"
+                  className="h-14 w-auto hidden dark:block"
+                />
               </div>
               <div className="w-10" /> {/* Spacer for alignment */}
             </div>

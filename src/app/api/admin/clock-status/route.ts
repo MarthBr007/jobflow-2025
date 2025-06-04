@@ -1,44 +1,52 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import prisma from '@/lib/prisma';
 import { hasPermission, UserRole } from '@/lib/permissions';
 
 // Haal alle gebruikers op met hun klokstatus
-export async function GET() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export async function GET(request: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.id || !session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-    // Check if user has permission to manage clock status
-    const currentUser = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { role: true, company: true },
-    });
+        // Check if user has permission to manage clock status
+        const currentUser = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { role: true, company: true },
+        });
 
-    if (!currentUser || !hasPermission(currentUser.role as UserRole, 'canManageClockStatus')) {
-        return NextResponse.json({ error: 'Access denied - Admin or Manager only' }, { status: 403 });
-    }
+        if (!currentUser || !hasPermission(currentUser.role as UserRole, 'canManageClockStatus')) {
+            return NextResponse.json({ error: 'Access denied - Admin or Manager only' }, { status: 403 });
+        }
 
-    const users = await prisma.user.findMany({
-        where: {
-            company: currentUser.company,
-            role: {
-                in: ['EMPLOYEE', 'FREELANCER'],
+        const users = await prisma.user.findMany({
+            where: {
+                company: currentUser.company,
+                role: {
+                    in: ['EMPLOYEE', 'FREELANCER'],
+                },
             },
-        },
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            status: true,
-            lastClockIn: true,
-            lastClockOut: true,
-        },
-    });
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                status: true,
+                lastClockIn: true,
+                lastClockOut: true,
+            },
+        });
 
-    return NextResponse.json(users);
+        return NextResponse.json(users);
+    } catch (error) {
+        console.error("Error fetching clock status:", error);
+        return NextResponse.json(
+            { success: false, error: "Internal server error" },
+            { status: 500 }
+        );
+    }
 }
 
 // Update de klokstatus van een gebruiker

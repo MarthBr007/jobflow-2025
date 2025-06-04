@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
         console.log('Personnel API: Session user:', session.user.email);
 
-        // Simple query first to test database connection
+        // Query users with their work types
         const users = await prisma.user.findMany({
             where: {
                 archived: false
@@ -41,7 +41,19 @@ export async function GET(request: Request) {
                 status: true,
                 createdAt: true,
                 lastLoginAt: true,
-                archived: true
+                archived: true,
+                UserWorkType: {
+                    select: {
+                        workType: {
+                            select: {
+                                id: true,
+                                name: true,
+                                emoji: true,
+                                description: true
+                            }
+                        }
+                    }
+                }
             },
             orderBy: [
                 { archived: 'asc' },
@@ -57,7 +69,7 @@ export async function GET(request: Request) {
             name: user.firstName && user.lastName
                 ? `${user.firstName} ${user.lastName}`.trim()
                 : user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0],
-            workTypes: [], // Simplified for now
+            workTypes: user.UserWorkType ? user.UserWorkType.map((uwt: any) => uwt.workType.name) : [],
             recentActivity: user.lastLoginAt
         }));
 

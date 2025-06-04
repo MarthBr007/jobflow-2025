@@ -176,7 +176,7 @@ export default function MetricCard({
         ${colorStyles[color].border}
         ${sizeStyles[size].padding}
         border rounded-xl shadow-sm hover:shadow-md transition-all duration-200
-        relative overflow-hidden
+        relative overflow-hidden h-full flex flex-col
       `}
       >
         {/* Status indicator */}
@@ -189,8 +189,8 @@ export default function MetricCard({
           className={`absolute top-0 left-0 right-0 h-1 ${colorStyles[color].accent}`}
         />
 
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
+        <div className="flex items-start justify-between h-full">
+          <div className="flex-1 flex flex-col justify-between">
             {/* Title and subtitle */}
             <div className="mb-3">
               <h3
@@ -206,7 +206,7 @@ export default function MetricCard({
             </div>
 
             {/* Value */}
-            <div className="mb-2">
+            <div className="mb-2 flex-grow">
               {loading ? (
                 <div className="space-y-2">
                   <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -248,7 +248,7 @@ export default function MetricCard({
           {/* Icon */}
           {icon && (
             <div
-              className={`${colorStyles[color].icon} ${sizeStyles[size].iconSize} flex-shrink-0 ml-3`}
+              className={`${colorStyles[color].icon} ${sizeStyles[size].iconSize} flex-shrink-0 ml-3 self-start`}
             >
               {icon}
             </div>

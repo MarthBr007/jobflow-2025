@@ -1,4 +1,4 @@
-import { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions, User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import prisma from './prisma';
@@ -11,34 +11,48 @@ export const authOptions: NextAuthOptions = {
                 email: { label: 'Email', type: 'email' },
                 password: { label: 'Password', type: 'password' },
             },
-            async authorize(credentials) {
+            async authorize(credentials): Promise<User | null> {
+                console.log('NextAuth authorize called with:', { email: credentials?.email });
+
                 if (!credentials?.email || !credentials?.password) {
+                    console.log('Missing credentials');
                     return null;
                 }
 
-                const user = await prisma.user.findUnique({
-                    where: {
-                        email: credentials.email,
-                    },
-                });
+                try {
+                    const user = await prisma.user.findUnique({
+                        where: {
+                            email: credentials.email,
+                        },
+                    });
 
-                if (!user) {
+                    console.log('Found user:', user ? 'Yes' : 'No');
+
+                    if (!user) {
+                        console.log('User not found for email:', credentials.email);
+                        return null;
+                    }
+
+                    const isPasswordValid = await compare(credentials.password, user.password);
+                    console.log('Password valid:', isPasswordValid);
+
+                    if (!isPasswordValid) {
+                        console.log('Invalid password for user:', credentials.email);
+                        return null;
+                    }
+
+                    console.log('Authentication successful for user:', user.email);
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        role: user.role as "ADMIN" | "MANAGER" | "EMPLOYEE" | "FREELANCER",
+                        company: user.company || '',
+                    } as User;
+                } catch (error) {
+                    console.error('Error in authorize:', error);
                     return null;
                 }
-
-                const isPasswordValid = await compare(credentials.password, user.password);
-
-                if (!isPasswordValid) {
-                    return null;
-                }
-
-                return {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    role: user.role,
-                    company: user.company || '',
-                };
             },
         }),
     ],
@@ -46,7 +60,7 @@ export const authOptions: NextAuthOptions = {
         strategy: 'jwt',
     },
     pages: {
-        signIn: '/login',
+        signIn: '/auth/login',
     },
     callbacks: {
         async jwt({ token, user }) {
@@ -66,4 +80,5 @@ export const authOptions: NextAuthOptions = {
             return session;
         },
     },
+    debug: process.env.NODE_ENV === 'development',
 }; 

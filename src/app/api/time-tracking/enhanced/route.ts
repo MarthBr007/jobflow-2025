@@ -735,7 +735,7 @@ export async function POST(request: NextRequest) {
         const { action, userId, hours, date, type, bulkAction } = body;
 
         if (action === 'use_compensation') {
-            return await useCompensationTime(userId || session.user.id, hours, date, type);
+            return await processCompensationTime(userId || session.user.id, hours, date, type);
         } else if (action === 'bulk_compensation') {
             return await processBulkCompensationRequest(bulkAction, session.user.id);
         } else if (action === 'approve_compensation') {
@@ -750,7 +750,7 @@ export async function POST(request: NextRequest) {
     }
 }
 
-async function useCompensationTime(userId: string, hours: number, date: string, type: string) {
+async function processCompensationTime(userId: string, hours: number, date: string, type: string) {
     // Valideer compensatie balans
     const compensationResponse = await getCompensationOverview(userId);
     const compensationData = await compensationResponse.json();

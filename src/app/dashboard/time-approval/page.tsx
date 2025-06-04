@@ -537,8 +537,8 @@ function TimeApprovalPage() {
           </h3>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            <div className="sm:col-span-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="sm:col-span-1 lg:col-span-1">
               <Input
                 placeholder="Zoek medewerkers..."
                 value={filters.search}
@@ -548,7 +548,7 @@ function TimeApprovalPage() {
                 leftIcon={<MagnifyingGlassIcon className="h-5 w-5" />}
                 variant="outlined"
                 inputSize="md"
-                className="w-full"
+                label="Zoeken"
               />
             </div>
 
@@ -589,29 +589,30 @@ function TimeApprovalPage() {
               </select>
             </div>
 
-            <div className="lg:col-span-1 xl:col-span-1">
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  label="Van"
-                  value={filters.dateFrom}
-                  onChange={(e) =>
-                    setFilters({ ...filters, dateFrom: e.target.value })
-                  }
-                  variant="outlined"
-                  inputSize="md"
-                />
-                <Input
-                  type="date"
-                  label="Tot"
-                  value={filters.dateTo}
-                  onChange={(e) =>
-                    setFilters({ ...filters, dateTo: e.target.value })
-                  }
-                  variant="outlined"
-                  inputSize="md"
-                />
-              </div>
+            <div>
+              <Input
+                type="date"
+                label="Van Datum"
+                value={filters.dateFrom}
+                onChange={(e) =>
+                  setFilters({ ...filters, dateFrom: e.target.value })
+                }
+                variant="outlined"
+                inputSize="md"
+              />
+            </div>
+
+            <div>
+              <Input
+                type="date"
+                label="Tot Datum"
+                value={filters.dateTo}
+                onChange={(e) =>
+                  setFilters({ ...filters, dateTo: e.target.value })
+                }
+                variant="outlined"
+                inputSize="md"
+              />
             </div>
           </div>
 

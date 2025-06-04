@@ -106,6 +106,16 @@ const rateLimitConfigs = {
         maxAttempts: 10,
         maxStrikes: 3
     },
+    '/api/user/profile/image': {
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        maxAttempts: 5, // 5 uploads per 15 minutes
+        maxStrikes: 3
+    },
+    '/api/personnel/': {
+        windowMs: 10 * 60 * 1000, // 10 minutes  
+        maxAttempts: 10, // 10 document uploads per 10 minutes
+        maxStrikes: 3
+    },
     default: {
         windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
         maxAttempts: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),

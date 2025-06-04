@@ -176,7 +176,7 @@ export default function EnhancedTimeTracker() {
     }
   };
 
-  const useCompensationTime = async (
+  const handleCompensationTime = async (
     hours: number,
     date: string,
     type: string
@@ -492,7 +492,7 @@ export default function EnhancedTimeTracker() {
             <CardContent className="space-y-3">
               <Button
                 onClick={() =>
-                  useCompensationTime(
+                  handleCompensationTime(
                     8,
                     new Date().toISOString().split("T")[0],
                     "Vrije dag"

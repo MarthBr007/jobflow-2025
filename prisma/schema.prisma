@@ -86,6 +86,12 @@ model User {
   FilterPreset           FilterPreset[]
   contracts              Contract[]               @relation("UserContracts")
   documents              Document[]               @relation("UserDocuments")
+  createdWorkPatterns    WorkPattern[]            @relation("WorkPatternCreator")
+  workPatternAssignments WorkPatternAssignment[]  @relation("UserWorkPatterns")
+  assignedWorkPatterns   WorkPatternAssignment[]  @relation("WorkPatternAssigner")
+  leaveBalances          LeaveBalance[]           @relation("UserLeaveBalances")
+  LeaveBalance           LeaveBalance?            @relation(fields: [leaveBalanceId], references: [id])
+  leaveBalanceId         String?
 
   @@index([email])
   @@index([company])
@@ -1013,4 +1019,82 @@ enum DocumentStatus {
   ACTIVE
   ARCHIVED
   EXPIRED
+}
+
+// Werkpatronen voor flexibele roosters
+model WorkPattern {
+  id                String                  @id @default(cuid())
+  name              String
+  description       String?
+  type              WorkPatternType         @default(FULLTIME)
+  isActive          Boolean                 @default(true)
+  workDays          Json // Array van WorkDay objecten: [{ dayOfWeek: 1, isWorkingDay: true, startTime: "09:00", endTime: "17:00", breakDuration: 60 }]
+  totalHoursPerWeek Float?
+  color             String                  @default("blue")
+  icon              String                  @default("👔")
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  createdById       String
+  createdBy         User                    @relation("WorkPatternCreator", fields: [createdById], references: [id])
+  assignments       WorkPatternAssignment[]
+
+  @@index([createdById])
+  @@index([type])
+  @@index([isActive])
+}
+
+// Toewijzingen van werkpatronen aan gebruikers
+model WorkPatternAssignment {
+  id           String      @id @default(cuid())
+  userId       String
+  patternId    String
+  startDate    DateTime    @default(now())
+  endDate      DateTime?
+  isActive     Boolean     @default(true)
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  assignedById String
+  user         User        @relation("UserWorkPatterns", fields: [userId], references: [id], onDelete: Cascade)
+  pattern      WorkPattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  assignedBy   User        @relation("WorkPatternAssigner", fields: [assignedById], references: [id])
+
+  @@index([userId])
+  @@index([patternId])
+  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([userId, isActive])
+}
+
+enum WorkPatternType {
+  FULLTIME
+  PARTTIME
+  SHIFT
+  FLEXIBLE
+  WEEKEND
+  CUSTOM
+}
+
+model LeaveBalance {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  year                  Int // e.g., 2025
+  vacationDaysTotal     Int      @default(25) // Total vacation days entitled
+  vacationDaysUsed      Int      @default(0) // Used vacation days
+  vacationDaysRemaining Int      @default(25) // Remaining vacation days
+  sickDaysUsed          Int      @default(0) // Used sick days
+  compensationHours     Float    @default(0) // Available compensation time (tijd-voor-tijd)
+  compensationUsed      Float    @default(0) // Used compensation time
+  specialLeaveUsed      Int      @default(0) // Used special leave days
+  notes                 String? // Admin notes
+  lastUpdatedBy         String? // Admin who last updated
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation("UserLeaveBalances", fields: [userId], references: [id], onDelete: Cascade)
+  User                  User[]
+
+  @@unique([userId, year])
+  @@index([userId])
+  @@index([year])
 }

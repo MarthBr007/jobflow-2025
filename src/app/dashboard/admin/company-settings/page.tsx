@@ -36,13 +36,13 @@ function CompanySettingsContent() {
   const router = useRouter();
   const { toast, showToast, hideToast } = useToast();
   const [settings, setSettings] = useState({
-    companyName: "JobFlow Solutions",
+    companyName: "CrewFlow Solutions",
     companyDescription: "Complete werknemers en project management oplossing",
-    contactEmail: "info@jobflow.nl",
+    contactEmail: "info@crewflow.nl",
     contactPhone: "+31 20 123 4567",
-    website: "https://www.jobflow.nl",
+    website: "https://crewflow.nl",
     address: {
-      street: "Hoofdstraat 123",
+      street: "Voorbeeldstraat 123",
       postalCode: "1234AB",
       city: "Amsterdam",
       country: "Nederland",
@@ -53,14 +53,30 @@ function CompanySettingsContent() {
       iban: "NL91ABNA0417164300",
     },
     branding: {
-      primaryColor: "#3B82F6",
-      secondaryColor: "#10B981",
+      primaryColor: "#2563eb",
+      secondaryColor: "#1e40af",
+      accentColor: "#06b6d4",
       logo: "",
+      favicon: "",
+      headerStyle: "modern",
+      sidebarStyle: "professional",
+      darkMode: true,
+      customCss: "",
+      companySlogan: "Professional workforce management",
     },
     notifications: {
-      systemName: "JobFlow",
-      fromEmail: "noreply@jobflow.nl",
-      replyToEmail: "support@jobflow.nl",
+      emailNotifications: true,
+      smsNotifications: false,
+      pushNotifications: true,
+      inAppNotifications: true,
+      emailDigest: true,
+      scheduleReminders: true,
+      deadlineAlerts: true,
+      fromEmail: "no-reply@crewflow.nl",
+      replyToEmail: "support@crewflow.nl",
+    },
+    system: {
+      systemName: "CrewFlow",
     },
   });
   const [loading, setLoading] = useState(true);
@@ -529,18 +545,18 @@ function CompanySettingsContent() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               <Input
                 label="Systeem naam"
-                value={settings.notifications.systemName}
+                value={settings.system.systemName}
                 onChange={(e) =>
                   setSettings({
                     ...settings,
-                    notifications: {
-                      ...settings.notifications,
+                    system: {
+                      ...settings.system,
                       systemName: e.target.value,
                     },
                   })
                 }
                 leftIcon={<ServerIcon className="w-5 h-5" />}
-                placeholder="JobFlow"
+                placeholder="CrewFlow"
                 helperText="Naam die wordt gebruikt in e-mails"
               />
 
@@ -558,7 +574,7 @@ function CompanySettingsContent() {
                   })
                 }
                 leftIcon={<EnvelopeIcon className="w-5 h-5" />}
-                placeholder="noreply@jobflow.nl"
+                placeholder="no-reply@crewflow.nl"
                 helperText="E-mail adres voor uitgaande berichten"
               />
 
@@ -576,7 +592,7 @@ function CompanySettingsContent() {
                   })
                 }
                 leftIcon={<EnvelopeIcon className="w-5 h-5" />}
-                placeholder="support@jobflow.nl"
+                placeholder="support@crewflow.nl"
                 helperText="E-mail voor antwoorden van gebruikers"
               />
             </div>

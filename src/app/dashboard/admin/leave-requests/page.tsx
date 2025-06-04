@@ -513,15 +513,18 @@ export default function AdminLeaveRequests() {
           </h3>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Input
-              placeholder="Zoek op naam, email of reden..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              leftIcon={<MagnifyingGlassIcon className="h-5 w-5" />}
-              variant="outlined"
-              inputSize="md"
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="sm:col-span-1 lg:col-span-1">
+              <Input
+                placeholder="Zoek op naam, email of reden..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                leftIcon={<MagnifyingGlassIcon className="h-5 w-5" />}
+                variant="outlined"
+                inputSize="md"
+                label="Zoeken"
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">

@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
             notes,
             validFrom,
             validUntil,
+            forceUpdate = false, // Add option to force update existing assignments
         } = data;
 
         if (!userId || !templateId || dayOfWeek === undefined) {
@@ -117,13 +118,101 @@ export async function POST(request: NextRequest) {
                     dayOfWeek,
                 },
             },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+                template: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
         });
 
         if (existingAssignment) {
-            return NextResponse.json(
-                { error: 'Assignment already exists for this user, template and day' },
-                { status: 409 }
-            );
+            if (forceUpdate) {
+                // Update the existing assignment
+                const updatedAssignment = await prisma.userScheduleAssignment.update({
+                    where: {
+                        id: existingAssignment.id,
+                    },
+                    data: {
+                        customStartTime,
+                        customEndTime,
+                        customBreaks,
+                        notes,
+                        validFrom: validFrom ? new Date(validFrom) : existingAssignment.validFrom,
+                        validUntil: validUntil ? new Date(validUntil) : null,
+                        isActive: true, // Reactivate if it was inactive
+                    },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                            },
+                        },
+                        template: {
+                            include: {
+                                shifts: {
+                                    include: {
+                                        workLocation: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                city: true,
+                                            },
+                                        },
+                                        project: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                company: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+
+                return NextResponse.json({
+                    ...updatedAssignment,
+                    _updated: true,
+                    _message: 'Bestaande toewijzing bijgewerkt'
+                });
+            } else {
+                // Get day name for better error message
+                const dayNames = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+                const dayName = dayNames[dayOfWeek] || `Dag ${dayOfWeek}`;
+
+                return NextResponse.json(
+                    { 
+                        error: `Er bestaat al een toewijzing voor ${existingAssignment.user.name} op ${dayName} met template "${existingAssignment.template.name}"`,
+                        existingAssignment: {
+                            id: existingAssignment.id,
+                            userId: existingAssignment.userId,
+                            templateId: existingAssignment.templateId,
+                            templateName: existingAssignment.template.name,
+                            dayOfWeek: existingAssignment.dayOfWeek,
+                            dayName,
+                            userName: existingAssignment.user.name,
+                            isActive: existingAssignment.isActive,
+                        },
+                        suggestion: 'forceUpdate',
+                        message: 'Wil je de bestaande toewijzing bijwerken?'
+                    },
+                    { status: 409 }
+                );
+            }
         }
 
         const assignment = await prisma.userScheduleAssignment.create({

@@ -3,7 +3,12 @@ import { sha256 } from 'js-sha256';
 
 // Strong encryption for contract tokens
 const ALGORITHM = 'aes-256-gcm';
-const SECRET_KEY = process.env.NEXTAUTH_SECRET || 'fallback-secret-key-change-in-production';
+
+// Fail if no secret is provided - security requirement
+if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('NEXTAUTH_SECRET environment variable is required for security');
+}
+const SECRET_KEY = process.env.NEXTAUTH_SECRET;
 const KEY = crypto.scryptSync(SECRET_KEY, 'salt', 32);
 
 interface TokenPayload {

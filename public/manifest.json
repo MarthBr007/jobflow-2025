@@ -1,6 +1,6 @@
 {
-  "name": "JobFlow 2025",
-  "short_name": "JobFlow",
+  "name": "CrewFlow 2025",
+  "short_name": "CrewFlow",
   "description": "Professional time tracking and project management",
   "start_url": "/dashboard",
   "display": "standalone",

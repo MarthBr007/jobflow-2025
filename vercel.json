@@ -1,38 +1,58 @@
 {
   "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
+  "outputDirectory": ".next",
   "installCommand": "npm install",
+  "devCommand": "npm run dev",
   "framework": "nextjs",
+  "public": true,
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
-    }
-  },
-  "env": {
-    "SKIP_ENV_VALIDATION": "1"
-  },
-  "build": {
-    "env": {
-      "SKIP_ENV_VALIDATION": "1"
+    },
+    "pages/api/**/*.ts": {
+      "maxDuration": 30
     }
   },
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
       "source": "/api/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     }
-  ]
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/dashboard",
+      "permanent": true
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 } 

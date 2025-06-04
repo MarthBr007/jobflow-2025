@@ -6,7 +6,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "JobFlow",
+  title: "CrewFlow",
   description:
     "Personnel management system for Broers Verhuur, DCRT Event Decorations, and DCRT in Building",
   keywords: [
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
     "project management",
     "scheduling",
   ],
-  authors: [{ name: "JobFlow Team" }],
-  creator: "JobFlow",
-  publisher: "JobFlow",
+  authors: [{ name: "CrewFlow Team" }],
+  creator: "CrewFlow",
+  publisher: "CrewFlow",
   formatDetection: {
     email: false,
     address: false,
@@ -44,7 +44,7 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="JobFlow" />
+        <meta name="apple-mobile-web-app-title" content="CrewFlow" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#2563eb" />
       </head>

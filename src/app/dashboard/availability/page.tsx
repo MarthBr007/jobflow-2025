@@ -19,12 +19,20 @@ import {
   XMarkIcon,
   PencilIcon,
   PlusIcon,
+  CalendarDaysIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  ChartBarIcon,
+  ShieldCheckIcon,
+  UsersIcon,
 } from "@heroicons/react/24/outline";
 import { format, startOfWeek, addDays, isSameDay, startOfDay } from "date-fns";
 import { nl } from "date-fns/locale";
 import Button from "@/components/ui/Button";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Input from "@/components/ui/Input";
+import MetricCard from "@/components/ui/MetricCard";
 
 interface Availability {
   id: string;
@@ -330,7 +338,7 @@ export default function AvailabilityPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -347,6 +355,20 @@ export default function AvailabilityPage() {
   }
 
   if (isAdminOrManager) {
+    // Calculate statistics
+    const totalEmployees = employees.length;
+    const availableToday = availability.filter(
+      (avail) =>
+        isSameDay(avail.date, new Date()) && avail.status === "AVAILABLE"
+    ).length;
+    const unavailableToday = availability.filter(
+      (avail) =>
+        isSameDay(avail.date, new Date()) && avail.status === "UNAVAILABLE"
+    ).length;
+    const partialToday = availability.filter(
+      (avail) => isSameDay(avail.date, new Date()) && avail.status === "PARTIAL"
+    ).length;
+
     return (
       <div className="space-y-6">
         {/* Breadcrumbs */}
@@ -358,126 +380,244 @@ export default function AvailabilityPage() {
           className="mb-4"
         />
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Beschikbaarheid Overzicht
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Bekijk de beschikbaarheid van alle medewerkers
-            </p>
+        {/* Modern Header Card */}
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="px-6 py-8 border-b border-gray-200 bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 dark:from-green-900/20 dark:via-blue-900/20 dark:to-purple-900/20 dark:border-gray-700">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-green-500 to-blue-600 rounded-xl">
+                  <CalendarDaysIcon className="text-white h-7 w-7" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Beschikbaarheid Overzicht
+                  </h1>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Bekijk en beheer de beschikbaarheid van alle medewerkers
+                  </p>
+                  <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center space-x-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      <span>{availableToday} Beschikbaar</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      <span>{unavailableToday} Niet beschikbaar</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                      <span>{partialToday} Gedeeltelijk</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <Input
-              placeholder="Zoek medewerkers..."
-              value={filters.search}
-              onChange={(e) =>
-                setFilters({ ...filters, search: e.target.value })
-              }
-              leftIcon={<MagnifyingGlassIcon className="h-5 w-5" />}
-              variant="outlined"
-              inputSize="md"
-            />
+        {/* Statistics Dashboard */}
+        <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-4">
+          <MetricCard
+            title="Totaal Medewerkers"
+            value={totalEmployees}
+            icon={<UsersIcon className="w-8 h-8" />}
+            color="blue"
+            subtitle="Alle medewerkers"
+            trend={{
+              value: 2,
+              isPositive: true,
+              label: "deze week",
+            }}
+          />
 
-            <div>
-              <select
-                value={filters.role}
-                onChange={(e) =>
-                  setFilters({ ...filters, role: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white touch-manipulation"
-                style={{ fontSize: "16px" }}
-              >
-                <option value="">Alle rollen</option>
-                <option value="MANAGER">Manager</option>
-                <option value="EMPLOYEE">Medewerker</option>
-                <option value="FREELANCER">Freelancer</option>
-              </select>
-            </div>
+          <MetricCard
+            title="Beschikbaar Vandaag"
+            value={availableToday}
+            icon={<CheckCircleIcon className="w-8 h-8" />}
+            color="green"
+            subtitle="Kunnen werken"
+            trend={{
+              value: Math.round((availableToday / totalEmployees) * 100) || 0,
+              isPositive: true,
+              label: "% van totaal",
+            }}
+          />
 
-            <div>
-              <select
-                value={filters.company}
-                onChange={(e) =>
-                  setFilters({ ...filters, company: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white touch-manipulation"
-                style={{ fontSize: "16px" }}
-              >
-                <option value="">Alle bedrijven</option>
-                <option value="Broers Verhuur">Broers Verhuur</option>
-                <option value="DCRT Event Decorations">
-                  DCRT Event Decorations
-                </option>
-                <option value="DCRT in Building">DCRT in Building</option>
-              </select>
-            </div>
+          <MetricCard
+            title="Niet Beschikbaar"
+            value={unavailableToday}
+            icon={<XCircleIcon className="w-8 h-8" />}
+            color="red"
+            subtitle="Vandaag niet werken"
+            trend={
+              unavailableToday > 0
+                ? {
+                    value: unavailableToday,
+                    isPositive: false,
+                    label: "medewerkers",
+                  }
+                : undefined
+            }
+          />
 
-            <div>
-              <select
-                value={filters.serviceType}
-                onChange={(e) =>
-                  setFilters({ ...filters, serviceType: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white touch-manipulation"
-                style={{ fontSize: "16px" }}
-              >
-                <option value="">Alle diensten</option>
-                {SERVICE_TYPES.map((service) => (
-                  <option key={service.value} value={service.value}>
-                    {service.label}
+          <MetricCard
+            title="Gedeeltelijk"
+            value={partialToday}
+            icon={<ClockIcon className="w-8 h-8" />}
+            color="orange"
+            subtitle="Beperkt beschikbaar"
+            trend={
+              partialToday > 0
+                ? {
+                    value: partialToday,
+                    isPositive: true,
+                    label: "flexibiliteit",
+                  }
+                : undefined
+            }
+          />
+        </div>
+
+        {/* Advanced Filters */}
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600">
+            <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+              <FunnelIcon className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+              Filters en Zoeken
+            </h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="sm:col-span-1 lg:col-span-1">
+                <Input
+                  placeholder="Zoek medewerkers..."
+                  value={filters.search}
+                  onChange={(e) =>
+                    setFilters({ ...filters, search: e.target.value })
+                  }
+                  leftIcon={<MagnifyingGlassIcon className="w-5 h-5" />}
+                  variant="outlined"
+                  inputSize="md"
+                  label="Zoeken"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Rol
+                </label>
+                <select
+                  value={filters.role}
+                  onChange={(e) =>
+                    setFilters({ ...filters, role: e.target.value })
+                  }
+                  className="w-full px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Alle rollen</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="EMPLOYEE">Medewerker</option>
+                  <option value="FREELANCER">Freelancer</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Bedrijf
+                </label>
+                <select
+                  value={filters.company}
+                  onChange={(e) =>
+                    setFilters({ ...filters, company: e.target.value })
+                  }
+                  className="w-full px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Alle bedrijven</option>
+                  <option value="Broers Verhuur">🚛 Broers Verhuur</option>
+                  <option value="DCRT Event Decorations">
+                    🎉 DCRT Event Decorations
                   </option>
-                ))}
-              </select>
-            </div>
+                  <option value="DCRT in Building">🏢 DCRT in Building</option>
+                </select>
+              </div>
 
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-              <FunnelIcon className="h-4 w-4 mr-2" />
-              {filteredEmployees.length} van {employees.length} medewerkers
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Dienst Type
+                </label>
+                <select
+                  value={filters.serviceType}
+                  onChange={(e) =>
+                    setFilters({ ...filters, serviceType: e.target.value })
+                  }
+                  className="w-full px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Alle diensten</option>
+                  {SERVICE_TYPES.map((service) => (
+                    <option key={service.value} value={service.value}>
+                      {service.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <div className="w-full">
+                  <div className="flex items-center mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <ChartBarIcon className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
+                    Resultaten
+                  </div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {filteredEmployees.length} van {employees.length}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Week Navigation */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Week van{" "}
-                {format(
-                  startOfWeek(selectedDate, { weekStartsOn: 1 }),
-                  "d MMMM",
-                  { locale: nl }
-                )}
-              </h3>
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center space-x-3">
+                <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Week van{" "}
+                  {format(
+                    startOfWeek(selectedDate, { weekStartsOn: 1 }),
+                    "d MMMM yyyy",
+                    { locale: nl }
+                  )}
+                </h3>
+              </div>
               <div className="flex items-center space-x-2">
                 <Button
                   onClick={() => navigateWeek("prev")}
-                  variant="outline"
+                  variant="primary"
                   size="sm"
-                  leftIcon={<ChevronLeftIcon className="h-4 w-4" />}
+                  leftIcon={<ChevronLeftIcon className="w-4 h-4" />}
+                  className="font-semibold shadow-sm rounded-xl touch-manipulation"
                 >
-                  Vorige week
+                  <span className="hidden sm:inline">Vorige</span>
+                  <span className="sm:hidden">←</span>
                 </Button>
                 <Button
                   onClick={() => setSelectedDate(new Date())}
-                  variant="outline"
+                  variant="primary"
                   size="sm"
+                  className="font-bold shadow-lg"
                 >
                   Vandaag
                 </Button>
                 <Button
                   onClick={() => navigateWeek("next")}
-                  variant="outline"
+                  variant="primary"
                   size="sm"
-                  rightIcon={<ChevronRightIcon className="h-4 w-4" />}
+                  rightIcon={<ChevronRightIcon className="w-4 h-4" />}
+                  className="font-semibold shadow-sm rounded-xl touch-manipulation"
                 >
-                  Volgende week
+                  <span className="hidden sm:inline">Volgende</span>
+                  <span className="sm:hidden">→</span>
                 </Button>
               </div>
             </div>
@@ -487,21 +627,28 @@ export default function AvailabilityPage() {
           <div className="p-6">
             <div className="overflow-x-auto">
               <table className="min-w-full">
-                <thead>
+                <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">
-                      Medewerker
+                    <th className="px-4 py-4 text-left">
+                      <div className="flex items-center space-x-2">
+                        <UserGroupIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Medewerker
+                        </span>
+                      </div>
                     </th>
                     {getWeekDays().map((day) => (
                       <th
                         key={day.toISOString()}
-                        className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white"
+                        className="px-2 py-4 text-center"
                       >
-                        <div className="text-sm">
-                          {format(day, "EEE", { locale: nl })}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {format(day, "d/M")}
+                        <div className="flex flex-col items-center space-y-1">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {format(day, "EEE", { locale: nl })}
+                          </span>
+                          <span className="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-lg dark:text-gray-400 dark:bg-gray-600">
+                            {format(day, "d/M")}
+                          </span>
                         </div>
                       </th>
                     ))}
@@ -513,30 +660,33 @@ export default function AvailabilityPage() {
                       key={employee.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
-                      <td className="py-4 px-4">
+                      <td className="px-4 py-4">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                            <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                            <span className="text-lg font-bold text-white">
+                              {employee.name.charAt(0).toUpperCase()}
+                            </span>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="flex-1 min-w-0 ml-4">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white">
                               {employee.name}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
                               {employee.email}
                             </div>
-                            <div className="flex items-center mt-1 space-x-2">
+                            <div className="flex items-center mt-2 space-x-2">
                               <span
-                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold border ${
                                   employee.role === "MANAGER"
-                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                    ? "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-700"
                                     : employee.role === "EMPLOYEE"
-                                    ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                                    ? "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-200 dark:border-indigo-700"
                                     : employee.role === "FREELANCER"
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                    ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-700"
+                                    : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                 }`}
                               >
+                                <ShieldCheckIcon className="w-3 h-3 mr-1" />
                                 {employee.role === "MANAGER"
                                   ? "Manager"
                                   : employee.role === "EMPLOYEE"
@@ -545,8 +695,8 @@ export default function AvailabilityPage() {
                                   ? "Freelancer"
                                   : "Medewerker"}
                               </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                                <BuildingOfficeIcon className="h-3 w-3 mr-1" />
+                              <span className="inline-flex items-center px-2 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg dark:text-gray-400 bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                <BuildingOfficeIcon className="w-3 h-3 mr-1" />
                                 {employee.company}
                               </span>
                             </div>
@@ -560,7 +710,7 @@ export default function AvailabilityPage() {
                         return (
                           <td
                             key={day.toISOString()}
-                            className="text-center py-4 px-2"
+                            className="px-2 py-4 text-center"
                           >
                             {dayAvailability ? (
                               <div
@@ -581,14 +731,14 @@ export default function AvailabilityPage() {
                               >
                                 {dayAvailability.status === "PARTIAL" &&
                                   dayAvailability.hours && (
-                                    <div className="w-full h-full flex items-center justify-center text-xs text-white font-bold">
+                                    <div className="flex items-center justify-center w-full h-full text-xs font-bold text-white">
                                       {dayAvailability.hours}
                                     </div>
                                   )}
                               </div>
                             ) : (
                               <div
-                                className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 mx-auto cursor-pointer"
+                                className="w-6 h-6 mx-auto bg-gray-200 rounded-full cursor-pointer dark:bg-gray-600"
                                 title="Geen informatie beschikbaar"
                               ></div>
                             )}
@@ -602,8 +752,8 @@ export default function AvailabilityPage() {
             </div>
 
             {filteredEmployees.length === 0 && (
-              <div className="text-center py-12">
-                <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+              <div className="py-12 text-center">
+                <UserGroupIcon className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
                   {employees.length === 0
                     ? "Geen medewerkers gevonden"
@@ -638,33 +788,36 @@ export default function AvailabilityPage() {
         </div>
 
         {/* Legend */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="px-6 py-4">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600">
+            <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+              <DocumentTextIcon className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
               Legenda
             </h3>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="flex items-center p-3 border border-green-200 rounded-lg bg-green-50 dark:bg-green-900/20 dark:border-green-700">
+                <div className="w-4 h-4 mr-3 bg-green-500 rounded-full shadow-sm"></div>
+                <span className="text-sm font-medium text-green-800 dark:text-green-200">
                   Beschikbaar
                 </span>
               </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  Gedeeltelijk beschikbaar
+              <div className="flex items-center p-3 border border-orange-200 rounded-lg bg-orange-50 dark:bg-orange-900/20 dark:border-orange-700">
+                <div className="w-4 h-4 mr-3 bg-orange-500 rounded-full shadow-sm"></div>
+                <span className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                  Gedeeltelijk
                 </span>
               </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
+              <div className="flex items-center p-3 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-700">
+                <div className="w-4 h-4 mr-3 bg-red-500 rounded-full shadow-sm"></div>
+                <span className="text-sm font-medium text-red-800 dark:text-red-200">
                   Niet beschikbaar
                 </span>
               </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 mr-2"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
+              <div className="flex items-center p-3 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                <div className="w-4 h-4 mr-3 bg-gray-400 rounded-full shadow-sm"></div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Geen informatie
                 </span>
               </div>
@@ -687,20 +840,43 @@ export default function AvailabilityPage() {
         className="mb-4"
       />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Mijn Beschikbaarheid
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Beheer je beschikbaarheid voor werkdagen
-          </p>
+      {/* Modern Header Card */}
+      <div className="overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+        <div className="px-6 py-8 border-b border-gray-200 bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 dark:from-green-900/20 dark:via-blue-900/20 dark:to-purple-900/20 dark:border-gray-700">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-green-500 to-blue-600 rounded-xl">
+                <CalendarDaysIcon className="text-white h-7 w-7" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Mijn Beschikbaarheid
+                </h1>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Beheer je beschikbaarheid voor werkdagen en projecten
+                </p>
+                <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center space-x-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span>Beschikbaar</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                    <span>Gedeeltelijk</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span>Niet beschikbaar</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Availability Form */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             {getAvailabilityForDate(selectedDate)
@@ -725,20 +901,20 @@ export default function AvailabilityPage() {
                 type="date"
                 value={format(selectedDate, "yyyy-MM-dd")}
                 onChange={(e) => setSelectedDate(new Date(e.target.value))}
-                leftIcon={<CalendarIcon className="h-5 w-5" />}
+                leftIcon={<CalendarIcon className="w-5 h-5" />}
                 variant="outlined"
                 inputSize="md"
                 required
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   Status
                 </label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value as any)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:bg-gray-700 dark:text-white"
                   required
                 >
                   <option value="AVAILABLE">Beschikbaar</option>
@@ -757,7 +933,7 @@ export default function AvailabilityPage() {
                 step="0.5"
                 value={hours}
                 onChange={(e) => setHours(e.target.value)}
-                leftIcon={<ClockIcon className="h-5 w-5" />}
+                leftIcon={<ClockIcon className="w-5 h-5" />}
                 variant="outlined"
                 inputSize="md"
                 placeholder="8"
@@ -769,7 +945,7 @@ export default function AvailabilityPage() {
               label="Notities (optioneel)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              leftIcon={<DocumentTextIcon className="h-5 w-5" />}
+              leftIcon={<DocumentTextIcon className="w-5 h-5" />}
               variant="outlined"
               inputSize="md"
               placeholder="Eventuele opmerkingen..."
@@ -783,7 +959,7 @@ export default function AvailabilityPage() {
                   size="md"
                   onClick={handleDelete}
                   disabled={isSubmitting}
-                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  className="font-semibold text-red-600 border-red-300 shadow-sm hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
                 >
                   Verwijderen
                 </Button>
@@ -807,29 +983,37 @@ export default function AvailabilityPage() {
       </div>
 
       {/* Current Week Overview */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white border border-gray-200 shadow-sm dark:bg-gray-800 rounded-xl dark:border-gray-700">
+        <div className="px-4 py-3 border-b border-gray-200 sm:px-6 sm:py-4 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="text-base font-medium text-gray-900 sm:text-lg dark:text-white">
               Deze Week
             </h3>
             <div className="flex items-center space-x-2">
               <Button
                 onClick={() => navigateWeek("prev")}
-                variant="outline"
+                variant="primary"
                 size="sm"
-                leftIcon={<ChevronLeftIcon className="h-4 w-4" />}
-                className="rounded-xl touch-manipulation"
+                leftIcon={<ChevronLeftIcon className="w-4 h-4" />}
+                className="font-semibold shadow-sm rounded-xl touch-manipulation"
               >
                 <span className="hidden sm:inline">Vorige</span>
                 <span className="sm:hidden">←</span>
               </Button>
               <Button
-                onClick={() => navigateWeek("next")}
-                variant="outline"
+                onClick={() => setSelectedDate(new Date())}
+                variant="primary"
                 size="sm"
-                rightIcon={<ChevronRightIcon className="h-4 w-4" />}
-                className="rounded-xl touch-manipulation"
+                className="font-bold shadow-lg"
+              >
+                Vandaag
+              </Button>
+              <Button
+                onClick={() => navigateWeek("next")}
+                variant="primary"
+                size="sm"
+                rightIcon={<ChevronRightIcon className="w-4 h-4" />}
+                className="font-semibold shadow-sm rounded-xl touch-manipulation"
               >
                 <span className="hidden sm:inline">Volgende</span>
                 <span className="sm:hidden">→</span>
@@ -860,7 +1044,7 @@ export default function AvailabilityPage() {
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {format(day, "EEE", { locale: nl })}
                     </div>
-                    <div className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
+                    <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                       {format(day, "d")}
                     </div>
                     <div className="mt-3">
@@ -872,16 +1056,16 @@ export default function AvailabilityPage() {
                             )} mx-auto flex items-center justify-center relative`}
                           >
                             {dayAvailability.status === "AVAILABLE" && (
-                              <CheckIcon className="h-4 w-4 text-white" />
+                              <CheckIcon className="w-4 h-4 text-white" />
                             )}
                             {dayAvailability.status === "PARTIAL" && (
-                              <ClockIcon className="h-4 w-4 text-white" />
+                              <ClockIcon className="w-4 h-4 text-white" />
                             )}
                             {dayAvailability.status === "UNAVAILABLE" && (
-                              <XMarkIcon className="h-4 w-4 text-white" />
+                              <XMarkIcon className="w-4 h-4 text-white" />
                             )}
                             {/* Edit indicator */}
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
+                            <div className="absolute w-3 h-3 bg-blue-500 border-2 border-white rounded-full -top-1 -right-1"></div>
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">
                             {getStatusText(dayAvailability.status)}
@@ -891,19 +1075,19 @@ export default function AvailabilityPage() {
                               {dayAvailability.hours} uren
                             </div>
                           )}
-                          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                          <div className="text-xs font-medium text-blue-600 dark:text-blue-400">
                             Klik om te bewerken
                           </div>
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 mx-auto flex items-center justify-center">
-                            <PlusIcon className="h-4 w-4 text-gray-400 dark:text-gray-300" />
+                          <div className="flex items-center justify-center w-8 h-8 mx-auto bg-gray-200 rounded-full dark:bg-gray-600">
+                            <PlusIcon className="w-4 h-4 text-gray-400 dark:text-gray-300" />
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             Niet ingesteld
                           </div>
-                          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                          <div className="text-xs font-medium text-blue-600 dark:text-blue-400">
                             Klik om in te stellen
                           </div>
                         </div>

@@ -467,9 +467,24 @@ Pauze: {{break_time}} minuten
 
   const saveCustomFieldsToStorage = (fields: TemplateVariable[]) => {
     try {
-      localStorage.setItem("jobflow_custom_fields", JSON.stringify(fields));
+      console.log("Saving custom fields to localStorage:", fields);
+      const fieldsJson = JSON.stringify(fields);
+      localStorage.setItem("jobflow_custom_fields", fieldsJson);
+      console.log("Successfully saved to localStorage");
+
+      // Verify the save worked
+      const verification = localStorage.getItem("jobflow_custom_fields");
+      if (verification) {
+        const parsedVerification = JSON.parse(verification);
+        console.log(
+          "Verification - fields were saved correctly:",
+          parsedVerification
+        );
+      } else {
+        console.error("Verification failed - no data found in localStorage");
+      }
     } catch (error) {
-      console.error("Error saving custom fields:", error);
+      console.error("Error saving custom fields to localStorage:", error);
       showToast("Fout bij opslaan van custom velden", "error");
     }
   };
@@ -577,15 +592,45 @@ Pauze: {{break_time}} minuten
 
   const handleCreateField = async () => {
     try {
+      console.log("Creating field with form data:", fieldForm);
+
+      const generatedKey = fieldForm.label
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+
+      console.log("Generated key:", generatedKey);
+
+      // Check for duplicate keys
+      const existingField = customFields.find(
+        (field) => field.key === generatedKey
+      );
+      if (existingField) {
+        console.log("Duplicate key found:", existingField);
+        showToast(
+          "Er bestaat al een veld met deze naam. Kies een andere naam.",
+          "error"
+        );
+        return;
+      }
+
+      // Validate required fields
+      if (!fieldForm.label.trim() || !fieldForm.description.trim()) {
+        console.log("Validation failed: missing required fields");
+        showToast("Veld naam en beschrijving zijn verplicht", "error");
+        return;
+      }
+
       const newField: TemplateVariable = {
         ...fieldForm,
-        key: fieldForm.key
-          .toLowerCase()
-          .replace(/\s+/g, "_")
-          .replace(/[^a-z0-9_]/g, ""),
+        key: generatedKey,
       };
 
+      console.log("Creating new field:", newField);
+
       const updatedFields = [...customFields, newField];
+      console.log("Updated fields array:", updatedFields);
+
       setCustomFields(updatedFields);
       saveCustomFieldsToStorage(updatedFields);
       setShowAddFieldModal(false);
@@ -601,12 +646,14 @@ Pauze: {{break_time}} minuten
     if (!editingField) return;
 
     try {
-      const updatedField = {
+      const generatedKey = fieldForm.label
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+
+      const updatedField: TemplateVariable = {
         ...fieldForm,
-        key: fieldForm.key
-          .toLowerCase()
-          .replace(/\s+/g, "_")
-          .replace(/[^a-z0-9_]/g, ""),
+        key: generatedKey,
       };
 
       const updatedFields = customFields.map((field) =>
