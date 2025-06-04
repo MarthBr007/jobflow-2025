@@ -943,200 +943,170 @@ function PersonnelContent() {
                 </div>
               </div>
 
-              {/* Employee Grid */}
-              <div className="p-6 bg-gray-50/50 dark:bg-gray-800/50">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredEmployees
-                    .filter((emp) => !emp.archived)
-                    .map((employee) => (
-                      <div
-                        key={employee.id}
-                        className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-500 hover:-translate-y-1 flex flex-col h-full"
-                      >
-                        {/* Fixed Header Section */}
-                        <div className="p-6 flex-shrink-0">
-                          <div className="flex items-start space-x-4">
-                            <div className="flex-shrink-0">
-                              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                                <span className="text-white font-bold text-xl">
-                                  {employee.name.charAt(0).toUpperCase()}
-                                </span>
+              {/* Employee Table instead of Grid */}
+              <div className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Naam
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Telefoonnummer
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Bedrijf
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Tarief
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Werktypen
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Actie
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredEmployees
+                        .filter((emp) => !emp.archived)
+                        .map((employee) => (
+                          <tr
+                            key={employee.id}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+                          >
+                            {/* Employee Name Only */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                                    <span className="text-white font-bold text-sm">
+                                      {employee.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <div className="text-sm font-bold text-gray-900 dark:text-white">
+                                    {employee.name}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                {employee.name}
-                              </h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                                {employee.email}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                            </td>
 
-                        {/* Content Section - Flexible */}
-                        <div className="px-6 flex-1 space-y-4">
-                          {/* Badges */}
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`px-3 py-1.5 text-xs font-bold rounded-full ${getRoleColor(
-                                employee.role
-                              )} shadow-sm`}
-                            >
-                              {getRoleText(employee.role)}
-                            </span>
-                            <span
-                              className={`px-3 py-1.5 text-xs font-semibold rounded-full ${getEmployeeTypeColor(
-                                employee.employeeType || ""
-                              )} shadow-sm`}
-                            >
-                              {getEmployeeTypeText(employee.employeeType || "")}
-                            </span>
-                          </div>
-
-                          {/* Details */}
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
-                              <BuildingOfficeIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                              <span className="truncate font-medium">
-                                {employee.company}
+                            {/* Employee Type Only */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getEmployeeTypeColor(
+                                  employee.employeeType || ""
+                                )}`}
+                              >
+                                {getEmployeeTypeText(
+                                  employee.employeeType || ""
+                                )}
                               </span>
-                            </div>
+                            </td>
 
-                            {employee.phone && (
-                              <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
-                                <PhoneIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                                <span className="font-medium">
-                                  {employee.phone}
+                            {/* Phone Number Only */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900 dark:text-white">
+                                {employee.phone ? (
+                                  <div className="flex items-center space-x-2">
+                                    <PhoneIcon className="h-4 w-4 text-gray-400" />
+                                    <span>{employee.phone}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 dark:text-gray-500">
+                                    Niet ingesteld
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Company */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center space-x-2">
+                                <BuildingOfficeIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {employee.company}
                                 </span>
                               </div>
-                            )}
+                            </td>
 
-                            {(employee.hourlyRate || employee.hourlyWage) && (
-                              <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
-                                <BanknotesIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                                <span className="font-bold text-green-600 dark:text-green-400">
-                                  €{employee.hourlyRate || employee.hourlyWage}
-                                  /uur
+                            {/* Rate */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {employee.hourlyRate || employee.hourlyWage ? (
+                                <div className="flex items-center space-x-2">
+                                  <BanknotesIcon className="h-4 w-4 text-green-500" />
+                                  <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                                    €
+                                    {employee.hourlyRate || employee.hourlyWage}
+                                    /uur
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-400 dark:text-gray-500">
+                                  Niet ingesteld
                                 </span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Work Types */}
-                          {employee.workTypes &&
-                            employee.workTypes.length > 0 && (
-                              <div className="space-y-2">
-                                <div className="flex flex-wrap gap-1.5">
-                                  {employee.workTypes
-                                    .slice(0, 3)
-                                    .map((workType, index) => (
-                                      <span
-                                        key={index}
-                                        className="px-2.5 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-700/50"
-                                      >
-                                        {workType}
-                                      </span>
-                                    ))}
-                                  {employee.workTypes.length > 3 && (
-                                    <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-600">
-                                      +{employee.workTypes.length - 3} meer
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                          <div className="space-y-2 mb-4">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              📧 {employee.email}
-                            </p>
-                            {employee.phone && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                📞 {employee.phone}
-                              </p>
-                            )}
-                            {employee.company && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                🏢 {employee.company}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Work Pattern Indicator */}
-                          {employee.workPatternAssignments &&
-                            employee.workPatternAssignments.length > 0 && (
-                              <div className="mb-4">
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                  Werkpatroon:
-                                </div>
-                                <div className="flex flex-wrap gap-1">
-                                  {employee.workPatternAssignments
-                                    .slice(0, 2)
-                                    .map((assignment: any, index: number) => (
-                                      <span
-                                        key={index}
-                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                                      >
-                                        {assignment.icon} {assignment.name}
-                                      </span>
-                                    ))}
-                                  {employee.workPatternAssignments.length >
-                                    2 && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                                      +
-                                      {employee.workPatternAssignments.length -
-                                        2}{" "}
-                                      meer
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                        </div>
-
-                        {/* Fixed Footer Section */}
-                        <div className="px-6 py-4 mt-auto border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30 flex-shrink-0">
-                          <div className="flex items-center justify-between">
-                            <Button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(
-                                  `/dashboard/personnel/edit/${employee.id}`
-                                );
-                              }}
-                              variant="primary"
-                              size="sm"
-                              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg transition-all duration-200 flex-1 max-w-[140px] font-semibold"
-                              title="Medewerker beheren"
-                            >
-                              <UserGroupIcon className="h-4 w-4 mr-2" />
-                              Beheren
-                            </Button>
-
-                            <div className="flex flex-col items-end text-right ml-3">
-                              {employee.hireDate && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                  Sinds{" "}
-                                  {format(
-                                    new Date(employee.hireDate),
-                                    "MMM yyyy",
-                                    { locale: nl }
-                                  )}
-                                </div>
                               )}
-                              <div className="flex items-center space-x-1 mt-1">
-                                <div className="w-2 h-2 bg-green-500 rounded-full shadow-sm"></div>
-                                <span className="text-xs text-green-600 dark:text-green-400 font-semibold">
-                                  Actief
-                                </span>
+                            </td>
+
+                            {/* Work Types */}
+                            <td className="px-6 py-4">
+                              <div className="max-w-xs">
+                                {employee.workTypes &&
+                                employee.workTypes.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {employee.workTypes
+                                      .slice(0, 2)
+                                      .map((workType, index) => (
+                                        <span
+                                          key={index}
+                                          className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200 rounded"
+                                        >
+                                          {workType}
+                                        </span>
+                                      ))}
+                                    {employee.workTypes.length > 2 && (
+                                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded">
+                                        +{employee.workTypes.length - 2}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                                    Geen werktypen
+                                  </span>
+                                )}
                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                            </td>
+
+                            {/* Single Action - Open Personnel File */}
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <Button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(
+                                    `/dashboard/personnel/edit/${employee.id}`
+                                  );
+                                }}
+                                variant="primary"
+                                size="sm"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                              >
+                                <UserGroupIcon className="h-4 w-4 mr-2" />
+                                Bekijken
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -1181,80 +1151,124 @@ function PersonnelContent() {
                   </div>
                 </div>
 
-                <div className="p-6 bg-gray-50/30 dark:bg-gray-800/30">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredEmployees
-                      .filter((emp) => emp.archived)
-                      .map((employee) => (
-                        <div
-                          key={employee.id}
-                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-300 dark:border-gray-600 opacity-80 hover:opacity-100 transition-opacity duration-200 flex flex-col h-full"
-                        >
-                          {/* Fixed Header Section */}
-                          <div className="p-6 flex-shrink-0">
-                            <div className="flex items-start space-x-4">
-                              <div className="flex-shrink-0">
-                                <div className="w-14 h-14 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center shadow-md">
-                                  <span className="text-white font-bold text-xl">
-                                    {employee.name.charAt(0).toUpperCase()}
+                {/* Archived Employees Table instead of Grid */}
+                <div className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Naam
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Telefoonnummer
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Bedrijf
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Actie
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-gray-50 dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {filteredEmployees
+                          .filter((emp) => emp.archived)
+                          .map((employee) => (
+                            <tr
+                              key={employee.id}
+                              className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 opacity-75"
+                            >
+                              {/* Employee Name Only */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-10 w-10">
+                                    <div className="h-10 w-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center shadow-md">
+                                      <span className="text-white font-bold text-sm">
+                                        {employee.name.charAt(0).toUpperCase()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="ml-3">
+                                    <div className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                                      {employee.name}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Employee Type Only */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                  {getEmployeeTypeText(
+                                    employee.employeeType || ""
+                                  )}
+                                </span>
+                              </td>
+
+                              {/* Phone Number Only */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  {employee.phone ? (
+                                    <div className="flex items-center space-x-2">
+                                      <PhoneIcon className="h-4 w-4 text-gray-400" />
+                                      <span>{employee.phone}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 dark:text-gray-500">
+                                      Niet ingesteld
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Company */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center space-x-2">
+                                  <BuildingOfficeIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {employee.company}
                                   </span>
                                 </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-lg font-bold text-gray-700 dark:text-gray-300 truncate">
-                                  {employee.name}
-                                </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                                  {employee.email}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
+                              </td>
 
-                          {/* Content Section - Flexible */}
-                          <div className="px-6 flex-1">
-                            <div className="flex items-center justify-center">
-                              <span className="px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-xl shadow-sm border border-gray-300 dark:border-gray-600">
-                                <ArchiveBoxIcon className="h-4 w-4 inline mr-2" />
-                                Gearchiveerd
-                              </span>
-                            </div>
-                          </div>
+                              {/* Status */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300">
+                                  <ArchiveBoxIcon className="h-3 w-3 mr-1" />
+                                  Gearchiveerd
+                                </span>
+                              </td>
 
-                          {/* Fixed Footer Section */}
-                          <div className="px-6 py-4 mt-auto border-t border-gray-200 dark:border-gray-600 bg-gray-100/50 dark:bg-gray-600/30 flex-shrink-0">
-                            <div className="flex items-center space-x-3">
-                              <Button
-                                type="button"
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/personnel/edit/${employee.id}`
-                                  )
-                                }
-                                variant="primary"
-                                size="sm"
-                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg transition-all duration-200 flex-1 font-semibold"
-                                title="Medewerker beheren"
-                              >
-                                <UserGroupIcon className="h-4 w-4 mr-2" />
-                                Beheren
-                              </Button>
-                              <Button
-                                onClick={() =>
-                                  handleUnarchiveEmployee(employee)
-                                }
-                                variant="primary"
-                                size="sm"
-                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all duration-200 flex-1 font-semibold"
-                                title="Medewerker herstellen"
-                              >
-                                <CheckCircleIcon className="h-4 w-4 mr-2" />
-                                Herstel
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                              {/* Single Action - Open Personnel File */}
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <Button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(
+                                      `/dashboard/personnel/edit/${employee.id}`
+                                    );
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                                  title="Bekijken"
+                                >
+                                  <UserGroupIcon className="h-4 w-4 mr-2" />
+                                  Bekijken
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>

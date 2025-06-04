@@ -93,6 +93,8 @@ export async function POST(request: NextRequest) {
             startDate,
             endDate,
             salary,
+            contractHoursPerWeek,
+            vacationHoursPerYear,
             notes,
             status = "DRAFT",
             sendForSigning = false
@@ -135,6 +137,8 @@ export async function POST(request: NextRequest) {
                 startDate: new Date(startDate),
                 endDate: endDate ? new Date(endDate) : null,
                 salary: salary || null,
+                contractHoursPerWeek: contractHoursPerWeek || null,
+                vacationHoursPerYear: vacationHoursPerYear || null,
                 notes: notes || null,
                 status: sendForSigning ? "PENDING_SIGNATURE" : "DRAFT",
                 createdBy: session.user.id || "system",

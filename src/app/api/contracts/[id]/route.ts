@@ -84,6 +84,8 @@ export async function PUT(
             endDate,
             status,
             salary,
+            contractHoursPerWeek,
+            vacationHoursPerYear,
             notes,
             signedDate,
         } = body;
@@ -105,6 +107,8 @@ export async function PUT(
                 endDate: endDate ? new Date(endDate) : endDate === null ? null : existingContract.endDate,
                 status: status || existingContract.status,
                 salary: salary !== undefined ? salary : existingContract.salary,
+                contractHoursPerWeek: contractHoursPerWeek !== undefined ? contractHoursPerWeek : existingContract.contractHoursPerWeek,
+                vacationHoursPerYear: vacationHoursPerYear !== undefined ? vacationHoursPerYear : existingContract.vacationHoursPerYear,
                 notes: notes !== undefined ? notes : existingContract.notes,
                 signedDate: signedDate ? new Date(signedDate) : signedDate === null ? null : existingContract.signedDate,
                 updatedAt: new Date(),

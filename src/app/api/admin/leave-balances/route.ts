@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
             where: {
                 company: currentUser.company,
                 archived: false,
-                role: { in: ["EMPLOYEE", "MANAGER"] },
+                role: { in: ["EMPLOYEE", "MANAGER", "FREELANCER"] },
             },
             include: {
                 leaveBalances: {
@@ -43,20 +43,25 @@ export async function GET(request: NextRequest) {
         const employeesWithBalances = employees.map(employee => {
             const currentBalance = employee.leaveBalances.find(lb => lb.year === year);
 
+            // For freelancers, only track sick days, not vacation days
+            const isFreelancer = employee.employeeType === "FREELANCER" || employee.role === "FREELANCER";
+
             return {
                 id: employee.id,
                 name: employee.name,
                 email: employee.email,
                 employeeType: employee.employeeType,
+                role: employee.role,
+                isFreelancer,
                 leaveBalance: currentBalance || {
                     id: null,
                     userId: employee.id,
                     year,
-                    vacationDaysTotal: 25,
+                    vacationDaysTotal: isFreelancer ? 0 : 25, // No vacation days for freelancers
                     vacationDaysUsed: 0,
-                    vacationDaysRemaining: 25,
-                    sickDaysUsed: 0,
-                    compensationHours: 0,
+                    vacationDaysRemaining: isFreelancer ? 0 : 25,
+                    sickDaysUsed: 0, // Track sick days for all (admin purposes only for freelancers)
+                    compensationHours: isFreelancer ? 0 : 0, // No compensation for freelancers
                     compensationUsed: 0,
                     specialLeaveUsed: 0,
                     notes: null,

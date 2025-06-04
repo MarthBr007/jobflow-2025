@@ -92,6 +92,7 @@ model User {
   leaveBalances          LeaveBalance[]           @relation("UserLeaveBalances")
   LeaveBalance           LeaveBalance?            @relation(fields: [leaveBalanceId], references: [id])
   leaveBalanceId         String?
+  vacationAccruals       VacationAccrual[]        @relation("UserVacationAccrual")
 
   @@index([email])
   @@index([company])
@@ -761,28 +762,30 @@ model FilterPreset {
 
 // New Contract model for detailed contract management
 model Contract {
-  id           String         @id @default(cuid())
-  userId       String
-  contractType ContractType
-  title        String // "Arbeidscontract 2024", "Freelance Agreement", etc.
-  description  String?
-  startDate    DateTime
-  endDate      DateTime? // null for indefinite contracts
-  status       ContractStatus @default(ACTIVE)
-  fileName     String? // Original filename
-  fileUrl      String? // URL to stored contract file
-  fileSize     Int? // File size in bytes
-  mimeType     String? // File MIME type
-  uploadedAt   DateTime? // When the file was uploaded
-  signedDate   DateTime? // When the contract was signed
-  salary       String? // Contract salary/rate
-  notes        String? // Additional notes
-  isActive     Boolean        @default(true)
-  version      Int            @default(1)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  createdBy    String // Who created/uploaded this contract
-  user         User           @relation("UserContracts", fields: [userId], references: [id], onDelete: Cascade)
+  id                   String         @id @default(cuid())
+  userId               String
+  contractType         ContractType
+  title                String // "Arbeidscontract 2024", "Freelance Agreement", etc.
+  description          String?
+  startDate            DateTime
+  endDate              DateTime? // null for indefinite contracts
+  status               ContractStatus @default(ACTIVE)
+  fileName             String? // Original filename
+  fileUrl              String? // URL to stored contract file
+  fileSize             Int? // File size in bytes
+  mimeType             String? // File MIME type
+  uploadedAt           DateTime? // When the file was uploaded
+  signedDate           DateTime? // When the contract was signed
+  salary               String? // Contract salary/rate
+  contractHoursPerWeek Float? // Contract hours per week for vacation calculation
+  vacationHoursPerYear Float? // Calculated vacation hours (4 * contractHoursPerWeek for permanent employees)
+  notes                String? // Additional notes
+  isActive             Boolean        @default(true)
+  version              Int            @default(1)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  createdBy            String // Who created/uploaded this contract
+  user                 User           @relation("UserContracts", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([contractType])
@@ -1008,6 +1011,7 @@ enum TimeEntryType {
   REGULAR
   OVERTIME
   COMPENSATION_USED
+  COMPENSATION_EARNED
   TRAINING
   MEETING
   SICK_LEAVE
@@ -1023,20 +1027,21 @@ enum DocumentStatus {
 
 // Werkpatronen voor flexibele roosters
 model WorkPattern {
-  id                String                  @id @default(cuid())
-  name              String
-  description       String?
-  type              WorkPatternType         @default(FULLTIME)
-  isActive          Boolean                 @default(true)
-  workDays          Json // Array van WorkDay objecten: [{ dayOfWeek: 1, isWorkingDay: true, startTime: "09:00", endTime: "17:00", breakDuration: 60 }]
-  totalHoursPerWeek Float?
-  color             String                  @default("blue")
-  icon              String                  @default("👔")
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  createdById       String
-  createdBy         User                    @relation("WorkPatternCreator", fields: [createdById], references: [id])
-  assignments       WorkPatternAssignment[]
+  id                  String                  @id @default(cuid())
+  name                String
+  description         String?
+  type                WorkPatternType         @default(FULLTIME)
+  isActive            Boolean                 @default(true)
+  workDays            Json // Array van WorkDay objecten: [{ dayOfWeek: 1, isWorkingDay: true, startTime: "09:00", endTime: "17:00", breakDuration: 60 }]
+  totalHoursPerWeek   Float?
+  color               String                  @default("blue")
+  icon                String                  @default("👔")
+  timeForTimeSettings Json? // Tijd-voor-tijd compensatie instellingen: { enabled: boolean, overtimeThreshold: number, weeklyOvertimeThreshold: number, compensationMultiplier: number, maxAccrualHours: number, autoApprovalThreshold: number, weekendCompensation: boolean, eveningCompensation: boolean, nightCompensation: boolean, holidayCompensation: boolean }
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  createdById         String
+  createdBy           User                    @relation("WorkPatternCreator", fields: [createdById], references: [id])
+  assignments         WorkPatternAssignment[]
 
   @@index([createdById])
   @@index([type])
@@ -1097,4 +1102,33 @@ model LeaveBalance {
   @@unique([userId, year])
   @@index([userId])
   @@index([year])
+}
+
+// Vakantie-opbouw tracking voor automatische berekening
+model VacationAccrual {
+  id                   String       @id @default(cuid())
+  userId               String
+  year                 Int
+  contractHoursPerWeek Float // Contract uren per week
+  contractType         ContractType // Employee type affects accrual rules
+  vacationHoursPerYear Float // 4 * contractHoursPerWeek for normal employees
+
+  // Current totals
+  hoursWorkedYTD       Float    @default(0) // Hours worked year-to-date
+  vacationHoursAccrued Float    @default(0) // Vacation hours accrued so far
+  lastCalculatedDate   DateTime @default(now())
+
+  // Monthly/weekly tracking
+  monthlyAccrual Json? // Track accrual per month: { "2025-01": { hoursWorked: 160, vacationAccrued: 13.33 }, ... }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserVacationAccrual", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year])
+  @@index([userId])
+  @@index([year])
+  @@index([contractType])
+  @@index([lastCalculatedDate])
 }

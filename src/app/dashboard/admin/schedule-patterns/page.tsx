@@ -48,6 +48,19 @@ interface WorkPattern {
   assignedEmployees: number;
   color: string;
   icon: string;
+  // Time-for-time compensation settings
+  timeForTimeSettings?: {
+    enabled: boolean; // Enable tijd-voor-tijd for this pattern
+    overtimeThreshold: number; // Daily overtime threshold (e.g., after 8 hours)
+    weeklyOvertimeThreshold: number; // Weekly overtime threshold (e.g., after 40 hours)
+    compensationMultiplier: number; // 1.0 = 1:1, 1.5 = 1.5:1 compensation
+    maxAccrualHours: number; // Maximum hours that can be accrued
+    autoApprovalThreshold: number; // Auto-approve compensation up to X hours
+    weekendCompensation: boolean; // Enable weekend time compensation
+    eveningCompensation: boolean; // Enable evening time compensation
+    nightCompensation: boolean; // Enable night time compensation
+    holidayCompensation: boolean; // Enable holiday time compensation
+  };
 }
 
 interface WorkDay {
@@ -167,6 +180,18 @@ function SchedulePatternsContent() {
     })),
     color: "blue",
     icon: "👔",
+    timeForTimeSettings: {
+      enabled: true,
+      overtimeThreshold: 8, // Daily overtime after 8 hours
+      weeklyOvertimeThreshold: 40, // Weekly overtime after 40 hours
+      compensationMultiplier: 1.0, // 1:1 compensation
+      maxAccrualHours: 80, // Max 80 hours accrual
+      autoApprovalThreshold: 8, // Auto-approve up to 8 hours
+      weekendCompensation: true,
+      eveningCompensation: true,
+      nightCompensation: true,
+      holidayCompensation: true,
+    },
   });
 
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
@@ -797,6 +822,330 @@ function SchedulePatternsContent() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm dark:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="Beschrijf voor welke medewerkers dit patroon geschikt is..."
             />
+          </div>
+
+          {/* Time-for-Time Compensation Settings */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-xl border border-green-200 dark:border-green-700">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="h-8 w-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                <ClockIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                  ⏰ Tijd-voor-Tijd Instellingen
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configureer overwerk compensatie en tijd-voor-tijd regels
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Enable Time-for-Time */}
+              <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div>
+                  <label className="text-sm font-medium text-gray-900 dark:text-white">
+                    Tijd-voor-Tijd Inschakelen
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Activeer compensatie uren voor overwerk
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={newPattern.timeForTimeSettings?.enabled || false}
+                  onChange={(e) =>
+                    setNewPattern({
+                      ...newPattern,
+                      timeForTimeSettings: {
+                        ...newPattern.timeForTimeSettings!,
+                        enabled: e.target.checked,
+                      },
+                    })
+                  }
+                  className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                />
+              </div>
+
+              {newPattern.timeForTimeSettings?.enabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Daily Overtime Threshold */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Dagelijkse Overwerk Drempel
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        value={
+                          newPattern.timeForTimeSettings?.overtimeThreshold || 8
+                        }
+                        onChange={(e) =>
+                          setNewPattern({
+                            ...newPattern,
+                            timeForTimeSettings: {
+                              ...newPattern.timeForTimeSettings!,
+                              overtimeThreshold:
+                                parseFloat(e.target.value) || 8,
+                            },
+                          })
+                        }
+                        min="4"
+                        max="12"
+                        step="0.5"
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                      <span className="text-sm text-gray-500">uur per dag</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Na hoeveel uur per dag begint overwerk
+                    </p>
+                  </div>
+
+                  {/* Weekly Overtime Threshold */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Wekelijkse Overwerk Drempel
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        value={
+                          newPattern.timeForTimeSettings
+                            ?.weeklyOvertimeThreshold || 40
+                        }
+                        onChange={(e) =>
+                          setNewPattern({
+                            ...newPattern,
+                            timeForTimeSettings: {
+                              ...newPattern.timeForTimeSettings!,
+                              weeklyOvertimeThreshold:
+                                parseFloat(e.target.value) || 40,
+                            },
+                          })
+                        }
+                        min="20"
+                        max="60"
+                        step="1"
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                      <span className="text-sm text-gray-500">
+                        uur per week
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Na hoeveel uur per week begint overwerk
+                    </p>
+                  </div>
+
+                  {/* Compensation Multiplier */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Compensatie Verhouding
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        value={
+                          newPattern.timeForTimeSettings
+                            ?.compensationMultiplier || 1.0
+                        }
+                        onChange={(e) =>
+                          setNewPattern({
+                            ...newPattern,
+                            timeForTimeSettings: {
+                              ...newPattern.timeForTimeSettings!,
+                              compensationMultiplier:
+                                parseFloat(e.target.value) || 1.0,
+                            },
+                          })
+                        }
+                        min="1.0"
+                        max="2.0"
+                        step="0.1"
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                      <span className="text-sm text-gray-500">
+                        :1 verhouding
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      1.0 = 1:1, 1.5 = 1.5:1 compensatie
+                    </p>
+                  </div>
+
+                  {/* Max Accrual Hours */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Maximum Opbouw Uren
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        value={
+                          newPattern.timeForTimeSettings?.maxAccrualHours || 80
+                        }
+                        onChange={(e) =>
+                          setNewPattern({
+                            ...newPattern,
+                            timeForTimeSettings: {
+                              ...newPattern.timeForTimeSettings!,
+                              maxAccrualHours: parseInt(e.target.value) || 80,
+                            },
+                          })
+                        }
+                        min="20"
+                        max="200"
+                        step="10"
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                      <span className="text-sm text-gray-500">
+                        uur maximaal
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Maximaal op te bouwen compensatie uren
+                    </p>
+                  </div>
+
+                  {/* Auto Approval Threshold */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Auto-Goedkeuring Drempel
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        value={
+                          newPattern.timeForTimeSettings
+                            ?.autoApprovalThreshold || 8
+                        }
+                        onChange={(e) =>
+                          setNewPattern({
+                            ...newPattern,
+                            timeForTimeSettings: {
+                              ...newPattern.timeForTimeSettings!,
+                              autoApprovalThreshold:
+                                parseInt(e.target.value) || 8,
+                            },
+                          })
+                        }
+                        min="0"
+                        max="24"
+                        step="1"
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                      <span className="text-sm text-gray-500">
+                        uur auto-approve
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Automatisch goedkeuren tot X uur per aanvraag
+                    </p>
+                  </div>
+
+                  {/* Compensation Types */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      Extra Compensatie Types
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <label className="flex items-center space-x-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={
+                            newPattern.timeForTimeSettings
+                              ?.weekendCompensation || false
+                          }
+                          onChange={(e) =>
+                            setNewPattern({
+                              ...newPattern,
+                              timeForTimeSettings: {
+                                ...newPattern.timeForTimeSettings!,
+                                weekendCompensation: e.target.checked,
+                              },
+                            })
+                          }
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          🏖️ Weekend
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={
+                            newPattern.timeForTimeSettings
+                              ?.eveningCompensation || false
+                          }
+                          onChange={(e) =>
+                            setNewPattern({
+                              ...newPattern,
+                              timeForTimeSettings: {
+                                ...newPattern.timeForTimeSettings!,
+                                eveningCompensation: e.target.checked,
+                              },
+                            })
+                          }
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          🌅 Avond
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={
+                            newPattern.timeForTimeSettings?.nightCompensation ||
+                            false
+                          }
+                          onChange={(e) =>
+                            setNewPattern({
+                              ...newPattern,
+                              timeForTimeSettings: {
+                                ...newPattern.timeForTimeSettings!,
+                                nightCompensation: e.target.checked,
+                              },
+                            })
+                          }
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          🌙 Nacht
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={
+                            newPattern.timeForTimeSettings
+                              ?.holidayCompensation || false
+                          }
+                          onChange={(e) =>
+                            setNewPattern({
+                              ...newPattern,
+                              timeForTimeSettings: {
+                                ...newPattern.timeForTimeSettings!,
+                                holidayCompensation: e.target.checked,
+                              },
+                            })
+                          }
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          🎉 Feestdag
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Work Days Configuration */}

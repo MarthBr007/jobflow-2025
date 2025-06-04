@@ -31,6 +31,41 @@ const baseNavigation = [
     href: "/dashboard/time-tracking",
     icon: ClockIcon,
   },
+];
+
+const freelancerNavigation = [
+  ...baseNavigation,
+  {
+    name: "Ziekte Registratie",
+    href: "/dashboard/sick-leave",
+    icon: CalendarIcon,
+  },
+  {
+    name: "Beschikbaarheid",
+    href: "/dashboard/availability",
+    icon: CalendarIcon,
+  },
+  { name: "Mijn Profiel", href: "/dashboard/profile", icon: UserCircleIcon },
+  { name: "Collega's", href: "/dashboard/colleagues", icon: UserGroupIcon },
+  {
+    name: "Team Chat",
+    href: "/dashboard/chat",
+    icon: CalendarIcon,
+  },
+  {
+    name: "Projecten",
+    href: "/dashboard/projects",
+    icon: CalendarIcon,
+  },
+  {
+    name: "Werkomschrijvingen",
+    href: "/dashboard/work-descriptions",
+    icon: DocumentTextIcon,
+  },
+];
+
+const employeeNavigation = [
+  ...baseNavigation,
   {
     name: "Tijd voor Tijd",
     href: "/dashboard/time-compensation",
@@ -46,6 +81,8 @@ const baseNavigation = [
     href: "/dashboard/leave-requests",
     icon: CalendarIcon,
   },
+  { name: "Mijn Profiel", href: "/dashboard/profile", icon: UserCircleIcon },
+  { name: "Collega's", href: "/dashboard/colleagues", icon: UserGroupIcon },
   {
     name: "Team Chat",
     href: "/dashboard/chat",
@@ -64,23 +101,23 @@ const baseNavigation = [
 ];
 
 const adminNavigation = [
-  ...baseNavigation.slice(0, 3),
+  ...baseNavigation.slice(0, 2),
   { name: "Personeel", href: "/dashboard/personnel", icon: UserGroupIcon },
   { name: "Rooster", href: "/dashboard/schedule", icon: CalendarIcon },
-  ...baseNavigation.slice(4),
+  ...baseNavigation.slice(3),
   {
     name: "Uren goedkeuren",
     href: "/dashboard/time-approval",
     icon: CalendarIcon,
   },
   {
-    name: "Verlof beheren",
-    href: "/dashboard/admin/leave-requests",
-    icon: CalendarIcon,
+    name: "Wekelijkse Overuren",
+    href: "/dashboard/admin/weekly-overtime",
+    icon: ClockIcon,
   },
   {
-    name: "Verlof Saldo's",
-    href: "/dashboard/admin/leave-balances",
+    name: "Verlof Beheer",
+    href: "/dashboard/admin/leave-management",
     icon: CalendarDaysIcon,
   },
   {
@@ -172,7 +209,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const navItems =
     session.user.role === "ADMIN" || session.user.role === "MANAGER"
       ? adminNavigation
-      : userNavigation;
+      : session.user.role === "FREELANCER"
+      ? freelancerNavigation
+      : employeeNavigation;
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/" });

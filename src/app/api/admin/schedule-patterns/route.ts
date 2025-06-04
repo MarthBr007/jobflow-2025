@@ -46,6 +46,9 @@ export async function GET(request: NextRequest) {
             assignedEmployees: pattern._count.assignments,
             color: pattern.color || "blue",
             icon: pattern.icon || "👔",
+            timeForTimeSettings: typeof pattern.timeForTimeSettings === 'string'
+                ? JSON.parse(pattern.timeForTimeSettings)
+                : (pattern.timeForTimeSettings || null),
         }));
 
         return NextResponse.json(formattedPatterns);
@@ -79,6 +82,7 @@ export async function POST(request: NextRequest) {
             totalHoursPerWeek,
             color = "blue",
             icon = "👔",
+            timeForTimeSettings,
         } = body;
 
         if (!name || !type || !workDays) {
@@ -98,6 +102,7 @@ export async function POST(request: NextRequest) {
                 totalHoursPerWeek,
                 color,
                 icon,
+                timeForTimeSettings,
                 createdById: session.user.id,
             },
         });
@@ -117,6 +122,9 @@ export async function POST(request: NextRequest) {
             assignedEmployees: 0,
             color: pattern.color || "blue",
             icon: pattern.icon || "👔",
+            timeForTimeSettings: typeof pattern.timeForTimeSettings === 'string'
+                ? JSON.parse(pattern.timeForTimeSettings)
+                : (pattern.timeForTimeSettings || null),
         });
     } catch (error) {
         console.error("Error creating pattern:", error);
@@ -149,6 +157,7 @@ export async function PUT(request: NextRequest) {
             totalHoursPerWeek,
             color,
             icon,
+            timeForTimeSettings,
         } = body;
 
         if (!id) {
@@ -169,6 +178,7 @@ export async function PUT(request: NextRequest) {
                 totalHoursPerWeek,
                 color,
                 icon,
+                timeForTimeSettings,
             },
             include: {
                 _count: {
@@ -194,6 +204,9 @@ export async function PUT(request: NextRequest) {
             assignedEmployees: pattern._count.assignments,
             color: pattern.color || "blue",
             icon: pattern.icon || "👔",
+            timeForTimeSettings: typeof pattern.timeForTimeSettings === 'string'
+                ? JSON.parse(pattern.timeForTimeSettings)
+                : (pattern.timeForTimeSettings || null),
         });
     } catch (error) {
         console.error("Error updating pattern:", error);

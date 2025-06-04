@@ -28,6 +28,10 @@ import {
   BuildingOfficeIcon,
   HomeIcon,
   CalendarIcon,
+  AdjustmentsHorizontalIcon,
+  ChartBarIcon,
+  DocumentChartBarIcon,
+  CalculatorIcon,
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
@@ -43,25 +47,30 @@ import { useConfirm } from "@/hooks/useConfirm";
 interface Employee {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  role: string;
-  employeeType?: string;
-  status: "active" | "inactive";
-  company: string;
   phone?: string;
+  role: string;
+  company: string;
+  employeeType?: string;
   address?: string;
-  bsnNumber?: string;
   hourlyRate?: string;
-  monthlySalary?: string;
   hourlyWage?: string;
-  workTypes?: string[];
+  monthlySalary?: string;
+  iban?: string;
+  bsnNumber?: string;
   kvkNumber?: string;
   btwNumber?: string;
   hasContract?: boolean;
-  firstName?: string;
-  lastName?: string;
-  iban?: string;
   availableDays?: string;
+  dateOfBirth?: Date | null;
+  bsn?: string;
+  zipCode?: string;
+  city?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  workTypes?: string[];
 }
 
 interface WorkType {
@@ -220,13 +229,33 @@ export default function EditEmployeeTabs() {
   const [employee, setEmployee] = useState<Employee>({
     id: "",
     name: "",
+    firstName: "",
+    lastName: "",
     email: "",
+    phone: "",
     role: "EMPLOYEE",
-    status: "active",
     company: "",
+    employeeType: "PERMANENT",
+    address: "",
+    hourlyRate: "",
+    hourlyWage: "",
+    monthlySalary: "",
+    iban: "",
+    bsnNumber: "",
+    kvkNumber: "",
+    btwNumber: "",
+    hasContract: false,
+    availableDays: "",
+    dateOfBirth: null,
+    bsn: "",
+    zipCode: "",
+    city: "",
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    workTypes: [],
   });
 
-  const [activeTab, setActiveTab] = useState("algemeen");
+  const [activeTab, setActiveTab] = useState("profiel");
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [workPatterns, setWorkPatterns] = useState<WorkPattern[]>([]);
   const [workPatternAssignments, setWorkPatternAssignments] = useState<
@@ -259,6 +288,14 @@ export default function EditEmployeeTabs() {
     specialLeaveUsed: 0,
     notes: "",
   });
+
+  // New state for vacation accrual
+  const [vacationAccrualData, setVacationAccrualData] = useState<any>(null);
+  const [vacationAccrualLoading, setVacationAccrualLoading] = useState(false);
+  const [selectedAccrualYear, setSelectedAccrualYear] = useState(
+    new Date().getFullYear()
+  );
+  const [showAccrualDetailsModal, setShowAccrualDetailsModal] = useState(false);
 
   // Toast state
   const [toast, setToast] = useState({
@@ -365,17 +402,28 @@ export default function EditEmployeeTabs() {
   };
 
   useEffect(() => {
-    try {
-      if (params?.id) {
-        fetchEmployee(params.id as string);
-        fetchWorkTypes();
-        fetchWorkPatterns();
-        fetchWorkPatternAssignments(params.id as string);
-      }
-    } catch (error) {
-      handleError(error, "useEffect initialization");
+    if (id) {
+      fetchEmployee(id);
+      fetchWorkTypes();
+      fetchWorkPatterns();
+      fetchWorkPatternAssignments(id);
     }
-  }, [params?.id]);
+  }, [id]);
+
+  useEffect(() => {
+    if (employee.id && activeTab === "verlof-aanwezigheid") {
+      fetchAttendanceData(employee.id);
+      fetchCompensationData(employee.id);
+      fetchLeaveBalance(employee.id, selectedLeaveYear);
+      fetchVacationAccrual(employee.id, selectedAccrualYear);
+    }
+  }, [
+    employee.id,
+    activeTab,
+    selectedAttendancePeriod,
+    selectedLeaveYear,
+    selectedAccrualYear,
+  ]);
 
   const fetchEmployee = async (id: string) => {
     try {
@@ -735,24 +783,18 @@ export default function EditEmployeeTabs() {
         fetchWorkPatternAssignments(employee.id);
       }
 
-      // Load attendance and compensation data when switching to aanwezigheid tab
-      if (tabId === "aanwezigheid" && employee) {
+      // Load attendance and compensation data when switching to verlof-aanwezigheid tab
+      if (tabId === "verlof-aanwezigheid" && employee) {
         console.log(
-          "Loading attendance and compensation data for aanwezigheid tab"
+          "Loading attendance, compensation, leave balance, and vacation accrual data for verlof-aanwezigheid tab"
         );
         fetchAttendanceData(employee.id);
         fetchCompensationData(employee.id);
         fetchLeaveBalance(employee.id, selectedLeaveYear);
+        fetchVacationAccrual(employee.id, selectedAccrualYear);
       }
     } catch (error) {
-      console.error("Error in handleTabChange:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      setToast({
-        show: true,
-        message: `Error switching tabs: ${errorMessage}`,
-        type: "error",
-      });
+      console.error("Error switching tabs:", error);
     }
   };
 
@@ -769,38 +811,88 @@ export default function EditEmployeeTabs() {
   };
 
   // New function to fetch leave balance
-  const fetchLeaveBalance = async (
-    userId: string,
-    year: number = new Date().getFullYear()
-  ) => {
+  const fetchLeaveBalance = async (userId: string, year: number) => {
     try {
       setLeaveBalanceLoading(true);
-      const response = await fetch(`/api/admin/leave-balances?year=${year}`);
+      const response = await fetch(
+        `/api/admin/leave-balances?userId=${userId}&year=${year}`
+      );
       const data = await response.json();
-
-      if (data.success) {
-        // Find the employee's balance from the returned data
-        const employeeBalance = data.data.employees.find(
-          (emp: any) => emp.id === userId
-        );
-        if (employeeBalance) {
-          setLeaveBalance(employeeBalance.leaveBalance);
+      if (response.ok) {
+        if (data.length > 0) {
+          const balance = data[0];
+          setLeaveBalance(balance);
           setLeaveBalanceForm({
-            vacationDaysTotal: employeeBalance.leaveBalance.vacationDaysTotal,
-            vacationDaysUsed: employeeBalance.leaveBalance.vacationDaysUsed,
-            sickDaysUsed: employeeBalance.leaveBalance.sickDaysUsed,
-            compensationHours: employeeBalance.leaveBalance.compensationHours,
-            compensationUsed: employeeBalance.leaveBalance.compensationUsed,
-            specialLeaveUsed: employeeBalance.leaveBalance.specialLeaveUsed,
-            notes: employeeBalance.leaveBalance.notes || "",
+            vacationDaysTotal: balance.vacationDaysTotal,
+            vacationDaysUsed: balance.vacationDaysUsed,
+            sickDaysUsed: balance.sickDaysUsed,
+            compensationHours: balance.compensationHours,
+            compensationUsed: balance.compensationUsed,
+            specialLeaveUsed: balance.specialLeaveUsed,
+            notes: balance.notes || "",
+          });
+        } else {
+          setLeaveBalance(null);
+          setLeaveBalanceForm({
+            vacationDaysTotal: 25,
+            vacationDaysUsed: 0,
+            sickDaysUsed: 0,
+            compensationHours: 0,
+            compensationUsed: 0,
+            specialLeaveUsed: 0,
+            notes: "",
           });
         }
+      } else {
+        console.error("Error fetching leave balance:", data.error);
       }
     } catch (error) {
       console.error("Error fetching leave balance:", error);
-      showToast("Fout bij ophalen verlof saldo", "error");
     } finally {
       setLeaveBalanceLoading(false);
+    }
+  };
+
+  // New function for vacation accrual
+  const fetchVacationAccrual = async (userId: string, year: number) => {
+    try {
+      setVacationAccrualLoading(true);
+      const response = await fetch(
+        `/api/vacation-accrual/calculate?userId=${userId}&year=${year}`
+      );
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setVacationAccrualData(data.data);
+      } else {
+        setVacationAccrualData(null);
+      }
+    } catch (error) {
+      console.error("Error fetching vacation accrual:", error);
+      setVacationAccrualData(null);
+    } finally {
+      setVacationAccrualLoading(false);
+    }
+  };
+
+  const calculateVacationAccrual = async (userId: string, year: number) => {
+    try {
+      setVacationAccrualLoading(true);
+      const response = await fetch("/api/vacation-accrual/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, year }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        // Refresh data after calculation
+        await fetchVacationAccrual(userId, year);
+        showToast("Vakantie-opbouw succesvol herberekend", "success");
+      } else {
+        showToast("Fout bij herberekenen vakantie-opbouw", "error");
+      }
+    } catch (error) {
+      console.error("Error calculating vacation accrual:", error);
+      showToast("Fout bij herberekenen vakantie-opbouw", "error");
     }
   };
 
@@ -860,34 +952,28 @@ export default function EditEmployeeTabs() {
 
   const tabs = [
     {
-      id: "algemeen",
-      name: "Algemeen",
+      id: "profiel",
+      name: "Profiel & Contact",
       icon: UserGroupIcon,
-      description: "Basis- en contactgegevens",
+      description: "Persoonlijke gegevens en contactinformatie",
     },
     {
       id: "werk",
-      name: "Werk",
+      name: "Werk & Planning",
       icon: CalendarDaysIcon,
-      description: "Werkzaamheden en roosters",
+      description: "Werkzaamheden, roosters en tijdregistratie",
     },
     {
-      id: "financieel",
-      name: "Financieel",
-      icon: CurrencyEuroIcon,
-      description: "Salaris en bedrijfsgegevens",
-    },
-    {
-      id: "contracten",
-      name: "Contracten",
+      id: "contract-financieel",
+      name: "Contracten & Financieel",
       icon: DocumentTextIcon,
-      description: "Contractbeheer",
+      description: "Contractbeheer, salaris en bedrijfsgegevens",
     },
     {
-      id: "aanwezigheid",
-      name: "Aan- en Afwezigheid",
-      icon: ClipboardDocumentCheckIcon,
-      description: "Aanwezigheid, verlof en compensatie overzicht",
+      id: "verlof-aanwezigheid",
+      name: "Verlof & Aanwezigheid",
+      icon: CalendarIcon,
+      description: "Verlofbalans, vakantie-opbouw en aanwezigheid",
     },
   ];
 
@@ -990,220 +1076,216 @@ export default function EditEmployeeTabs() {
 
           {/* Tab Content */}
           <div className="px-6 py-6">
-            {/* Algemeen Tab */}
-            {activeTab === "algemeen" && (
-              <div className="space-y-8">
-                {/* Basisinformatie */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">
-                    Basisinformatie
-                  </h3>
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {/* Profiel & Contact Tab (was Algemeen) */}
+            {activeTab === "profiel" && (
+              <div className="space-y-6">
+                {/* Basic Information Section */}
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                    Persoonlijke Gegevens
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Personal info fields - keeping all existing content */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Voornaam *
+                      </label>
                       <Input
-                        label="Volledige Naam"
-                        value={employee.name}
+                        type="text"
+                        value={employee.firstName}
                         onChange={(e) =>
-                          setEmployee({ ...employee, name: e.target.value })
+                          setEmployee({
+                            ...employee,
+                            firstName: e.target.value,
+                          })
                         }
-                        leftIcon={<UserGroupIcon className="h-5 w-5" />}
-                        variant="outlined"
-                        inputSize="md"
-                        required
-                      />
-                      <Input
-                        label="Email"
-                        type="email"
-                        value={employee.email}
-                        onChange={(e) =>
-                          setEmployee({ ...employee, email: e.target.value })
-                        }
-                        leftIcon={<EnvelopeIcon className="h-5 w-5" />}
-                        variant="outlined"
-                        inputSize="md"
+                        placeholder="Voornaam"
                         required
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <div>
-                        <label
-                          htmlFor="role"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                          Rol
-                        </label>
-                        <select
-                          id="role"
-                          value={employee.role}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Achternaam *
+                      </label>
+                      <Input
+                        type="text"
+                        value={employee.lastName}
+                        onChange={(e) =>
+                          setEmployee({ ...employee, lastName: e.target.value })
+                        }
+                        placeholder="Achternaam"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Email
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <Input
+                          type="email"
+                          value={employee.email || ""}
                           onChange={(e) =>
-                            setEmployee({ ...employee, role: e.target.value })
+                            setEmployee({ ...employee, email: e.target.value })
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          required
-                        >
-                          <option value="ADMIN">👑 Administrator</option>
-                          <option value="MANAGER">👨‍💼 Manager</option>
-                          <option value="HR_MANAGER">👥 HR Manager</option>
-                          <option value="PLANNER">📅 Planner</option>
-                          <option value="EMPLOYEE">👨‍💻 Medewerker</option>
-                          <option value="FREELANCER">🎯 Freelancer</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="employeeType"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                          Type Medewerker
-                        </label>
-                        <select
-                          id="employeeType"
-                          value={employee.employeeType || "PERMANENT"}
-                          onChange={(e) =>
-                            setEmployee({
-                              ...employee,
-                              employeeType: e.target.value,
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          required
-                        >
-                          <option value="PERMANENT">Vaste Medewerker</option>
-                          <option value="FREELANCER">Freelancer</option>
-                          <option value="FLEX_WORKER">Oproepkracht</option>
-                        </select>
+                          placeholder="email@voorbeeld.nl"
+                          className="pl-10"
+                        />
                       </div>
                     </div>
 
                     <div>
-                      <label
-                        htmlFor="company"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Bedrijf
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Telefoonnummer
                       </label>
-                      <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <BuildingOfficeIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                          <PhoneIcon className="h-5 w-5 text-gray-400" />
                         </div>
-                        <select
-                          id="company"
-                          value={employee.company}
+                        <Input
+                          type="tel"
+                          value={employee.phone || ""}
                           onChange={(e) =>
-                            setEmployee({
-                              ...employee,
-                              company: e.target.value,
-                            })
+                            setEmployee({ ...employee, phone: e.target.value })
                           }
-                          className="block w-full pl-10 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          required
-                        >
-                          <option value="Broers Verhuur">Broers Verhuur</option>
-                          <option value="DCRT Event Decorations">
-                            DCRT Event Decorations
-                          </option>
-                          <option value="DCRT in Building">
-                            DCRT in Building
-                          </option>
-                        </select>
+                          placeholder="06-12345678"
+                          className="pl-10"
+                        />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Geboortedatum
+                      </label>
+                      <Input
+                        type="date"
+                        value={
+                          employee.dateOfBirth
+                            ? new Date(employee.dateOfBirth)
+                                .toISOString()
+                                .split("T")[0]
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const dateValue = e.target.value
+                            ? new Date(e.target.value)
+                            : null;
+                          setEmployee({
+                            ...employee,
+                            dateOfBirth: dateValue,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        BSN
+                      </label>
+                      <Input
+                        type="text"
+                        value={employee.bsn || ""}
+                        onChange={(e) =>
+                          setEmployee({ ...employee, bsn: e.target.value })
+                        }
+                        placeholder="123456789"
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Contactgegevens */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">
-                    Contactgegevens
-                  </h3>
-                  <div className="space-y-6">
-                    <Input
-                      label="Telefoonnummer"
-                      type="tel"
-                      value={employee.phone || ""}
-                      onChange={(e) =>
-                        setEmployee({ ...employee, phone: e.target.value })
-                      }
-                      leftIcon={<PhoneIcon className="h-5 w-5" />}
-                      variant="outlined"
-                      inputSize="md"
-                      placeholder="+31 6 12345678"
-                    />
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                        Woonadres
+                {/* Address Information Section */}
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                    <HomeIcon className="h-5 w-5 mr-2 text-gray-500" />
+                    Adresgegevens
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Adres
                       </label>
-                      <div className="space-y-4">
-                        <Input
-                          label="Straat en huisnummer"
-                          value={employee.address?.split(",")[0]?.trim() || ""}
-                          onChange={(e) => {
-                            const addressParts = employee.address?.split(
-                              ","
-                            ) || ["", "", ""];
-                            const newAddress = [
-                              e.target.value,
-                              addressParts[1]?.trim() || "",
-                              addressParts[2]?.trim() || "",
-                            ]
-                              .filter((part) => part)
-                              .join(", ");
-                            setEmployee({ ...employee, address: newAddress });
-                          }}
-                          leftIcon={<HomeIcon className="h-5 w-5" />}
-                          variant="outlined"
-                          inputSize="md"
-                          placeholder="Hoofdstraat 123"
-                        />
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <Input
-                            label="Postcode"
-                            value={
-                              employee.address?.split(",")[1]?.trim() || ""
-                            }
-                            onChange={(e) => {
-                              const addressParts = employee.address?.split(
-                                ","
-                              ) || ["", "", ""];
-                              const newAddress = [
-                                addressParts[0]?.trim() || "",
-                                e.target.value,
-                                addressParts[2]?.trim() || "",
-                              ]
-                                .filter((part) => part)
-                                .join(", ");
-                              setEmployee({ ...employee, address: newAddress });
-                            }}
-                            variant="outlined"
-                            inputSize="md"
-                            placeholder="1234AB"
-                          />
-                          <Input
-                            label="Plaats"
-                            value={
-                              employee.address?.split(",")[2]?.trim() || ""
-                            }
-                            onChange={(e) => {
-                              const addressParts = employee.address?.split(
-                                ","
-                              ) || ["", "", ""];
-                              const newAddress = [
-                                addressParts[0]?.trim() || "",
-                                addressParts[1]?.trim() || "",
-                                e.target.value,
-                              ]
-                                .filter((part) => part)
-                                .join(", ");
-                              setEmployee({ ...employee, address: newAddress });
-                            }}
-                            variant="outlined"
-                            inputSize="md"
-                            placeholder="Amsterdam"
-                          />
-                        </div>
-                      </div>
+                      <Input
+                        type="text"
+                        value={employee.address || ""}
+                        onChange={(e) =>
+                          setEmployee({ ...employee, address: e.target.value })
+                        }
+                        placeholder="Straatnaam 123"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Postcode
+                      </label>
+                      <Input
+                        type="text"
+                        value={employee.zipCode || ""}
+                        onChange={(e) =>
+                          setEmployee({ ...employee, zipCode: e.target.value })
+                        }
+                        placeholder="1234AB"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Stad
+                      </label>
+                      <Input
+                        type="text"
+                        value={employee.city || ""}
+                        onChange={(e) =>
+                          setEmployee({ ...employee, city: e.target.value })
+                        }
+                        placeholder="Amsterdam"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Emergency Contact Section */}
+                <div>
+                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                    Contactpersoon bij Noodgevallen
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Naam
+                      </label>
+                      <Input
+                        type="text"
+                        value={employee.emergencyContactName || ""}
+                        onChange={(e) =>
+                          setEmployee({
+                            ...employee,
+                            emergencyContactName: e.target.value,
+                          })
+                        }
+                        placeholder="Naam contactpersoon"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Telefoonnummer
+                      </label>
+                      <Input
+                        type="tel"
+                        value={employee.emergencyContactPhone || ""}
+                        onChange={(e) =>
+                          setEmployee({
+                            ...employee,
+                            emergencyContactPhone: e.target.value,
+                          })
+                        }
+                        placeholder="06-12345678"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1604,1558 +1686,563 @@ export default function EditEmployeeTabs() {
               </div>
             )}
 
-            {/* Financieel Tab */}
-            {activeTab === "financieel" && (
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">
-                    Financiële gegevens
-                  </h3>
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      {employee.employeeType === "FREELANCER" ? (
-                        <Input
-                          label="Uurtarief (€)"
-                          type="number"
-                          step="0.01"
-                          value={employee.hourlyRate || ""}
+            {/* Contract-Financieel Tab (combines old Financieel + Contracten) */}
+            {activeTab === "contract-financieel" && (
+              <div className="space-y-6">
+                {/* Employee Type and Role Section */}
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                    Functie & Rol
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Rol in Systeem
+                      </label>
+                      <select
+                        value={employee.role}
+                        onChange={(e) =>
+                          setEmployee({ ...employee, role: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      >
+                        <option value="ADMIN">👑 Administrator</option>
+                        <option value="MANAGER">👨‍💼 Manager</option>
+                        <option value="HR_MANAGER">👥 HR Manager</option>
+                        <option value="PLANNER">📅 Planner</option>
+                        <option value="EMPLOYEE">👨‍💻 Medewerker</option>
+                        <option value="FREELANCER">🎯 Freelancer</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Type Medewerker
+                      </label>
+                      <select
+                        value={employee.employeeType || "PERMANENT"}
+                        onChange={(e) =>
+                          setEmployee({
+                            ...employee,
+                            employeeType: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      >
+                        <option value="PERMANENT">Vaste Medewerker</option>
+                        <option value="FREELANCER">Freelancer</option>
+                        <option value="FLEX_WORKER">Oproepkracht</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Bedrijf
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <select
+                          value={employee.company}
                           onChange={(e) =>
                             setEmployee({
                               ...employee,
-                              hourlyRate: e.target.value,
+                              company: e.target.value,
                             })
                           }
-                          leftIcon={<CurrencyEuroIcon className="h-5 w-5" />}
-                          variant="outlined"
-                          inputSize="md"
-                          placeholder="25.00"
-                          helperText="Uurtarief in euro's voor freelance werk"
-                        />
-                      ) : employee.employeeType === "FLEX_WORKER" ? (
-                        <Input
-                          label="Bruto Uurloon (€)"
-                          type="number"
-                          step="0.01"
-                          value={employee.hourlyWage || ""}
-                          onChange={(e) =>
-                            setEmployee({
-                              ...employee,
-                              hourlyWage: e.target.value,
-                            })
-                          }
-                          leftIcon={<CurrencyEuroIcon className="h-5 w-5" />}
-                          variant="outlined"
-                          inputSize="md"
-                          placeholder="15.50"
-                          helperText="Bruto uurloon in euro's voor oproepkrachten"
-                        />
-                      ) : (
-                        <Input
-                          label="Bruto Maandloon (€)"
-                          type="number"
-                          step="0.01"
-                          value={employee.monthlySalary || ""}
-                          onChange={(e) =>
-                            setEmployee({
-                              ...employee,
-                              monthlySalary: e.target.value,
-                            })
-                          }
-                          leftIcon={<CurrencyEuroIcon className="h-5 w-5" />}
-                          variant="outlined"
-                          inputSize="md"
-                          placeholder="3500.00"
-                          helperText="Bruto maandloon in euro's voor vaste medewerkers"
-                        />
-                      )}
+                          className="w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          required
+                        >
+                          <option value="Broers Verhuur">Broers Verhuur</option>
+                          <option value="DCRT Event Decorations">
+                            DCRT Event Decorations
+                          </option>
+                          <option value="DCRT in Building">
+                            DCRT in Building
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Information Section */}
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                    <CurrencyEuroIcon className="h-5 w-5 mr-2 text-gray-500" />
+                    Financiële Gegevens
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        IBAN Nummer
+                      </label>
                       <Input
-                        label="IBAN"
+                        type="text"
                         value={employee.iban || ""}
                         onChange={(e) =>
                           setEmployee({ ...employee, iban: e.target.value })
                         }
-                        leftIcon={<DocumentTextIcon className="h-5 w-5" />}
-                        variant="outlined"
-                        inputSize="md"
                         placeholder="NL91ABNA0417164300"
-                        helperText="Bankrekeningnummer voor uitbetalingen"
                       />
-
-                      {/* BSN nummer voor vaste medewerkers, parttimers en oproepkrachten */}
-                      {employee.employeeType !== "FREELANCER" && (
-                        <Input
-                          label="BSN Nummer"
-                          value={employee.bsnNumber || ""}
-                          onChange={(e) =>
-                            setEmployee({
-                              ...employee,
-                              bsnNumber: e.target.value,
-                            })
-                          }
-                          leftIcon={<UserIcon className="h-5 w-5" />}
-                          variant="outlined"
-                          inputSize="md"
-                          placeholder="123456789"
-                          helperText="Burgerservicenummer (verplicht voor werknemers)"
-                        />
-                      )}
                     </div>
 
-                    {/* Bedrijfsgegevens voor freelancers */}
-                    {employee.employeeType === "FREELANCER" && (
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
-                          Bedrijfsgegevens
-                        </h4>
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                          <Input
-                            label="KVK Nummer"
-                            value={employee.kvkNumber || ""}
-                            onChange={(e) =>
-                              setEmployee({
-                                ...employee,
-                                kvkNumber: e.target.value,
-                              })
-                            }
-                            variant="outlined"
-                            inputSize="md"
-                            placeholder="12345678"
-                          />
-                          <Input
-                            label="BTW Nummer"
-                            value={employee.btwNumber || ""}
-                            onChange={(e) =>
-                              setEmployee({
-                                ...employee,
-                                btwNumber: e.target.value,
-                              })
-                            }
-                            variant="outlined"
-                            inputSize="md"
-                            placeholder="NL123456789B01"
-                          />
-                        </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        KvK Nummer
+                      </label>
+                      <Input
+                        type="text"
+                        value={employee.kvkNumber || ""}
+                        onChange={(e) =>
+                          setEmployee({
+                            ...employee,
+                            kvkNumber: e.target.value,
+                          })
+                        }
+                        placeholder="12345678"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-                        {/* Contract Status */}
-                        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h5 className="text-sm font-medium text-gray-900 dark:text-white">
-                                Contract Status
-                              </h5>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Wet DBA compliance status
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {employee.hasContract ? (
-                                <>
-                                  <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                                  <span className="text-sm text-green-700 dark:text-green-400 font-medium">
-                                    Actief Contract
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
-                                  <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-                                    Geen Contract
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {!employee.hasContract && (
-                            <div className="mt-3">
-                              <div className="flex space-x-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  leftIcon={
-                                    <DocumentTextIcon className="h-4 w-4" />
-                                  }
-                                  onClick={() =>
-                                    router.push(
-                                      "/dashboard/contracts/freelance"
-                                    )
-                                  }
-                                >
-                                  Uitgebreid Contract
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="primary"
-                                  size="sm"
-                                  leftIcon={
-                                    <DocumentTextIcon className="h-4 w-4" />
-                                  }
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/contracts?userId=${
-                                        employee.id
-                                      }&userName=${encodeURIComponent(
-                                        employee.name
-                                      )}&userEmail=${encodeURIComponent(
-                                        employee.email
-                                      )}&template=basic`
-                                    )
-                                  }
-                                >
-                                  Basis Template
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Contract Management Section - keeping existing contract functionality */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
+                      <DocumentTextIcon className="h-5 w-5 mr-2 text-gray-500" />
+                      Contractbeheer
+                    </h4>
+                    <Button
+                      onClick={() => {
+                        window.open(
+                          `/dashboard/contracts?userId=${employee.id}&userName=${employee.name}`,
+                          "_blank"
+                        );
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      📄 Nieuw Contract
+                    </Button>
+                  </div>
 
-                    {/* Add contract status for non-freelancers */}
-                    {employee.employeeType !== "FREELANCER" && (
-                      <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-900 dark:text-white">
-                              Contract Status
-                            </h5>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {employee.employeeType === "FLEX_WORKER"
-                                ? "Oproepovereenkomst status"
-                                : "Arbeidsovereenkomst status"}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {employee.hasContract ? (
-                              <>
-                                <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                                <span className="text-sm text-green-700 dark:text-green-400 font-medium">
-                                  Actief Contract
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
-                                <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-                                  Geen Contract
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        {!employee.hasContract && (
-                          <div className="mt-3">
-                            <div className="flex space-x-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                leftIcon={
-                                  <DocumentTextIcon className="h-4 w-4" />
-                                }
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/contracts?userId=${
-                                      employee.id
-                                    }&userName=${encodeURIComponent(
-                                      employee.name
-                                    )}&userEmail=${encodeURIComponent(
-                                      employee.email
-                                    )}&template=basic`
-                                  )
-                                }
-                              >
-                                {employee.employeeType === "FLEX_WORKER"
-                                  ? "Uitgebreide Oproepovereenkomst"
-                                  : "Uitgebreid Contract"}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="primary"
-                                size="sm"
-                                leftIcon={
-                                  <DocumentTextIcon className="h-4 w-4" />
-                                }
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/contracts?userId=${
-                                      employee.id
-                                    }&userName=${encodeURIComponent(
-                                      employee.name
-                                    )}&userEmail=${encodeURIComponent(
-                                      employee.email
-                                    )}&template=advanced`
-                                  )
-                                }
-                              >
-                                Basis Template
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                  {/* Existing contracts display */}
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                      💡 <strong>Contractbeheer:</strong> Klik op "Nieuw
+                      Contract" om contracten aan te maken en te beheren voor
+                      deze medewerker.
+                    </p>
+                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                      Contractoverzicht en -beheer wordt geopend in een nieuw
+                      tabblad.
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Contracten Tab */}
-            {activeTab === "contracten" && (
-              <div className="space-y-8">
-                {employee.employeeType === "FREELANCER" ? (
-                  // Freelancer Contract Management
-                  <div className="space-y-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-700">
-                      <div className="flex items-start space-x-4">
-                        <CheckCircleIcon className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
-                        <div>
-                          <h3 className="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">
-                            Wet DBA Compliance voor Freelancers
-                          </h3>
-                          <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
-                            Voor freelancers is het belangrijk om Wet
-                            DBA-conforme overeenkomsten te hebben. JobFlow helpt
-                            je automatisch compliant contracten genereren.
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                              ✓ Specifieke werkzaamheden
-                            </span>
-                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                              ✓ Onafhankelijkheid
-                            </span>
-                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                              ✓ Vervangingsmogelijkheid
-                            </span>
-                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                              ✓ Prestatiegerichte betaling
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Generate New Contract */}
-                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-                        <div className="text-center">
-                          <DocumentTextIcon className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                            Nieuwe Raamovereenkomst
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Genereer automatisch een Wet DBA-conforme freelance
-                            overeenkomst
-                          </p>
-                          <div className="space-y-2">
-                            <Button
-                              type="button"
-                              variant="primary"
-                              size="md"
-                              leftIcon={
-                                <DocumentTextIcon className="h-4 w-4" />
-                              }
-                              onClick={() =>
-                                router.push(
-                                  `/dashboard/contracts?userId=${
-                                    employee.id
-                                  }&userName=${encodeURIComponent(
-                                    employee.name
-                                  )}&userEmail=${encodeURIComponent(
-                                    employee.email
-                                  )}&template=basic`
-                                )
-                              }
-                              className="w-full"
-                            >
-                              Basis Template
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="md"
-                              leftIcon={
-                                <DocumentTextIcon className="h-4 w-4" />
-                              }
-                              onClick={() =>
-                                router.push(
-                                  `/dashboard/contracts?userId=${
-                                    employee.id
-                                  }&userName=${encodeURIComponent(
-                                    employee.name
-                                  )}&userEmail=${encodeURIComponent(
-                                    employee.email
-                                  )}&template=advanced`
-                                )
-                              }
-                              className="w-full"
-                            >
-                              Uitgebreid Contract
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Manage Existing Contracts */}
-                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-                        <div className="text-center">
-                          <CheckCircleIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                            Contractbeheer voor {employee.name}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Beheer alle contracten voor deze medewerker, upload
-                            documenten en track handtekeningen
-                          </p>
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="md"
-                            leftIcon={<DocumentTextIcon className="h-4 w-4" />}
-                            onClick={() =>
-                              setShowPersonnelContractManagement(true)
-                            }
-                            className="w-full"
-                          >
-                            Contracten Beheren
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Info */}
-                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-700">
-                      <div className="flex items-start space-x-3">
-                        <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <h4 className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                            Belangrijk voor Freelancers
-                          </h4>
-                          <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
-                            Zorg ervoor dat alle freelance overeenkomsten
-                            voldoen aan de Wet DBA om problemen met de
-                            Belastingdienst te voorkomen. Gebruik altijd
-                            project-specifieke contracten in plaats van algemene
-                            overeenkomsten.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  // Regular Employee Contract Management
-                  <div className="space-y-6">
-                    <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg border border-green-200 dark:border-green-700">
-                      <div className="flex items-start space-x-4">
-                        <CheckCircleIcon className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" />
-                        <div>
-                          <h3 className="text-lg font-medium text-green-900 dark:text-green-100 mb-2">
-                            {employee.employeeType === "FLEX_WORKER"
-                              ? "Oproepovereenkomsten voor Flexwerkers"
-                              : "Arbeidsovereenkomsten voor Medewerkers"}
-                          </h3>
-                          <p className="text-sm text-green-800 dark:text-green-200 mb-4">
-                            {employee.employeeType === "FLEX_WORKER"
-                              ? "Voor flexwerkers genereer je oproepovereenkomsten conform artikel 7:628a BW. Deze bieden flexibiliteit en bescherming voor beide partijen."
-                              : "Voor vaste medewerkers en oproepkrachten kun je standaard arbeidsovereenkomsten genereren die voldoen aan de Nederlandse arbeidsrechtgeving."}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {employee.employeeType === "FLEX_WORKER" ? (
-                              <>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  ✓ Artikel 7:628a BW
-                                </span>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  ✓ Flexibele oproepen
-                                </span>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  ✓ Recht op weigering
-                                </span>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  ✓ Uurloon basis
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  ✓ Nederlandse arbeidswetgeving
-                                </span>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  ✓ Standaard arbeidsvoorwaarden
-                                </span>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  ✓ Proeftijd & opzegging
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Generate New Contract */}
-                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-                        <div className="text-center">
-                          <DocumentTextIcon className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                            {employee.employeeType === "FLEX_WORKER"
-                              ? "Nieuwe Oproepovereenkomst"
-                              : "Nieuwe Arbeidsovereenkomst"}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            {employee.employeeType === "FLEX_WORKER"
-                              ? "Genereer automatisch een professionele oproepovereenkomst conform artikel 7:628a BW"
-                              : "Genereer automatisch een professionele arbeidsovereenkomst"}
-                          </p>
-                          <div className="space-y-2">
-                            <Button
-                              type="button"
-                              variant="primary"
-                              size="md"
-                              leftIcon={
-                                <DocumentTextIcon className="h-4 w-4" />
-                              }
-                              onClick={() =>
-                                router.push(
-                                  `/dashboard/contracts?userId=${
-                                    employee.id
-                                  }&userName=${encodeURIComponent(
-                                    employee.name
-                                  )}&userEmail=${encodeURIComponent(
-                                    employee.email
-                                  )}&template=basic`
-                                )
-                              }
-                              className="w-full"
-                            >
-                              Basis Template
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="md"
-                              leftIcon={
-                                <DocumentTextIcon className="h-4 w-4" />
-                              }
-                              onClick={() =>
-                                router.push(
-                                  `/dashboard/contracts?userId=${
-                                    employee.id
-                                  }&userName=${encodeURIComponent(
-                                    employee.name
-                                  )}&userEmail=${encodeURIComponent(
-                                    employee.email
-                                  )}&template=advanced`
-                                )
-                              }
-                              className="w-full"
-                            >
-                              {employee.employeeType === "FLEX_WORKER"
-                                ? "Uitgebreide Oproepovereenkomst"
-                                : "Uitgebreid Contract"}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Manage Existing Contracts */}
-                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-                        <div className="text-center">
-                          <CheckCircleIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                            Contractbeheer voor {employee.name}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Beheer alle contracten voor deze medewerker, upload
-                            documenten en track handtekeningen
-                          </p>
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="md"
-                            leftIcon={<DocumentTextIcon className="h-4 w-4" />}
-                            onClick={() =>
-                              setShowPersonnelContractManagement(true)
-                            }
-                            className="w-full"
-                          >
-                            Contracten Beheren
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Info */}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
-                      <div className="flex items-start space-x-3">
-                        <DocumentTextIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                            {employee.employeeType === "FLEX_WORKER"
-                              ? "Oproepkracht Contracten"
-                              : "Vaste Medewerker Contracten"}
-                          </h4>
-                          <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
-                            {employee.employeeType === "FLEX_WORKER"
-                              ? "Voor oproepkrachten gelden specifieke regelingen omtrent oproepen, weigeringsrecht en minimale voorbereidingstijd conform artikel 7:628a BW."
-                              : "Arbeidsovereenkomsten voor vaste medewerkers bevatten standaard arbeidsrechtelijke bescherming."}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Aanwezigheid Tab */}
-            {activeTab === "aanwezigheid" && (
+            {/* Verlof & Aanwezigheid Tab */}
+            {activeTab === "verlof-aanwezigheid" && (
               <div className="space-y-6">
                 {/* Tab Header */}
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Aan- en Afwezigheid Overzicht
+                      Verlof & Aanwezigheid Overzicht
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      Bekijk aanwezigheid, werkuren, verlofgegevens en
-                      compensatie uren van {employee.name}
+                      Verlofbalans, vakantie-opbouw en aanwezigheidsoverzicht
+                      voor {employee.name}
                     </p>
                   </div>
                   <div className="flex items-center space-x-3">
                     <select
-                      value={selectedAttendancePeriod}
+                      value={selectedAccrualYear}
                       onChange={(e) => {
-                        setSelectedAttendancePeriod(e.target.value);
-                        fetchAttendanceData(employee.id);
+                        const year = parseInt(e.target.value);
+                        setSelectedAccrualYear(year);
+                        setSelectedLeaveYear(year);
+                        fetchVacationAccrual(employee.id, year);
+                        fetchLeaveBalance(employee.id, year);
                       }}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                     >
-                      <option value="current_week">Deze week</option>
-                      <option value="current_month">Deze maand</option>
-                      <option value="last_month">Vorige maand</option>
-                      <option value="last_3_months">Laatste 3 maanden</option>
-                      <option value="current_year">Dit jaar</option>
+                      {Array.from({ length: 3 }, (_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        );
+                      })}
                     </select>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        fetchAttendanceData(employee.id);
-                        fetchCompensationData(employee.id);
+                        calculateVacationAccrual(
+                          employee.id,
+                          selectedAccrualYear
+                        );
+                        fetchLeaveBalance(employee.id, selectedLeaveYear);
                       }}
-                      disabled={attendanceLoading || compensationLoading}
+                      disabled={vacationAccrualLoading || leaveBalanceLoading}
+                      leftIcon={<CalculatorIcon className="h-4 w-4" />}
                     >
-                      {attendanceLoading || compensationLoading
-                        ? "Laden..."
-                        : "Vernieuwen"}
+                      {vacationAccrualLoading || leaveBalanceLoading
+                        ? "Berekenen..."
+                        : "Herbereken"}
                     </Button>
                   </div>
                 </div>
 
-                {attendanceLoading || compensationLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-500 dark:text-gray-400">
-                      Gegevens laden...
-                    </p>
-                  </div>
-                ) : attendanceData ? (
-                  <>
-                    {/* Current Status and Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                      {/* Current Status */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="flex items-center space-x-3">
-                          <ClipboardDocumentCheckIcon className="h-8 w-8 text-blue-600" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Huidige Status
+                {/* Three Section Layout: Vacation Accrual, Leave Balance, Attendance */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Section 1: Vacation Accrual */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
+                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
+                          <ClockIcon className="h-5 w-5 mr-2 text-blue-500" />
+                          Vakantie-Opbouw
+                        </h4>
+                      </div>
+                      <div className="p-4">
+                        {vacationAccrualLoading ? (
+                          <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                              Berekenen...
                             </p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full border ${getAttendanceStatusColor(
-                                  attendanceData.currentStatus || "OFFLINE"
-                                )}`}
-                              >
-                                {getAttendanceStatusText(
-                                  attendanceData.currentStatus || "OFFLINE"
-                                )}
-                              </span>
+                          </div>
+                        ) : employee.employeeType === "FREELANCER" ? (
+                          <div className="text-center py-8">
+                            <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Freelancers bouwen geen vakantie-uren op
+                            </p>
+                          </div>
+                        ) : vacationAccrualData ? (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                  Contract Uren
+                                </p>
+                                <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                                  {vacationAccrualData.contractHoursPerWeek}u
+                                </p>
+                              </div>
+                              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                  Gewerkt YTD
+                                </p>
+                                <p className="text-lg font-bold text-green-700 dark:text-green-300">
+                                  {vacationAccrualData.hoursWorkedYTD?.toFixed(
+                                    1
+                                  )}
+                                  u
+                                </p>
+                              </div>
+                              <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                                  Opgebouwd
+                                </p>
+                                <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                                  {vacationAccrualData.vacationHoursAccrued?.toFixed(
+                                    1
+                                  )}
+                                  u
+                                </p>
+                              </div>
+                              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                                <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                                  Per Uur
+                                </p>
+                                <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                                  {(
+                                    (vacationAccrualData.accrualPerHour || 0) *
+                                    100
+                                  ).toFixed(2)}
+                                  %
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Hours Today */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="flex items-center space-x-3">
-                          <ClockIcon className="h-8 w-8 text-green-600" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Vandaag
-                            </p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">
-                              {formatDuration(
-                                attendanceData.workingHoursToday || 0
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Hours This Week */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="flex items-center space-x-3">
-                          <CalendarDaysIcon className="h-8 w-8 text-blue-600" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Deze Week
-                            </p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">
-                              {formatDuration(
-                                attendanceData.workingHoursWeek || 0
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Absent Days */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="flex items-center space-x-3">
-                          <ExclamationTriangleIcon className="h-8 w-8 text-red-600" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Afwezig Dagen
-                            </p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">
-                              {attendanceData.absentDays || 0}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Compensation Balance */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="flex items-center space-x-3">
-                          <ClockIcon className="h-8 w-8 text-purple-600" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Tijd voor Tijd
-                            </p>
-                            <p
-                              className={`text-lg font-bold ${
-                                (attendanceData.leaveBalance?.compensationTime
-                                  ?.available || 0) > 0
-                                  ? "text-green-600 dark:text-green-400"
-                                  : "text-gray-600 dark:text-gray-400"
-                              }`}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowAccrualDetailsModal(true)}
+                              className="w-full"
+                              leftIcon={
+                                <DocumentChartBarIcon className="h-4 w-4" />
+                              }
                             >
-                              {formatDuration(
-                                attendanceData.leaveBalance?.compensationTime
-                                  ?.available || 0
-                              )}
+                              Maandelijks Detail
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Geen data beschikbaar
                             </p>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Verlof Saldo Section */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                              Verlof Saldo & Balansen
-                            </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                              Overzicht van vakantiedagen, ziektedagen en
-                              compensatie uren
-                            </p>
-                          </div>
-                          {/* Admin Edit Button */}
-                          <div className="flex items-center space-x-3">
-                            {/* Debug info - remove after testing */}
-                            <div className="text-xs text-gray-500">
-                              Role: {session?.user?.role || "No role"}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Modal: {showLeaveBalanceModal ? "OPEN" : "CLOSED"}
-                            </div>
-                            {session?.user?.role === "ADMIN" ||
-                            session?.user?.role === "MANAGER" ? (
-                              <>
-                                <select
-                                  value={selectedLeaveYear}
-                                  onChange={(e) => {
-                                    setSelectedLeaveYear(
-                                      parseInt(e.target.value)
-                                    );
-                                    fetchLeaveBalance(
-                                      employee.id,
-                                      parseInt(e.target.value)
-                                    );
-                                  }}
-                                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                                >
-                                  {Array.from({ length: 5 }, (_, i) => {
-                                    const year =
-                                      new Date().getFullYear() - 2 + i;
-                                    return (
-                                      <option key={year} value={year}>
-                                        {year}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => {
-                                    console.log(
-                                      "Saldo Bewerken button clicked!"
-                                    );
-                                    console.log("Employee ID:", employee.id);
-                                    console.log(
-                                      "Selected year:",
-                                      selectedLeaveYear
-                                    );
-                                    try {
-                                      fetchLeaveBalance(
-                                        employee.id,
-                                        selectedLeaveYear
-                                      );
-                                      setShowLeaveBalanceModal(true);
-                                      console.log("Modal should be opening...");
-                                    } catch (error) {
-                                      console.error(
-                                        "Error opening modal:",
-                                        error
-                                      );
-                                      alert("Error opening modal: " + error);
-                                    }
-                                  }}
-                                  disabled={leaveBalanceLoading}
-                                  leftIcon={<PencilIcon className="h-4 w-4" />}
-                                >
-                                  Saldo Bewerken
-                                </Button>
-                                {/* Debug Test Button */}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    console.log("Direct modal open test");
-                                    setShowLeaveBalanceModal(true);
-                                  }}
-                                >
-                                  Test Modal
-                                </Button>
-                              </>
-                            ) : (
-                              <div className="text-xs text-red-500">
-                                Geen ADMIN/MANAGER rechten
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          {/* Vakantiedagen */}
-                          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center space-x-3">
-                                <CalendarDaysIcon className="h-6 w-6 text-green-600" />
-                                <div>
-                                  <h5 className="font-medium text-green-900 dark:text-green-100">
-                                    Vakantiedagen
-                                  </h5>
-                                  <p className="text-sm text-green-700 dark:text-green-300">
-                                    {new Date().getFullYear()}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                                  {attendanceData.leaveBalance?.vacationDays
-                                    ?.remaining || 0}
-                                </div>
-                                <div className="text-sm text-green-700 dark:text-green-300">
-                                  van{" "}
-                                  {attendanceData.leaveBalance?.vacationDays
-                                    ?.entitled || 25}{" "}
-                                  dagen
-                                </div>
-                              </div>
-                            </div>
-                            <div className="mt-3">
-                              <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
-                                <div
-                                  className="bg-green-600 h-2 rounded-full"
-                                  style={{
-                                    width: `${Math.min(
-                                      100,
-                                      ((attendanceData.leaveBalance
-                                        ?.vacationDays?.remaining || 0) /
-                                        (attendanceData.leaveBalance
-                                          ?.vacationDays?.entitled || 25)) *
-                                        100
-                                    )}%`,
-                                  }}
-                                ></div>
-                              </div>
-                              <div className="flex justify-between text-xs text-green-700 dark:text-green-300 mt-1">
-                                <span>
-                                  Gebruikt:{" "}
-                                  {attendanceData.leaveBalance?.vacationDays
-                                    ?.used || 0}
-                                </span>
-                                <span>
-                                  Resterend:{" "}
-                                  {attendanceData.leaveBalance?.vacationDays
-                                    ?.remaining || 0}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Ziektedagen */}
-                          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center space-x-3">
-                                <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
-                                <div>
-                                  <h5 className="font-medium text-red-900 dark:text-red-100">
-                                    Ziektedagen
-                                  </h5>
-                                  <p className="text-sm text-red-700 dark:text-red-300">
-                                    Dit jaar
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-red-900 dark:text-red-100">
-                                  {attendanceData.leaveBalance?.sickDays
-                                    ?.used || 0}
-                                </div>
-                                <div className="text-sm text-red-700 dark:text-red-300">
-                                  dagen gebruikt
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Compensatie Tijd */}
-                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center space-x-3">
-                                <ClockIcon className="h-6 w-6 text-purple-600" />
-                                <div>
-                                  <h5 className="font-medium text-purple-900 dark:text-purple-100">
-                                    Compensatie Tijd
-                                  </h5>
-                                  <p className="text-sm text-purple-700 dark:text-purple-300">
-                                    Beschikbaar
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xl font-bold text-purple-900 dark:text-purple-100">
-                                  {formatDuration(
-                                    attendanceData.leaveBalance
-                                      ?.compensationTime?.available || 0
-                                  )}
-                                </div>
-                                <div className="text-sm text-purple-700 dark:text-purple-300">
-                                  tijd voor tijd
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-xs text-purple-700 dark:text-purple-300">
-                              <div className="flex justify-between">
-                                <span>
-                                  Gebruikt:{" "}
-                                  {formatDuration(
-                                    attendanceData.leaveBalance
-                                      ?.compensationTime?.used || 0
-                                  )}
-                                </span>
-                                <span>
-                                  In behandeling:{" "}
-                                  {formatDuration(
-                                    attendanceData.leaveBalance
-                                      ?.compensationTime?.pending || 0
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Admin: Verlof Saldo Beheer - Only show for admins/managers */}
-                    {(session?.user?.role === "ADMIN" ||
-                      session?.user?.role === "MANAGER") && (
-                      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                                Verlof Saldo Beheer
-                              </h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                Bewerk verlof saldo&apos;s en balansen voor{" "}
-                                {employee.name}
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <select
-                                value={selectedLeaveYear}
-                                onChange={(e) => {
-                                  setSelectedLeaveYear(
-                                    parseInt(e.target.value)
-                                  );
-                                  fetchLeaveBalance(
-                                    employee.id,
-                                    parseInt(e.target.value)
-                                  );
-                                }}
-                                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                              >
-                                {Array.from({ length: 5 }, (_, i) => {
-                                  const year = new Date().getFullYear() - 2 + i;
-                                  return (
-                                    <option key={year} value={year}>
-                                      {year}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => {
-                                  fetchLeaveBalance(
-                                    employee.id,
-                                    selectedLeaveYear
-                                  );
-                                  setShowLeaveBalanceModal(true);
-                                }}
-                                disabled={leaveBalanceLoading}
-                                leftIcon={<PencilIcon className="h-4 w-4" />}
-                              >
-                                Saldo Bewerken
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-6">
-                          {leaveBalanceLoading ? (
-                            <div className="text-center py-4">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                              <p className="mt-2 text-gray-500 dark:text-gray-400">
-                                Verlof saldo laden...
-                              </p>
-                            </div>
-                          ) : leaveBalance ? (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                                <div className="text-center">
-                                  <CalendarDaysIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                                  <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                                    {leaveBalance.vacationDaysRemaining}
-                                  </div>
-                                  <div className="text-sm text-green-700 dark:text-green-300">
-                                    van {leaveBalance.vacationDaysTotal}{" "}
-                                    vakantiedagen
-                                  </div>
-                                  <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                    {leaveBalance.vacationDaysUsed} gebruikt
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
-                                <div className="text-center">
-                                  <ExclamationTriangleIcon className="h-8 w-8 text-red-600 mx-auto mb-2" />
-                                  <div className="text-2xl font-bold text-red-900 dark:text-red-100">
-                                    {leaveBalance.sickDaysUsed}
-                                  </div>
-                                  <div className="text-sm text-red-700 dark:text-red-300">
-                                    ziektedagen gebruikt
-                                  </div>
-                                  <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                                    {leaveBalance.specialLeaveUsed} bijzonder
-                                    verlof
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                                <div className="text-center">
-                                  <ClockIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                                  <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                                    {formatDuration(
-                                      leaveBalance.compensationHours -
-                                        leaveBalance.compensationUsed
-                                    )}
-                                  </div>
-                                  <div className="text-sm text-purple-700 dark:text-purple-300">
-                                    compensatie tijd
-                                  </div>
-                                  <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                                    {formatDuration(
-                                      leaveBalance.compensationUsed
-                                    )}{" "}
-                                    gebruikt
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-center py-4">
-                              <CalendarDaysIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                                Geen verlof saldo gevonden voor{" "}
-                                {selectedLeaveYear}
-                              </p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowLeaveBalanceModal(true)}
-                              >
-                                Saldo Instellen
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Totalen per Periode */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                          Uren Overzicht per Periode
+                  {/* Section 2: Leave Balance */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
+                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
+                          <CalendarDaysIcon className="h-5 w-5 mr-2 text-green-500" />
+                          Verlofbalans {selectedLeaveYear}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Gewerkte uren, overwerk en compensatie per
-                          tijdsperiode
-                        </p>
                       </div>
-                      <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          {/* Deze Week */}
-                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                            <h6 className="font-medium text-blue-900 dark:text-blue-100 mb-3">
-                              Deze Week
-                            </h6>
+                      <div className="p-4">
+                        {leaveBalanceLoading ? (
+                          <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                              Laden...
+                            </p>
+                          </div>
+                        ) : leaveBalance ? (
+                          <div className="space-y-4">
                             <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-sm text-blue-700 dark:text-blue-300">
-                                  Reguliere uren:
+                              <div className="flex justify-between items-center p-2 bg-green-50 dark:bg-green-900/20 rounded">
+                                <span className="text-sm text-green-600 dark:text-green-400">
+                                  Vakantiedagen Totaal
                                 </span>
-                                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentWeek
-                                      ?.regularHours || 0
-                                  )}
+                                <span className="font-medium text-green-700 dark:text-green-300">
+                                  {leaveBalance.vacationDaysTotal}
                                 </span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-blue-700 dark:text-blue-300">
-                                  Overwerk:
+                              <div className="flex justify-between items-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                <span className="text-sm text-blue-600 dark:text-blue-400">
+                                  Gebruikt
                                 </span>
-                                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentWeek
-                                      ?.overtimeHours || 0
-                                  )}
+                                <span className="font-medium text-blue-700 dark:text-blue-300">
+                                  {leaveBalance.vacationDaysUsed}
                                 </span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-blue-700 dark:text-blue-300">
-                                  Compensatie:
+                              <div className="flex justify-between items-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                <span className="text-sm text-purple-600 dark:text-purple-400">
+                                  Resterend
                                 </span>
-                                <span className="text-sm font-medium text-green-600">
-                                  +
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentWeek
-                                      ?.compensationEarned || 0
-                                  )}
+                                <span className="font-medium text-purple-700 dark:text-purple-300">
+                                  {leaveBalance.vacationDaysTotal -
+                                    leaveBalance.vacationDaysUsed}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                                <span className="text-sm text-red-600 dark:text-red-400">
+                                  Ziektedagen (Reg.)
+                                </span>
+                                <span className="font-medium text-red-700 dark:text-red-300">
+                                  {leaveBalance.sickDaysUsed}
                                 </span>
                               </div>
                             </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowLeaveBalanceModal(true)}
+                              className="w-full"
+                              leftIcon={
+                                <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                              }
+                            >
+                              Balans Aanpassen
+                            </Button>
                           </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <CalendarDaysIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Geen verlofbalans gevonden
+                            </p>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => setShowLeaveBalanceModal(true)}
+                              className="mt-2"
+                              leftIcon={
+                                <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                              }
+                            >
+                              Aanmaken
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-                          {/* Deze Maand */}
-                          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                            <h6 className="font-medium text-green-900 dark:text-green-100 mb-3">
+                  {/* Section 3: Attendance Overview */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
+                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
+                          <ClipboardDocumentCheckIcon className="h-5 w-5 mr-2 text-orange-500" />
+                          Aanwezigheid
+                        </h4>
+                      </div>
+                      <div className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
                               Deze Maand
-                            </h6>
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-sm text-green-700 dark:text-green-300">
-                                  Reguliere uren:
-                                </span>
-                                <span className="text-sm font-medium text-green-900 dark:text-green-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentMonth
-                                      ?.regularHours || 0
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-green-700 dark:text-green-300">
-                                  Overwerk:
-                                </span>
-                                <span className="text-sm font-medium text-green-900 dark:text-green-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentMonth
-                                      ?.overtimeHours || 0
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-green-700 dark:text-green-300">
-                                  Compensatie:
-                                </span>
-                                <span className="text-sm font-medium text-green-600">
-                                  +
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentMonth
-                                      ?.compensationEarned || 0
-                                  )}
-                                </span>
-                              </div>
-                            </div>
+                            </span>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {attendanceData.thisMonth?.totalHours?.toFixed(
+                                1
+                              ) || "0"}
+                              u
+                            </span>
                           </div>
-
-                          {/* Vorige Maand */}
-                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                            <h6 className="font-medium text-purple-900 dark:text-purple-100 mb-3">
-                              Vorige Maand
-                            </h6>
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-sm text-purple-700 dark:text-purple-300">
-                                  Reguliere uren:
-                                </span>
-                                <span className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.lastMonth
-                                      ?.regularHours || 0
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-purple-700 dark:text-purple-300">
-                                  Overwerk:
-                                </span>
-                                <span className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.lastMonth
-                                      ?.overtimeHours || 0
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-purple-700 dark:text-purple-300">
-                                  Compensatie:
-                                </span>
-                                <span className="text-sm font-medium text-green-600">
-                                  +
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.lastMonth
-                                      ?.compensationEarned || 0
-                                  )}
-                                </span>
-                              </div>
-                            </div>
+                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Deze Week
+                            </span>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {attendanceData.thisWeek?.totalHours?.toFixed(
+                                1
+                              ) || "0"}
+                              u
+                            </span>
                           </div>
-
-                          {/* Dit Jaar */}
-                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
-                            <h6 className="font-medium text-orange-900 dark:text-orange-100 mb-3">
-                              Dit Jaar
-                            </h6>
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-sm text-orange-700 dark:text-orange-300">
-                                  Reguliere uren:
-                                </span>
-                                <span className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentYear
-                                      ?.regularHours || 0
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-orange-700 dark:text-orange-300">
-                                  Overwerk:
-                                </span>
-                                <span className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentYear
-                                      ?.overtimeHours || 0
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm text-orange-700 dark:text-orange-300">
-                                  Compensatie:
-                                </span>
-                                <span className="text-sm font-medium text-green-600">
-                                  +
-                                  {formatDuration(
-                                    attendanceData.periodTotals?.currentYear
-                                      ?.compensationEarned || 0
-                                  )}
-                                </span>
-                              </div>
-                            </div>
+                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Compensatie Uren
+                            </span>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {compensationData.currentBalance?.toFixed(1) ||
+                                "0"}
+                              u
+                            </span>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Recente Tijdregistraties */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                          Recente Tijdregistraties
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Overzicht van recente in- en uitkloktijden
-                        </p>
-                      </div>
-                      <div className="p-6">
-                        {attendanceData.recentEntries &&
-                        attendanceData.recentEntries.length > 0 ? (
-                          <div className="space-y-3">
-                            {attendanceData.recentEntries
-                              .slice(0, 10)
-                              .map((entry: any, index: number) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                  <div className="flex items-center space-x-4">
-                                    <div
-                                      className={`h-3 w-3 rounded-full ${
-                                        entry.endTime
-                                          ? "bg-green-500"
-                                          : "bg-blue-500"
-                                      }`}
-                                    />
-                                    <div>
-                                      <p className="font-medium text-gray-900 dark:text-white">
-                                        {new Date(
-                                          entry.date
-                                        ).toLocaleDateString("nl-NL", {
-                                          weekday: "long",
-                                          year: "numeric",
-                                          month: "long",
-                                          day: "numeric",
-                                        })}
-                                      </p>
-                                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {entry.startTime}{" "}
-                                        {entry.endTime
-                                          ? `- ${entry.endTime}`
-                                          : "(nog actief)"}
-                                        {entry.isOvertime && (
-                                          <span className="ml-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                                            Overwerk
-                                          </span>
-                                        )}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="font-medium text-gray-900 dark:text-white">
-                                      {formatDuration(entry.totalHours || 0)}
-                                    </p>
-                                    {entry.workType && (
-                                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {entry.workType}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-6">
-                            <ClockIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Geen recente tijdregistraties
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Verlofaanvragen */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                          Verlofaanvragen
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Overzicht van vakantie, ziekte en compensatie verlof
-                        </p>
-                      </div>
-                      <div className="p-6">
-                        {attendanceData.leaveRequests &&
-                        attendanceData.leaveRequests.length > 0 ? (
-                          <div className="space-y-3">
-                            {attendanceData.leaveRequests.map(
-                              (leave: any, index: number) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                  <div className="flex items-center space-x-4">
-                                    <div
-                                      className={`h-3 w-3 rounded-full ${
-                                        leave.type === "VACATION"
-                                          ? "bg-green-500"
-                                          : leave.type === "SICK"
-                                          ? "bg-red-500"
-                                          : leave.type === "COMPENSATION"
-                                          ? "bg-purple-500"
-                                          : "bg-gray-500"
-                                      }`}
-                                    />
-                                    <div>
-                                      <p className="font-medium text-gray-900 dark:text-white">
-                                        {leave.type === "VACATION"
-                                          ? "Vakantie"
-                                          : leave.type === "SICK"
-                                          ? "Ziekte"
-                                          : leave.type === "COMPENSATION"
-                                          ? "Compensatie verlof"
-                                          : leave.type}
-                                      </p>
-                                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {new Date(
-                                          leave.startDate
-                                        ).toLocaleDateString("nl-NL")}
-                                        {leave.endDate &&
-                                          leave.endDate !== leave.startDate &&
-                                          ` - ${new Date(
-                                            leave.endDate
-                                          ).toLocaleDateString("nl-NL")}`}
-                                        {leave.reason && (
-                                          <span className="ml-2 text-gray-400">
-                                            • {leave.reason}
-                                          </span>
-                                        )}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="font-medium text-gray-900 dark:text-white">
-                                      {leave.duration
-                                        ? formatDuration(leave.duration)
-                                        : "1 dag"}
-                                    </p>
-                                    <span
-                                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                        leave.status === "APPROVED"
-                                          ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200"
-                                          : leave.status === "PENDING"
-                                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200"
-                                          : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200"
-                                      }`}
-                                    >
-                                      {leave.status === "APPROVED"
-                                        ? "Goedgekeurd"
-                                        : leave.status === "PENDING"
-                                        ? "In behandeling"
-                                        : "Afgewezen"}
-                                    </span>
-                                  </div>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center py-6">
-                            <CalendarDaysIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Geen verlofaanvragen in deze periode
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium text-gray-900 dark:text-white">
-                            Aanwezigheid en Verlof Beheer
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Beheer verlofaanvragen, pas verlof saldo&apos;s aan
-                            en bekijk gedetailleerde rapporten voor{" "}
-                            {employee.name.split(" ")[0]}
-                          </p>
-                        </div>
-                        <div className="flex space-x-3">
                           <Button
                             variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              fetchAttendanceData(employee.id);
-                              fetchCompensationData(employee.id);
-                            }}
-                          >
-                            Vernieuwen
-                          </Button>
-                          <Button
-                            variant="primary"
                             size="sm"
                             onClick={() =>
                               window.open(`/dashboard/time-tracking`, "_blank")
                             }
+                            className="w-full"
+                            leftIcon={<ClockIcon className="h-4 w-4" />}
                           >
-                            Volledig Rapport
+                            Tijdregistratie
                           </Button>
                         </div>
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <ClipboardDocumentCheckIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      Geen aanwezigheidsgegevens
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                      Er zijn nog geen aanwezigheidsgegevens beschikbaar voor
-                      deze medewerker.
-                    </p>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => {
-                        fetchAttendanceData(employee.id);
-                        fetchCompensationData(employee.id);
-                      }}
-                    >
-                      Gegevens Laden
-                    </Button>
                   </div>
-                )}
+                </div>
+
+                {/* Combined Details Section */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white">
+                      Gedetailleerd Overzicht
+                    </h4>
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Recent Activity */}
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                          Recente Activiteit
+                        </h5>
+                        <div className="space-y-2">
+                          {attendanceData.recentEntries
+                            ?.slice(0, 5)
+                            .map((entry: any, index: number) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {new Date(entry.date).toLocaleDateString(
+                                    "nl-NL"
+                                  )}
+                                </span>
+                                <span className="font-medium">
+                                  {entry.hours?.toFixed(1)}u
+                                </span>
+                              </div>
+                            ))}
+                          {(!attendanceData.recentEntries ||
+                            attendanceData.recentEntries.length === 0) && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                              Geen recente tijdregistraties gevonden
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Leave Requests Status */}
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                          Verlofaanvragen Status
+                        </h5>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded text-sm">
+                            <span className="text-green-600 dark:text-green-400">
+                              Goedgekeurd
+                            </span>
+                            <span className="font-medium">-</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-sm">
+                            <span className="text-yellow-600 dark:text-yellow-400">
+                              In Behandeling
+                            </span>
+                            <span className="font-medium">-</span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            💡 Verlofaanvragen kunnen worden ingediend via het
+                            verlofpanel
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    variant="primary"
+                    onClick={() =>
+                      window.open("/dashboard/leave-requests/new", "_blank")
+                    }
+                    leftIcon={<CalendarDaysIcon className="h-4 w-4" />}
+                  >
+                    Verlof Aanvragen
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      window.open("/dashboard/time-tracking", "_blank")
+                    }
+                    leftIcon={<ClockIcon className="h-4 w-4" />}
+                  >
+                    Tijdregistratie
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowLeaveBalanceModal(true)}
+                    leftIcon={<AdjustmentsHorizontalIcon className="h-4 w-4" />}
+                  >
+                    Balans Aanpassen
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -3522,69 +2609,6 @@ export default function EditEmployeeTabs() {
           </div>
         </div>
       </Modal>
-
-      {/* 🎯 GROTE ZICHTBARE VERLOF SALDO INSTELLING */}
-      {(session?.user?.role === "ADMIN" ||
-        session?.user?.role === "MANAGER") && (
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-8 shadow-xl border-4 border-yellow-300">
-          <div className="text-center">
-            <h3 className="text-3xl font-black mb-4">
-              🎯 VERLOF SALDO INSTELLEN
-            </h3>
-            <p className="text-blue-100 mb-6 text-xl font-semibold">
-              Hier kun je het startsaldo voor {employee.name} instellen!
-            </p>
-            <div className="bg-white/20 rounded-lg p-4 mb-6">
-              <p className="text-yellow-200 font-bold mb-2">
-                ⚡ BELANGRIJK: Hier vul je saldo&apos;s in!
-              </p>
-              <p className="text-blue-100 text-sm">
-                Voor het opzetten van CrewFlow kun je hier bestaande
-                saldo&apos;s van vorig jaar invoeren
-              </p>
-            </div>
-            <div className="flex items-center justify-center space-x-6 mb-6">
-              <div className="bg-white rounded-lg p-3">
-                <label className="block text-blue-900 font-bold mb-2">
-                  JAAR SELECTEREN:
-                </label>
-                <select
-                  value={selectedLeaveYear}
-                  onChange={(e) => {
-                    setSelectedLeaveYear(parseInt(e.target.value));
-                    fetchLeaveBalance(employee.id, parseInt(e.target.value));
-                  }}
-                  className="px-4 py-3 border-2 border-blue-600 rounded-lg bg-white text-blue-900 font-bold text-xl"
-                >
-                  {Array.from({ length: 5 }, (_, i) => {
-                    const year = new Date().getFullYear() - 2 + i;
-                    return (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => {
-                  console.log("🎯 GROTE SALDO KNOP CLICKED!");
-                  setShowLeaveBalanceModal(true);
-                }}
-                className="px-12 py-6 text-2xl font-black bg-yellow-400 text-blue-900 hover:bg-yellow-300 border-4 border-yellow-500 shadow-lg transform hover:scale-105 transition-all"
-              >
-                🔧 SALDO BEWERKEN
-              </Button>
-            </div>
-            <div className="bg-yellow-400 text-blue-900 rounded-lg p-3 font-bold">
-              👆 Klik op de gele knop hierboven om vakantiedagen, ziektedagen en
-              compensatie tijd in te stellen
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

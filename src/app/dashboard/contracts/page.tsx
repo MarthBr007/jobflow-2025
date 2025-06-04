@@ -18,6 +18,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   UserIcon,
+  CalculatorIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -59,6 +60,8 @@ interface Contract {
     name: string;
     email: string;
   };
+  contractHoursPerWeek?: string;
+  vacationHoursPerYear?: string;
 }
 
 const contractTypeLabels: Record<string, string> = {
@@ -136,13 +139,25 @@ export default function ContractsPage() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [formData, setFormData] = useState({
-    contractType: "PERMANENT_FULL_TIME",
-    title: "",
-    description: "",
+    contractType: template === "advanced" ? "FREELANCE" : "PERMANENT_FULL_TIME",
+    title:
+      template === "basic"
+        ? `Arbeidsovereenkomst ${userName || "Nieuwe Medewerker"}`
+        : template === "advanced"
+        ? `Uitgebreide Overeenkomst ${userName || "Nieuwe Medewerker"}`
+        : "",
+    description:
+      template === "basic"
+        ? "Standaard arbeidsovereenkomst voor werkzaamheden"
+        : template === "advanced"
+        ? "Uitgebreide overeenkomst met specifieke voorwaarden"
+        : "",
     startDate: "",
     endDate: "",
     status: "DRAFT",
     salary: "",
+    contractHoursPerWeek: "",
+    vacationHoursPerYear: "",
     notes: "",
     signedDate: "",
     firstName: "",
@@ -154,7 +169,7 @@ export default function ContractsPage() {
     kvkNumber: "",
     btwNumber: "",
     expenseAllowance: "",
-    file: null as File | null,
+    file: null,
   });
 
   // Electronic signature functionality states
@@ -251,6 +266,8 @@ export default function ContractsPage() {
       endDate: "",
       status: "DRAFT",
       salary: "",
+      contractHoursPerWeek: "",
+      vacationHoursPerYear: "",
       notes: "",
       signedDate: "",
       firstName: "",
@@ -264,6 +281,45 @@ export default function ContractsPage() {
       expenseAllowance: "",
       file: null,
     });
+  };
+
+  // Calculate vacation hours based on contract hours and type
+  const calculateVacationHours = (
+    contractHours: string,
+    contractType: string
+  ): string => {
+    const hours = parseFloat(contractHours);
+    if (isNaN(hours) || hours <= 0) return "";
+
+    // Only calculate for permanent employees, not freelancers or zero hours
+    if (contractType === "FREELANCE" || contractType === "ZERO_HOURS") {
+      return "0"; // Freelancers don't accrue vacation
+    }
+
+    // Standard formula: 4 × contract hours per week = annual vacation hours
+    const vacationHours = hours * 4;
+    return vacationHours.toString();
+  };
+
+  // Handle contract hours change and auto-calculate vacation hours
+  const handleContractHoursChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      contractHoursPerWeek: value,
+      vacationHoursPerYear: calculateVacationHours(value, prev.contractType),
+    }));
+  };
+
+  // Handle contract type change and recalculate vacation hours
+  const handleContractTypeChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      contractType: value,
+      vacationHoursPerYear: calculateVacationHours(
+        prev.contractHoursPerWeek,
+        value
+      ),
+    }));
   };
 
   const handleAddContract = () => {
@@ -281,6 +337,8 @@ export default function ContractsPage() {
       endDate: contract.endDate ? contract.endDate.split("T")[0] : "",
       status: contract.status,
       salary: contract.salary || "",
+      contractHoursPerWeek: contract.contractHoursPerWeek?.toString() || "",
+      vacationHoursPerYear: contract.vacationHoursPerYear?.toString() || "",
       notes: contract.notes || "",
       signedDate: contract.signedDate ? contract.signedDate.split("T")[0] : "",
       firstName: "",
@@ -312,6 +370,12 @@ export default function ContractsPage() {
         endDate: formData.endDate || null,
         status: formData.status,
         salary: formData.salary,
+        contractHoursPerWeek: formData.contractHoursPerWeek
+          ? parseFloat(formData.contractHoursPerWeek)
+          : null,
+        vacationHoursPerYear: formData.vacationHoursPerYear
+          ? parseFloat(formData.vacationHoursPerYear)
+          : null,
         notes: formData.notes,
         signedDate: formData.signedDate || null,
       };
@@ -767,9 +831,7 @@ export default function ContractsPage() {
                   </label>
                   <select
                     value={formData.contractType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, contractType: e.target.value })
-                    }
+                    onChange={(e) => handleContractTypeChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
@@ -1019,6 +1081,7 @@ export default function ContractsPage() {
                 Financiële Gegevens
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Salary Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {formData.contractType === "ZERO_HOURS"
@@ -1043,6 +1106,63 @@ export default function ContractsPage() {
                     }
                   />
                 </div>
+
+                {/* Contract Hours Field - Only for non-freelancers */}
+                {formData.contractType !== "FREELANCE" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Contract Uren per Week
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="80"
+                      value={formData.contractHoursPerWeek}
+                      onChange={(e) =>
+                        handleContractHoursChange(e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="40"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Voor automatische vakantieuren berekening
+                    </p>
+                  </div>
+                )}
+
+                {/* Vacation Hours Field - Only for non-freelancers */}
+                {formData.contractType !== "FREELANCE" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Vakantieuren per Jaar
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={formData.vacationHoursPerYear}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          vacationHoursPerYear: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="160"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {formData.contractHoursPerWeek
+                        ? `Automatisch berekend: ${calculateVacationHours(
+                            formData.contractHoursPerWeek,
+                            formData.contractType
+                          )} uur`
+                        : "Vul contract uren in voor automatische berekening"}
+                    </p>
+                  </div>
+                )}
+
+                {/* Expense Allowance Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Onkostenvergoeding (optioneel)
@@ -1060,6 +1180,8 @@ export default function ContractsPage() {
                     placeholder="€ 0,19 per km (reiskosten)"
                   />
                 </div>
+
+                {/* Signed Date Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Ondertekend op (optioneel)
@@ -1074,6 +1196,50 @@ export default function ContractsPage() {
                   />
                 </div>
               </div>
+
+              {/* Freelancer Information Box */}
+              {formData.contractType === "FREELANCE" && (
+                <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h5 className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                        Freelancer Vakantieuren
+                      </h5>
+                      <p className="text-sm text-orange-800 dark:text-orange-200 mt-1">
+                        Freelancers bouwen geen vakantieuren op. Vakantie wordt
+                        ingecalculeerd in het uurtarief conform Wet DBA
+                        regelgeving.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Contract Hours Information Box */}
+              {formData.contractType !== "FREELANCE" &&
+                formData.contractHoursPerWeek && (
+                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <CalculatorIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h5 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                          Automatische Vakantieuren Berekening
+                        </h5>
+                        <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                          Op basis van {formData.contractHoursPerWeek} uur per
+                          week worden automatisch{" "}
+                          {calculateVacationHours(
+                            formData.contractHoursPerWeek,
+                            formData.contractType
+                          )}{" "}
+                          vakantieuren per jaar berekend (4 × contract uren per
+                          week).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
 
             {/* Notes Section */}
