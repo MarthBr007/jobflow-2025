@@ -1,8 +1,8 @@
 {
-  "name": "crewflow-2025",
-  "version": "0.1.0",
+  "name": "crewflow",
+  "version": "1.0.0",
   "private": true,
-  "description": "CrewFlow 2025 - Employee Management System with PDF and Email functionality",
+  "description": "CrewFlow - Modern Employee Management System with comprehensive HR features",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
