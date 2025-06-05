@@ -218,11 +218,12 @@ const Toast = ({
 };
 
 export default function EditEmployeeTabs() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { ConfirmModal, confirm } = useConfirm();
 
   // Existing state
@@ -303,6 +304,37 @@ export default function EditEmployeeTabs() {
     message: "",
     type: "info" as "success" | "error" | "info",
   });
+
+  // Check authentication first
+  useEffect(() => {
+    if (status === "loading") return; // Still loading
+
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
+      return;
+    }
+
+    if (!session?.user) {
+      setError("Geen geldige sessie gevonden");
+      setLoading(false);
+      return;
+    }
+
+    // Check if user has permission to edit personnel
+    if (!["ADMIN", "MANAGER", "HR_MANAGER"].includes(session.user.role || "")) {
+      setError("Geen toegang - alleen beheerders kunnen personeel bewerken");
+      setLoading(false);
+      return;
+    }
+
+    // If we get here, user is authenticated and has permission
+    if (id) {
+      fetchEmployee(id);
+      fetchWorkTypes();
+      fetchWorkPatterns();
+      fetchWorkPatternAssignments(id);
+    }
+  }, [status, session, id, router]);
 
   // Error boundary function
   const handleError = (error: any, context: string) => {
@@ -427,22 +459,65 @@ export default function EditEmployeeTabs() {
 
   const fetchEmployee = async (id: string) => {
     try {
+      setLoading(true);
+      setError(null);
+
       const response = await fetch("/api/personnel");
-      const data = await response.json();
-      if (response.ok) {
-        const foundEmployee = data.find((emp: Employee) => emp.id === id);
-        if (foundEmployee) {
-          setEmployee(foundEmployee);
-        } else {
-          router.push("/dashboard/personnel");
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError("Niet geautoriseerd - log opnieuw in");
+          router.push("/auth/login");
+          return;
         }
-      } else {
-        console.error("Error fetching employee:", data.error);
-        router.push("/dashboard/personnel");
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Onverwacht data formaat ontvangen");
+      }
+
+      const foundEmployee = data.find((emp: Employee) => emp.id === id);
+
+      if (!foundEmployee) {
+        setError("Medewerker niet gevonden");
+        setTimeout(() => router.push("/dashboard/personnel"), 2000);
+        return;
+      }
+
+      // Ensure all required fields have default values
+      const processedEmployee = {
+        ...foundEmployee,
+        firstName: foundEmployee.firstName || "",
+        lastName: foundEmployee.lastName || "",
+        name:
+          foundEmployee.name ||
+          `${foundEmployee.firstName || ""} ${
+            foundEmployee.lastName || ""
+          }`.trim(),
+        email: foundEmployee.email || "",
+        phone: foundEmployee.phone || "",
+        role: foundEmployee.role || "EMPLOYEE",
+        company: foundEmployee.company || "",
+        employeeType: foundEmployee.employeeType || "PERMANENT",
+        address: foundEmployee.address || "",
+        workTypes: foundEmployee.workTypes || [],
+        dateOfBirth: foundEmployee.dateOfBirth
+          ? new Date(foundEmployee.dateOfBirth)
+          : null,
+      };
+
+      setEmployee(processedEmployee);
     } catch (error) {
       console.error("Error fetching employee:", error);
-      router.push("/dashboard/personnel");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Onbekende fout bij laden medewerker";
+      setError(errorMessage);
+      handleError(error, "fetchEmployee");
     } finally {
       setLoading(false);
     }
@@ -451,28 +526,48 @@ export default function EditEmployeeTabs() {
   const fetchWorkTypes = async () => {
     try {
       const response = await fetch("/api/work-types");
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch work types`);
+      }
+
       const data = await response.json();
-      if (response.ok) {
+
+      if (Array.isArray(data)) {
         setWorkTypes(data.filter((wt: WorkType) => wt.isActive));
       } else {
-        console.error("Error fetching work types:", data.error);
+        console.warn("Unexpected data format for work types");
+        setWorkTypes([]);
       }
     } catch (error) {
       console.error("Error fetching work types:", error);
+      setWorkTypes([]); // Set empty array on error
+      showToast("Error loading work types", "error");
     }
   };
 
   const fetchWorkPatterns = async () => {
     try {
       const response = await fetch("/api/work-patterns");
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP ${response.status}: Failed to fetch work patterns`
+        );
+      }
+
       const data = await response.json();
-      if (response.ok) {
+
+      if (Array.isArray(data)) {
         setWorkPatterns(data.filter((wp: WorkPattern) => wp.isActive));
       } else {
-        console.error("Error fetching work patterns:", data.error);
+        console.warn("Unexpected data format for work patterns");
+        setWorkPatterns([]);
       }
     } catch (error) {
       console.error("Error fetching work patterns:", error);
+      setWorkPatterns([]); // Set empty array on error
+      showToast("Error loading work patterns", "error");
     }
   };
 
@@ -482,51 +577,74 @@ export default function EditEmployeeTabs() {
       const response = await fetch(`/api/personnel/${userId}/work-patterns`);
 
       console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No assignments found is not an error
+          setWorkPatternAssignments([]);
+          return;
+        }
+        throw new Error(
+          `HTTP ${response.status}: Failed to fetch work patterns`
+        );
+      }
 
       const data = await response.json();
-
       console.log("Raw API response:", data);
 
-      if (response.ok) {
-        // Map the response to match our interface
-        const validAssignments = (data.currentAssignments || [])
-          .map((assignment: any) => ({
-            ...assignment,
-            workPattern: assignment.pattern, // Map pattern to workPattern for consistency
-          }))
-          .filter((assignment: any) => {
-            try {
-              console.log("Processing assignment:", assignment);
-              // Check if workDays exists and is valid
-              if (assignment.workPattern && assignment.workPattern.workDays) {
-                console.log("WorkDays found:", assignment.workPattern.workDays);
-                return Array.isArray(assignment.workPattern.workDays);
-              }
-              return true;
-            } catch (assignmentError) {
-              console.error("Error processing assignment:", assignmentError);
+      // Handle different response formats
+      const assignments =
+        data.currentAssignments || data.assignments || data || [];
+
+      if (!Array.isArray(assignments)) {
+        console.warn("Unexpected data format for work pattern assignments");
+        setWorkPatternAssignments([]);
+        return;
+      }
+
+      // Map and validate the response
+      const validAssignments = assignments
+        .map((assignment: any) => ({
+          ...assignment,
+          workPattern: assignment.pattern || assignment.workPattern, // Handle different property names
+        }))
+        .filter((assignment: any) => {
+          try {
+            // Basic validation
+            if (!assignment.id || !assignment.workPattern) {
+              console.warn("Assignment missing required fields:", assignment);
               return false;
             }
-          });
 
-        console.log("Valid assignments count:", validAssignments.length);
-        setWorkPatternAssignments(validAssignments);
-        console.log("Successfully set work pattern assignments");
-        return;
-      } else {
-        console.error("API response not ok:", data);
-        throw new Error(data.error || "Failed to fetch work patterns");
-      }
+            // Validate workDays if present
+            if (
+              assignment.workPattern.workDays &&
+              !Array.isArray(assignment.workPattern.workDays)
+            ) {
+              console.warn(
+                "Invalid workDays format:",
+                assignment.workPattern.workDays
+              );
+              return false;
+            }
+
+            return true;
+          } catch (assignmentError) {
+            console.error("Error validating assignment:", assignmentError);
+            return false;
+          }
+        });
+
+      console.log("Valid assignments count:", validAssignments.length);
+      setWorkPatternAssignments(validAssignments);
     } catch (error) {
       console.error("Error in fetchWorkPatternAssignments:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      setToast({
-        show: true,
-        message: `Error loading work patterns: ${errorMessage}`,
-        type: "error",
-      });
+      setWorkPatternAssignments([]); // Set empty array instead of keeping loading state
+
+      // Only show toast for actual errors, not missing data
+      if (error instanceof Error && !error.message.includes("404")) {
+        showToast(`Error loading work patterns: ${error.message}`, "error");
+      }
     }
   };
 
@@ -932,19 +1050,87 @@ export default function EditEmployeeTabs() {
     }
   };
 
-  if (loading) {
+  // Loading state - show while checking authentication or loading employee
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-xl text-gray-900 dark:text-white">
+            {status === "loading"
+              ? "Authenticatie controleren..."
+              : "Medewerker laden..."}
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!employee) {
+  // Error state
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-900 dark:text-white">
-          Medewerker niet gevonden
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-red-100 dark:bg-red-900/20 rounded-lg p-6">
+            <ExclamationTriangleIcon className="h-16 w-16 text-red-600 dark:text-red-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-red-900 dark:text-red-100 mb-2">
+              Er is een probleem opgetreden
+            </h2>
+            <p className="text-red-700 dark:text-red-300 mb-4">{error}</p>
+            <div className="space-y-2">
+              <Button
+                variant="primary"
+                onClick={() => window.location.reload()}
+                className="w-full"
+              >
+                Probeer opnieuw
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard/personnel")}
+                className="w-full"
+              >
+                Terug naar Personeel
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Authentication required
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl text-gray-900 dark:text-white mb-4">
+            Inloggen vereist
+          </div>
+          <Button variant="primary" onClick={() => router.push("/auth/login")}>
+            Naar inlogpagina
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Employee not found or not loaded
+  if (!employee || !employee.id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <UserIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <div className="text-xl text-gray-900 dark:text-white">
+            Medewerker niet gevonden
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard/personnel")}
+            className="mt-4"
+          >
+            Terug naar Personeel
+          </Button>
         </div>
       </div>
     );
