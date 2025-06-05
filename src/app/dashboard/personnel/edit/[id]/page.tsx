@@ -2126,400 +2126,505 @@ export default function EditEmployeeTabs() {
             {/* Verlof & Aanwezigheid Tab */}
             {activeTab === "verlof-aanwezigheid" && (
               <div className="space-y-6">
-                {/* Tab Header */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Verlof & Aanwezigheid Overzicht
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      Verlofbalans, vakantie-opbouw en aanwezigheidsoverzicht
-                      voor {employee.name}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <select
-                      value={selectedAccrualYear}
-                      onChange={(e) => {
-                        const year = parseInt(e.target.value);
-                        setSelectedAccrualYear(year);
-                        setSelectedLeaveYear(year);
-                        fetchVacationAccrual(employee.id, year);
-                        fetchLeaveBalance(employee.id, year);
-                      }}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                    >
-                      {Array.from({ length: 3 }, (_, i) => {
-                        const year = new Date().getFullYear() - i;
-                        return (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        calculateVacationAccrual(
-                          employee.id,
-                          selectedAccrualYear
-                        );
-                        fetchLeaveBalance(employee.id, selectedLeaveYear);
-                      }}
-                      disabled={vacationAccrualLoading || leaveBalanceLoading}
-                      leftIcon={<CalculatorIcon className="h-4 w-4" />}
-                    >
-                      {vacationAccrualLoading || leaveBalanceLoading
-                        ? "Berekenen..."
-                        : "Herbereken"}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Three Section Layout: Vacation Accrual, Leave Balance, Attendance */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Section 1: Vacation Accrual */}
-                  <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
-                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
-                          <ClockIcon className="h-5 w-5 mr-2 text-blue-500" />
-                          Vakantie-Opbouw
-                        </h4>
-                      </div>
-                      <div className="p-4">
-                        {vacationAccrualLoading ? (
-                          <div className="text-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                              Berekenen...
+                {(() => {
+                  try {
+                    return (
+                      <>
+                        {/* Tab Header */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                              Verlof & Aanwezigheid Overzicht
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              Verlofbalans, vakantie-opbouw en
+                              aanwezigheidsoverzicht voor{" "}
+                              {employee?.name || "Medewerker"}
                             </p>
                           </div>
-                        ) : employee.employeeType === "FREELANCER" ? (
-                          <div className="text-center py-8">
-                            <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Freelancers bouwen geen vakantie-uren op
-                            </p>
-                          </div>
-                        ) : vacationAccrualData ? (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                                  Contract Uren
-                                </p>
-                                <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                                  {vacationAccrualData.contractHoursPerWeek}u
-                                </p>
-                              </div>
-                              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                                  Gewerkt YTD
-                                </p>
-                                <p className="text-lg font-bold text-green-700 dark:text-green-300">
-                                  {vacationAccrualData.hoursWorkedYTD?.toFixed(
-                                    1
-                                  )}
-                                  u
-                                </p>
-                              </div>
-                              <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                                  Opgebouwd
-                                </p>
-                                <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
-                                  {vacationAccrualData.vacationHoursAccrued?.toFixed(
-                                    1
-                                  )}
-                                  u
-                                </p>
-                              </div>
-                              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                                <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
-                                  Per Uur
-                                </p>
-                                <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
-                                  {(
-                                    (vacationAccrualData.accrualPerHour || 0) *
-                                    100
-                                  ).toFixed(2)}
-                                  %
-                                </p>
-                              </div>
-                            </div>
+                          <div className="flex items-center space-x-3">
+                            <select
+                              value={selectedAccrualYear}
+                              onChange={(e) => {
+                                try {
+                                  const year = parseInt(e.target.value);
+                                  setSelectedAccrualYear(year);
+                                  setSelectedLeaveYear(year);
+                                  if (employee?.id) {
+                                    fetchVacationAccrual(employee.id, year);
+                                    fetchLeaveBalance(employee.id, year);
+                                  }
+                                } catch (yearError) {
+                                  console.error(
+                                    "Error changing year:",
+                                    yearError
+                                  );
+                                  showToast("Error bij wijzigen jaar", "error");
+                                }
+                              }}
+                              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            >
+                              {Array.from({ length: 3 }, (_, i) => {
+                                const year = new Date().getFullYear() - i;
+                                return (
+                                  <option key={year} value={year}>
+                                    {year}
+                                  </option>
+                                );
+                              })}
+                            </select>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setShowAccrualDetailsModal(true)}
-                              className="w-full"
-                              leftIcon={
-                                <DocumentChartBarIcon className="h-4 w-4" />
+                              onClick={() => {
+                                try {
+                                  if (employee?.id) {
+                                    calculateVacationAccrual(
+                                      employee.id,
+                                      selectedAccrualYear
+                                    );
+                                    fetchLeaveBalance(
+                                      employee.id,
+                                      selectedLeaveYear
+                                    );
+                                  }
+                                } catch (recalcError) {
+                                  console.error(
+                                    "Error recalculating:",
+                                    recalcError
+                                  );
+                                  showToast("Error bij herberekenen", "error");
+                                }
+                              }}
+                              disabled={
+                                vacationAccrualLoading || leaveBalanceLoading
                               }
+                              leftIcon={<CalculatorIcon className="h-4 w-4" />}
                             >
-                              Maandelijks Detail
+                              {vacationAccrualLoading || leaveBalanceLoading
+                                ? "Berekenen..."
+                                : "Herbereken"}
                             </Button>
                           </div>
-                        ) : (
-                          <div className="text-center py-8">
-                            <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Geen data beschikbaar
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                        </div>
 
-                  {/* Section 2: Leave Balance */}
-                  <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
-                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
-                          <CalendarDaysIcon className="h-5 w-5 mr-2 text-green-500" />
-                          Verlofbalans {selectedLeaveYear}
-                        </h4>
-                      </div>
-                      <div className="p-4">
-                        {leaveBalanceLoading ? (
-                          <div className="text-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                              Laden...
-                            </p>
-                          </div>
-                        ) : leaveBalance ? (
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center p-2 bg-green-50 dark:bg-green-900/20 rounded">
-                                <span className="text-sm text-green-600 dark:text-green-400">
-                                  Vakantiedagen Totaal
-                                </span>
-                                <span className="font-medium text-green-700 dark:text-green-300">
-                                  {leaveBalance.vacationDaysTotal}
-                                </span>
+                        {/* Three Section Layout: Vacation Accrual, Leave Balance, Attendance */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          {/* Section 1: Vacation Accrual */}
+                          <div className="lg:col-span-1">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
+                              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
+                                  <ClockIcon className="h-5 w-5 mr-2 text-blue-500" />
+                                  Vakantie-Opbouw
+                                </h4>
                               </div>
-                              <div className="flex justify-between items-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                <span className="text-sm text-blue-600 dark:text-blue-400">
-                                  Gebruikt
-                                </span>
-                                <span className="font-medium text-blue-700 dark:text-blue-300">
-                                  {leaveBalance.vacationDaysUsed}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
-                                <span className="text-sm text-purple-600 dark:text-purple-400">
-                                  Resterend
-                                </span>
-                                <span className="font-medium text-purple-700 dark:text-purple-300">
-                                  {leaveBalance.vacationDaysTotal -
-                                    leaveBalance.vacationDaysUsed}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/20 rounded">
-                                <span className="text-sm text-red-600 dark:text-red-400">
-                                  Ziektedagen (Reg.)
-                                </span>
-                                <span className="font-medium text-red-700 dark:text-red-300">
-                                  {leaveBalance.sickDaysUsed}
-                                </span>
+                              <div className="p-4">
+                                {vacationAccrualLoading ? (
+                                  <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                      Berekenen...
+                                    </p>
+                                  </div>
+                                ) : employee.employeeType === "FREELANCER" ? (
+                                  <div className="text-center py-8">
+                                    <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                      Freelancers bouwen geen vakantie-uren op
+                                    </p>
+                                  </div>
+                                ) : vacationAccrualData ? (
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                          Contract Uren
+                                        </p>
+                                        <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                                          {vacationAccrualData.contractHoursPerWeek ||
+                                            0}
+                                          u
+                                        </p>
+                                      </div>
+                                      <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                        <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                          Gewerkt YTD
+                                        </p>
+                                        <p className="text-lg font-bold text-green-700 dark:text-green-300">
+                                          {vacationAccrualData.hoursWorkedYTD?.toFixed(
+                                            1
+                                          ) || 0}
+                                          u
+                                        </p>
+                                      </div>
+                                      <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                        <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                                          Opgebouwd
+                                        </p>
+                                        <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                                          {vacationAccrualData.vacationHoursAccrued?.toFixed(
+                                            1
+                                          ) || 0}
+                                          u
+                                        </p>
+                                      </div>
+                                      <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                                        <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                                          Per Uur
+                                        </p>
+                                        <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                                          {(
+                                            (vacationAccrualData.accrualPerHour ||
+                                              0) * 100
+                                          ).toFixed(2)}
+                                          %
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setShowAccrualDetailsModal(true)
+                                      }
+                                      className="w-full"
+                                      leftIcon={
+                                        <DocumentChartBarIcon className="h-4 w-4" />
+                                      }
+                                    >
+                                      Maandelijks Detail
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-8">
+                                    <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                      Geen data beschikbaar
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowLeaveBalanceModal(true)}
-                              className="w-full"
-                              leftIcon={
-                                <AdjustmentsHorizontalIcon className="h-4 w-4" />
-                              }
-                            >
-                              Balans Aanpassen
-                            </Button>
                           </div>
-                        ) : (
-                          <div className="text-center py-8">
-                            <CalendarDaysIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Geen verlofbalans gevonden
-                            </p>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => setShowLeaveBalanceModal(true)}
-                              className="mt-2"
-                              leftIcon={
-                                <AdjustmentsHorizontalIcon className="h-4 w-4" />
-                              }
-                            >
-                              Aanmaken
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Section 3: Attendance Overview */}
-                  <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
-                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
-                          <ClipboardDocumentCheckIcon className="h-5 w-5 mr-2 text-orange-500" />
-                          Aanwezigheid
-                        </h4>
-                      </div>
-                      <div className="p-4">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              Deze Maand
-                            </span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {attendanceData.thisMonth?.totalHours?.toFixed(
-                                1
-                              ) || "0"}
-                              u
-                            </span>
+                          {/* Section 2: Leave Balance */}
+                          <div className="lg:col-span-1">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
+                              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
+                                  <CalendarDaysIcon className="h-5 w-5 mr-2 text-green-500" />
+                                  Verlofbalans {selectedLeaveYear}
+                                </h4>
+                              </div>
+                              <div className="p-4">
+                                {leaveBalanceLoading ? (
+                                  <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                      Laden...
+                                    </p>
+                                  </div>
+                                ) : leaveBalance ? (
+                                  <div className="space-y-4">
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between items-center p-2 bg-green-50 dark:bg-green-900/20 rounded">
+                                        <span className="text-sm text-green-600 dark:text-green-400">
+                                          Vakantiedagen Totaal
+                                        </span>
+                                        <span className="font-medium text-green-700 dark:text-green-300">
+                                          {leaveBalance.vacationDaysTotal || 0}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                        <span className="text-sm text-blue-600 dark:text-blue-400">
+                                          Gebruikt
+                                        </span>
+                                        <span className="font-medium text-blue-700 dark:text-blue-300">
+                                          {leaveBalance.vacationDaysUsed || 0}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                        <span className="text-sm text-purple-600 dark:text-purple-400">
+                                          Resterend
+                                        </span>
+                                        <span className="font-medium text-purple-700 dark:text-purple-300">
+                                          {(leaveBalance.vacationDaysTotal ||
+                                            0) -
+                                            (leaveBalance.vacationDaysUsed ||
+                                              0)}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                                        <span className="text-sm text-red-600 dark:text-red-400">
+                                          Ziektedagen (Reg.)
+                                        </span>
+                                        <span className="font-medium text-red-700 dark:text-red-300">
+                                          {leaveBalance.sickDaysUsed || 0}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setShowLeaveBalanceModal(true)
+                                      }
+                                      className="w-full"
+                                      leftIcon={
+                                        <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                                      }
+                                    >
+                                      Balans Aanpassen
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-8">
+                                    <CalendarDaysIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                      Geen verlofbalans gevonden
+                                    </p>
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() =>
+                                        setShowLeaveBalanceModal(true)
+                                      }
+                                      className="mt-2"
+                                      leftIcon={
+                                        <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                                      }
+                                    >
+                                      Aanmaken
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              Deze Week
-                            </span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {attendanceData.thisWeek?.totalHours?.toFixed(
-                                1
-                              ) || "0"}
-                              u
-                            </span>
+
+                          {/* Section 3: Attendance Overview */}
+                          <div className="lg:col-span-1">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
+                              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
+                                  <ClipboardDocumentCheckIcon className="h-5 w-5 mr-2 text-orange-500" />
+                                  Aanwezigheid
+                                </h4>
+                              </div>
+                              <div className="p-4">
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                      Deze Maand
+                                    </span>
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                      {attendanceData?.thisMonth?.totalHours?.toFixed(
+                                        1
+                                      ) || "0"}
+                                      u
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                      Deze Week
+                                    </span>
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                      {attendanceData?.thisWeek?.totalHours?.toFixed(
+                                        1
+                                      ) || "0"}
+                                      u
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                      Compensatie Uren
+                                    </span>
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                      {compensationData?.currentBalance?.toFixed(
+                                        1
+                                      ) || "0"}
+                                      u
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      window.open(
+                                        `/dashboard/time-tracking`,
+                                        "_blank"
+                                      )
+                                    }
+                                    className="w-full"
+                                    leftIcon={<ClockIcon className="h-4 w-4" />}
+                                  >
+                                    Tijdregistratie
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              Compensatie Uren
-                            </span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {compensationData.currentBalance?.toFixed(1) ||
-                                "0"}
-                              u
-                            </span>
+                        </div>
+
+                        {/* Combined Details Section */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h4 className="text-md font-medium text-gray-900 dark:text-white">
+                              Gedetailleerd Overzicht
+                            </h4>
                           </div>
+                          <div className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {/* Recent Activity */}
+                              <div>
+                                <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                                  Recente Activiteit
+                                </h5>
+                                <div className="space-y-2">
+                                  {attendanceData?.recentEntries
+                                    ?.slice(0, 5)
+                                    .map((entry: any, index: number) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm"
+                                      >
+                                        <span className="text-gray-600 dark:text-gray-400">
+                                          {entry?.date
+                                            ? new Date(
+                                                entry.date
+                                              ).toLocaleDateString("nl-NL")
+                                            : "Onbekende datum"}
+                                        </span>
+                                        <span className="font-medium">
+                                          {entry?.hours?.toFixed(1) || "0"}u
+                                        </span>
+                                      </div>
+                                    ))}
+                                  {(!attendanceData?.recentEntries ||
+                                    attendanceData.recentEntries.length ===
+                                      0) && (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                                      Geen recente tijdregistraties gevonden
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Leave Requests Status */}
+                              <div>
+                                <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                                  Verlofaanvragen Status
+                                </h5>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded text-sm">
+                                    <span className="text-green-600 dark:text-green-400">
+                                      Goedgekeurd
+                                    </span>
+                                    <span className="font-medium">-</span>
+                                  </div>
+                                  <div className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-sm">
+                                    <span className="text-yellow-600 dark:text-yellow-400">
+                                      In Behandeling
+                                    </span>
+                                    <span className="font-medium">-</span>
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    💡 Verlofaanvragen kunnen worden ingediend
+                                    via het verlofpanel
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="flex flex-wrap gap-3">
+                          <Button
+                            variant="primary"
+                            onClick={() =>
+                              window.open(
+                                "/dashboard/leave-requests/new",
+                                "_blank"
+                              )
+                            }
+                            leftIcon={<CalendarDaysIcon className="h-4 w-4" />}
+                          >
+                            Verlof Aanvragen
+                          </Button>
                           <Button
                             variant="outline"
-                            size="sm"
                             onClick={() =>
-                              window.open(`/dashboard/time-tracking`, "_blank")
+                              window.open("/dashboard/time-tracking", "_blank")
                             }
-                            className="w-full"
                             leftIcon={<ClockIcon className="h-4 w-4" />}
                           >
                             Tijdregistratie
                           </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowLeaveBalanceModal(true)}
+                            leftIcon={
+                              <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                            }
+                          >
+                            Balans Aanpassen
+                          </Button>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Combined Details Section */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h4 className="text-md font-medium text-gray-900 dark:text-white">
-                      Gedetailleerd Overzicht
-                    </h4>
-                  </div>
-                  <div className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Recent Activity */}
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                          Recente Activiteit
-                        </h5>
+                      </>
+                    );
+                  } catch (verlofTabError) {
+                    console.error(
+                      "Error in verlof-aanwezigheid tab:",
+                      verlofTabError
+                    );
+                    return (
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-6">
+                        <ExclamationTriangleIcon className="h-8 w-8 text-red-600 dark:text-red-400 mb-2" />
+                        <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
+                          Error in Verlof & Aanwezigheid Tab
+                        </h3>
+                        <p className="text-red-600 dark:text-red-300 text-sm mb-4">
+                          {verlofTabError instanceof Error
+                            ? verlofTabError.message
+                            : "Onbekende fout in verlof & aanwezigheid tab"}
+                        </p>
                         <div className="space-y-2">
-                          {attendanceData.recentEntries
-                            ?.slice(0, 5)
-                            .map((entry: any, index: number) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {new Date(entry.date).toLocaleDateString(
-                                    "nl-NL"
-                                  )}
-                                </span>
-                                <span className="font-medium">
-                                  {entry.hours?.toFixed(1)}u
-                                </span>
-                              </div>
-                            ))}
-                          {(!attendanceData.recentEntries ||
-                            attendanceData.recentEntries.length === 0) && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                              Geen recente tijdregistraties gevonden
-                            </p>
-                          )}
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              // Reset state and try again
+                              setAttendanceData({
+                                thisMonth: { totalHours: 0 },
+                                thisWeek: { totalHours: 0 },
+                                recentEntries: [],
+                              });
+                              setCompensationData({ currentBalance: 0 });
+                              setVacationAccrualData(null);
+                              setLeaveBalance(null);
+                              setActiveTab("profiel");
+                              setTimeout(
+                                () => setActiveTab("verlof-aanwezigheid"),
+                                100
+                              );
+                            }}
+                            size="sm"
+                          >
+                            Reset & Probeer Opnieuw
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => window.location.reload()}
+                            size="sm"
+                          >
+                            Pagina Herladen
+                          </Button>
                         </div>
                       </div>
-
-                      {/* Leave Requests Status */}
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                          Verlofaanvragen Status
-                        </h5>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded text-sm">
-                            <span className="text-green-600 dark:text-green-400">
-                              Goedgekeurd
-                            </span>
-                            <span className="font-medium">-</span>
-                          </div>
-                          <div className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-sm">
-                            <span className="text-yellow-600 dark:text-yellow-400">
-                              In Behandeling
-                            </span>
-                            <span className="font-medium">-</span>
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            💡 Verlofaanvragen kunnen worden ingediend via het
-                            verlofpanel
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    variant="primary"
-                    onClick={() =>
-                      window.open("/dashboard/leave-requests/new", "_blank")
-                    }
-                    leftIcon={<CalendarDaysIcon className="h-4 w-4" />}
-                  >
-                    Verlof Aanvragen
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      window.open("/dashboard/time-tracking", "_blank")
-                    }
-                    leftIcon={<ClockIcon className="h-4 w-4" />}
-                  >
-                    Tijdregistratie
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowLeaveBalanceModal(true)}
-                    leftIcon={<AdjustmentsHorizontalIcon className="h-4 w-4" />}
-                  >
-                    Balans Aanpassen
-                  </Button>
-                </div>
+                    );
+                  }
+                })()}
               </div>
             )}
           </div>
