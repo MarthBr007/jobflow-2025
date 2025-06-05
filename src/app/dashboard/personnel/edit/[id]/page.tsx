@@ -264,8 +264,14 @@ export default function EditEmployeeTabs() {
   >([]);
   const [showWorkPatternModal, setShowWorkPatternModal] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState("");
-  const [attendanceData, setAttendanceData] = useState<any>(null);
-  const [compensationData, setCompensationData] = useState<any>(null);
+  const [attendanceData, setAttendanceData] = useState<any>({
+    thisMonth: { totalHours: 0 },
+    thisWeek: { totalHours: 0 },
+    recentEntries: [],
+  });
+  const [compensationData, setCompensationData] = useState<any>({
+    currentBalance: 0,
+  });
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [compensationLoading, setCompensationLoading] = useState(false);
   const [selectedAttendancePeriod, setSelectedAttendancePeriod] =
@@ -362,15 +368,33 @@ export default function EditEmployeeTabs() {
       const response = await fetch(
         `/api/personnel/${userId}/compensation?period=current_month`
       );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No compensation data found is not an error
+          setCompensationData(null);
+          return;
+        }
+        throw new Error(
+          `HTTP ${response.status}: Failed to fetch compensation data`
+        );
+      }
+
       const data = await response.json();
 
       if (data.success) {
         setCompensationData(data.data);
       } else {
         console.error("Failed to fetch compensation data:", data.error);
+        setCompensationData(null);
       }
     } catch (error) {
       console.error("Error fetching compensation data:", error);
+      setCompensationData(null);
+      // Only show error for actual errors, not missing data
+      if (error instanceof Error && !error.message.includes("404")) {
+        showToast("Error loading compensation data", "error");
+      }
     } finally {
       setCompensationLoading(false);
     }
@@ -389,15 +413,33 @@ export default function EditEmployeeTabs() {
       const response = await fetch(
         `/api/personnel/${userId}/attendance?period=${selectedAttendancePeriod}`
       );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No attendance data found is not an error
+          setAttendanceData(null);
+          return;
+        }
+        throw new Error(
+          `HTTP ${response.status}: Failed to fetch attendance data`
+        );
+      }
+
       const data = await response.json();
 
       if (data.success) {
         setAttendanceData(data.data);
       } else {
         console.error("Failed to fetch attendance data:", data.error);
+        setAttendanceData(null);
       }
     } catch (error) {
       console.error("Error fetching attendance data:", error);
+      setAttendanceData(null);
+      // Only show error for actual errors, not missing data
+      if (error instanceof Error && !error.message.includes("404")) {
+        showToast("Error loading attendance data", "error");
+      }
     } finally {
       setAttendanceLoading(false);
     }
@@ -935,21 +977,10 @@ export default function EditEmployeeTabs() {
       const response = await fetch(
         `/api/admin/leave-balances?userId=${userId}&year=${year}`
       );
-      const data = await response.json();
-      if (response.ok) {
-        if (data.length > 0) {
-          const balance = data[0];
-          setLeaveBalance(balance);
-          setLeaveBalanceForm({
-            vacationDaysTotal: balance.vacationDaysTotal,
-            vacationDaysUsed: balance.vacationDaysUsed,
-            sickDaysUsed: balance.sickDaysUsed,
-            compensationHours: balance.compensationHours,
-            compensationUsed: balance.compensationUsed,
-            specialLeaveUsed: balance.specialLeaveUsed,
-            notes: balance.notes || "",
-          });
-        } else {
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No leave balance found is not an error
           setLeaveBalance(null);
           setLeaveBalanceForm({
             vacationDaysTotal: 25,
@@ -960,12 +991,55 @@ export default function EditEmployeeTabs() {
             specialLeaveUsed: 0,
             notes: "",
           });
+          return;
         }
+        throw new Error(
+          `HTTP ${response.status}: Failed to fetch leave balance`
+        );
+      }
+
+      const data = await response.json();
+
+      if (Array.isArray(data) && data.length > 0) {
+        const balance = data[0];
+        setLeaveBalance(balance);
+        setLeaveBalanceForm({
+          vacationDaysTotal: balance.vacationDaysTotal || 25,
+          vacationDaysUsed: balance.vacationDaysUsed || 0,
+          sickDaysUsed: balance.sickDaysUsed || 0,
+          compensationHours: balance.compensationHours || 0,
+          compensationUsed: balance.compensationUsed || 0,
+          specialLeaveUsed: balance.specialLeaveUsed || 0,
+          notes: balance.notes || "",
+        });
       } else {
-        console.error("Error fetching leave balance:", data.error);
+        setLeaveBalance(null);
+        setLeaveBalanceForm({
+          vacationDaysTotal: 25,
+          vacationDaysUsed: 0,
+          sickDaysUsed: 0,
+          compensationHours: 0,
+          compensationUsed: 0,
+          specialLeaveUsed: 0,
+          notes: "",
+        });
       }
     } catch (error) {
       console.error("Error fetching leave balance:", error);
+      setLeaveBalance(null);
+      setLeaveBalanceForm({
+        vacationDaysTotal: 25,
+        vacationDaysUsed: 0,
+        sickDaysUsed: 0,
+        compensationHours: 0,
+        compensationUsed: 0,
+        specialLeaveUsed: 0,
+        notes: "",
+      });
+      // Only show error for actual errors, not missing data
+      if (error instanceof Error && !error.message.includes("404")) {
+        showToast("Error loading leave balance", "error");
+      }
     } finally {
       setLeaveBalanceLoading(false);
     }
@@ -978,8 +1052,21 @@ export default function EditEmployeeTabs() {
       const response = await fetch(
         `/api/vacation-accrual/calculate?userId=${userId}&year=${year}`
       );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No vacation accrual data found is not an error
+          setVacationAccrualData(null);
+          return;
+        }
+        throw new Error(
+          `HTTP ${response.status}: Failed to fetch vacation accrual`
+        );
+      }
+
       const data = await response.json();
-      if (response.ok && data.success) {
+
+      if (data.success && data.data) {
         setVacationAccrualData(data.data);
       } else {
         setVacationAccrualData(null);
@@ -987,6 +1074,10 @@ export default function EditEmployeeTabs() {
     } catch (error) {
       console.error("Error fetching vacation accrual:", error);
       setVacationAccrualData(null);
+      // Only show error for actual errors, not missing data
+      if (error instanceof Error && !error.message.includes("404")) {
+        showToast("Error loading vacation accrual", "error");
+      }
     } finally {
       setVacationAccrualLoading(false);
     }
