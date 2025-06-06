@@ -33,6 +33,7 @@ model User {
   contractStartDate      DateTime?
   contractEndDate        DateTime?
   contractStatus         ContractStatus           @default(NONE)
+  contractVersion        Int?                     @default(1)
   contractFileName       String?
   contractFileUrl        String?
   contractNotes          String?

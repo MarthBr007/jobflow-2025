@@ -73,6 +73,16 @@ interface ScheduleAssignment {
   };
 }
 
+const DAYS_OF_WEEK = [
+  { value: 0, shortLabel: "Zo", fullLabel: "Zondag" },
+  { value: 1, shortLabel: "Ma", fullLabel: "Maandag" },
+  { value: 2, shortLabel: "Di", fullLabel: "Dinsdag" },
+  { value: 3, shortLabel: "Wo", fullLabel: "Woensdag" },
+  { value: 4, shortLabel: "Do", fullLabel: "Donderdag" },
+  { value: 5, shortLabel: "Vr", fullLabel: "Vrijdag" },
+  { value: 6, shortLabel: "Za", fullLabel: "Zaterdag" },
+];
+
 export default function ShiftPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -341,22 +351,22 @@ export default function ShiftPage() {
     setBreaks(updatedBreaks);
   };
 
-  const getBreakTypeEmoji = (type: string) => {
+  const getBreakTypeLabel = (type: string) => {
     switch (type) {
       case "morning":
-        return "☕";
+        return "Ochtendpauze";
       case "lunch":
-        return "🍽️";
+        return "Lunch";
       case "afternoon":
-        return "🫖";
+        return "Middagpauze";
       case "break":
-        return "⏸️";
+        return "Pauze";
       case "meeting":
-        return "🤝";
+        return "Overleg";
       case "other":
-        return "📝";
+        return "Anders";
       default:
-        return "⏸️";
+        return "Pauze";
     }
   };
 
@@ -506,7 +516,7 @@ export default function ShiftPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Breadcrumbs */}
         <Breadcrumbs
           items={[
@@ -517,23 +527,23 @@ export default function ShiftPage() {
           className="mb-6"
         />
 
-        {/* Modern Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 px-6 py-8 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+          <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
                   {isEditing ? (
-                    <PencilIcon className="h-6 w-6 text-white" />
+                    <PencilIcon className="h-5 w-5 text-white" />
                   ) : (
-                    <PlusIcon className="h-6 w-6 text-white" />
+                    <PlusIcon className="h-5 w-5 text-white" />
                   )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {isEditing ? "Dienst Bewerken" : "Nieuwe Dienst"}
                   </h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {isEditing
                       ? "Wijzig de details van deze dienst"
                       : `Plan een nieuwe dienst voor ${format(
@@ -550,7 +560,6 @@ export default function ShiftPage() {
                 variant="outline"
                 size="md"
                 leftIcon={<ArrowLeftIcon className="h-4 w-4" />}
-                className="shadow-md hover:shadow-lg transition-all duration-200 font-semibold min-w-[120px]"
               >
                 Terug
               </Button>
@@ -559,29 +568,25 @@ export default function ShiftPage() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Medewerker & Datum Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                  <UserIcon className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Medewerker & Planning
-                </h3>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <UserIcon className="h-5 w-5 mr-2 text-gray-400" />
+                Medewerker & Planning
+              </h2>
             </div>
-            <div className="p-6">
+            <div className="px-6 py-6">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Medewerker <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={shiftData.userId}
                     onChange={(e) => handleUserChange(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all duration-200"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
                     <option value="">Selecteer medewerker</option>
@@ -594,7 +599,7 @@ export default function ShiftPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Datum <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -604,39 +609,35 @@ export default function ShiftPage() {
                       onChange={(e) =>
                         setShiftData({ ...shiftData, date: e.target.value })
                       }
-                      className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all duration-200"
+                      className="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     />
-                    <CalendarIcon className="h-5 w-5 text-gray-400 absolute left-4 top-4" />
+                    <CalendarIcon className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Werkzaamheden Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
-                  <BriefcaseIcon className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Werkzaamheden
-                </h3>
-              </div>
+          {/* Work Details */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <BriefcaseIcon className="h-5 w-5 mr-2 text-gray-400" />
+                Werkzaamheden
+              </h2>
             </div>
-            <div className="p-6">
+            <div className="px-6 py-6">
               {getSelectedUser()?.workTypes &&
               getSelectedUser()!.workTypes!.length > 0 ? (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Functie/Rol <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={workType}
                     onChange={(e) => handleWorkTypeChange(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all duration-200"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
                     <option value="">Selecteer functie</option>
@@ -649,14 +650,12 @@ export default function ShiftPage() {
                 </div>
               ) : getSelectedUser() ? (
                 <div>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-6 mb-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="h-10 w-10 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 rounded-xl flex items-center justify-center border border-amber-200 dark:border-amber-700 shadow-sm flex-shrink-0">
-                        <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                      </div>
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md p-4 mb-4">
+                    <div className="flex items-start space-x-3">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                          <h4 className="text-sm font-medium text-amber-800 dark:text-amber-200">
                             Geen werkzaamheden toegewezen
                           </h4>
                           {getSelectedUser() && (
@@ -672,7 +671,6 @@ export default function ShiftPage() {
                                   "_blank"
                                 );
                               }}
-                              className="text-xs font-semibold"
                             >
                               Werkzaamheden toewijzen
                             </Button>
@@ -687,7 +685,7 @@ export default function ShiftPage() {
                     </div>
                   </div>
 
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Functie/Rol (handmatig invoeren){" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -695,13 +693,13 @@ export default function ShiftPage() {
                     type="text"
                     value={workType}
                     onChange={(e) => handleWorkTypeChange(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all duration-200"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Bijv. schoonmaak, wasstraat, orderpicker..."
                     required
                   />
                 </div>
               ) : (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600 text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Selecteer eerst een medewerker om werkzaamheden te kunnen
                     kiezen
@@ -711,32 +709,27 @@ export default function ShiftPage() {
             </div>
           </div>
 
-          {/* Werkpatronen Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-                    <CalendarDaysIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {/* Work Patterns */}
+          {getWorkPatternsForDate().length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                    <CalendarDaysIcon className="h-5 w-5 mr-2 text-gray-400" />
                     Werkpatronen voor deze dag
-                  </h3>
+                  </h2>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowQuickAssign(true)}
+                    leftIcon={<PlusIcon className="h-4 w-4" />}
+                  >
+                    Werkpatroon instellen
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowQuickAssign(true)}
-                  leftIcon={<PlusIcon className="h-4 w-4" />}
-                  className="font-semibold"
-                >
-                  Werkpatroon instellen
-                </Button>
               </div>
-            </div>
-            <div className="p-6">
-              {getWorkPatternsForDate().length > 0 ? (
+              <div className="px-6 py-6">
                 <div className="space-y-3">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     Medewerkers met vaste werkpatronen voor{" "}
@@ -750,11 +743,11 @@ export default function ShiftPage() {
                   {getWorkPatternsForDate().map((assignment) => (
                     <div
                       key={assignment.id}
-                      className="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-700 hover:shadow-md transition-all duration-200"
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center shadow-sm">
-                          <UserIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                        <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                          <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">
@@ -776,7 +769,7 @@ export default function ShiftPage() {
                       </div>
                       <Button
                         type="button"
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           setShiftData((prev) => ({
@@ -798,54 +791,28 @@ export default function ShiftPage() {
                             assignment.template.shifts[0]?.role || ""
                           );
                         }}
-                        className="font-semibold"
                       >
                         Gebruik patroon
                       </Button>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="h-16 w-16 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <CalendarDaysIcon className="h-8 w-8 text-indigo-500 dark:text-indigo-400" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Geen vaste werkpatronen
-                  </h4>
-                  <p className="text-gray-500 dark:text-gray-400 mb-2">
-                    Geen vaste werkpatronen voor{" "}
-                    {
-                      DAYS_OF_WEEK.find(
-                        (d) => d.value === new Date(shiftData.date).getDay()
-                      )?.fullLabel
-                    }
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Klik op "Werkpatroon instellen" om een vaste planning aan te
-                    maken
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tijden Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center shadow-md">
-                  <ClockIcon className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Werktijden
-                </h3>
               </div>
             </div>
-            <div className="p-6">
+          )}
+
+          {/* Time Schedule */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <ClockIcon className="h-5 w-5 mr-2 text-gray-400" />
+                Werktijden
+              </h2>
+            </div>
+            <div className="px-6 py-6">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Start Tijd <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -858,15 +825,15 @@ export default function ShiftPage() {
                           startTime: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all duration-200"
+                      className="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     />
-                    <ClockIcon className="h-5 w-5 text-gray-400 absolute left-4 top-4" />
+                    <ClockIcon className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Eind Tijd <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -876,22 +843,20 @@ export default function ShiftPage() {
                       onChange={(e) =>
                         setShiftData({ ...shiftData, endTime: e.target.value })
                       }
-                      className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base transition-all duration-200"
+                      className="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     />
-                    <ClockIcon className="h-5 w-5 text-gray-400 absolute left-4 top-4" />
+                    <ClockIcon className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
                   </div>
                 </div>
               </div>
 
               {/* Time calculation display */}
               {shiftData.startTime && shiftData.endTime && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700 shadow-sm">
-                        <ClockIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
+                      <ClockIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       <div>
                         <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                           Totale werktijd
@@ -902,7 +867,7 @@ export default function ShiftPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                      <span className="text-xl font-semibold text-blue-900 dark:text-blue-100">
                         {(() => {
                           const start = new Date(
                             `2000-01-01T${shiftData.startTime}:00`
@@ -920,7 +885,7 @@ export default function ShiftPage() {
                             : `${minutes}m`;
                         })()}
                       </span>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
                         Geplande tijd
                       </p>
                     </div>
@@ -930,120 +895,117 @@ export default function ShiftPage() {
             </div>
           </div>
 
-          {/* Pauzes Section */}
-          <Card variant="elevated" className="container-query">
-            <CardHeader>
-              <CardTitle
-                size="lg"
-                className="flex-responsive justify-between text-cyan-700 dark:text-cyan-300"
-              >
-                <div className="flex items-center">
-                  <ClockIcon className="h-5 w-5 mr-3" />
-                  ⏸️ Pauzes
-                </div>
+          {/* Breaks Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                  <ClockIcon className="h-5 w-5 mr-2 text-gray-400" />
+                  Pauzes
+                </h2>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={addBreak}
                   leftIcon={<PlusIcon className="h-4 w-4" />}
-                  className="text-cyan-600 border-cyan-300 hover:bg-cyan-50 dark:text-cyan-400 dark:border-cyan-600 dark:hover:bg-cyan-900/20 w-full sm:w-auto"
                 >
                   Pauze Toevoegen
                 </Button>
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-fluid">
+              </div>
+            </div>
+            <div className="px-6 py-6">
               {breaks.length === 0 ? (
-                <div className="card-adaptive text-center text-gray-500 dark:text-gray-400">
-                  <ClockIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-fluid">Geen pauzes toegevoegd</p>
-                  <p className="text-fluid text-sm">
+                <div className="text-center py-8">
+                  <ClockIcon className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Geen pauzes toegevoegd
+                  </p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                     Klik op "Pauze Toevoegen" om te beginnen
                   </p>
                 </div>
               ) : (
-                <div className="auto-fit-grid">
+                <div className="space-y-4">
                   {breaks.map((breakItem, index) => (
                     <div
                       key={index}
-                      className="card-adaptive stack-context border border-gray-200 dark:border-gray-600"
+                      className="p-4 border border-gray-200 dark:border-gray-600 rounded-md"
                     >
-                      <div className="flex-responsive justify-between mb-3">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">
-                            {getBreakTypeEmoji(breakItem.type)}
-                          </span>
-                          <select
-                            value={breakItem.type}
-                            onChange={(e) =>
-                              updateBreak(index, "type", e.target.value)
-                            }
-                            className="text-fluid border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-w-0 flex-1"
-                          >
-                            <option value="lunch">🍽️ Lunch</option>
-                            <option value="break">☕ Pauze</option>
-                            <option value="meeting">🤝 Overleg</option>
-                            <option value="other">📝 Anders</option>
-                          </select>
-                        </div>
+                      <div className="flex items-center justify-between mb-3">
+                        <select
+                          value={breakItem.type}
+                          onChange={(e) =>
+                            updateBreak(index, "type", e.target.value)
+                          }
+                          className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        >
+                          <option value="lunch">Lunch</option>
+                          <option value="break">Pauze</option>
+                          <option value="meeting">Overleg</option>
+                          <option value="other">Anders</option>
+                        </select>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeBreak(index)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </Button>
                       </div>
 
-                      <div className="responsive-grid">
-                        <Input
-                          label="Start Tijd"
-                          type="time"
-                          value={breakItem.startTime}
-                          onChange={(e) =>
-                            updateBreak(index, "startTime", e.target.value)
-                          }
-                          variant="outlined"
-                          inputSize="sm"
-                          className="w-full"
-                        />
-                        <Input
-                          label="Eind Tijd"
-                          type="time"
-                          value={breakItem.endTime}
-                          onChange={(e) =>
-                            updateBreak(index, "endTime", e.target.value)
-                          }
-                          variant="outlined"
-                          inputSize="sm"
-                          className="w-full"
-                        />
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Start Tijd
+                          </label>
+                          <input
+                            type="time"
+                            value={breakItem.startTime}
+                            onChange={(e) =>
+                              updateBreak(index, "startTime", e.target.value)
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Eind Tijd
+                          </label>
+                          <input
+                            type="time"
+                            value={breakItem.endTime}
+                            onChange={(e) =>
+                              updateBreak(index, "endTime", e.target.value)
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                          />
+                        </div>
                       </div>
 
                       {breakItem.type === "other" && (
                         <div className="mt-3">
-                          <Input
-                            label="Beschrijving"
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Beschrijving
+                          </label>
+                          <input
+                            type="text"
                             value={breakItem.description || ""}
                             onChange={(e) =>
                               updateBreak(index, "description", e.target.value)
                             }
                             placeholder="Beschrijf de activiteit..."
-                            variant="outlined"
-                            inputSize="sm"
-                            className="w-full"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                           />
                         </div>
                       )}
 
-                      {/* Enhanced break info */}
-                      <div className="enhanced-only mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      {/* Break info */}
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         {breakItem.startTime && breakItem.endTime && (
-                          <div className="text-fluid text-gray-600 dark:text-gray-400">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
                             <span className="font-medium">Duur: </span>
                             {calculateBreakDuration(
                               breakItem.startTime,
@@ -1056,42 +1018,35 @@ export default function ShiftPage() {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Project & Locatie Section */}
-          <Card
-            variant="glass"
-            padding="lg"
-            className="border-orange-200 dark:border-orange-800"
-          >
-            <CardHeader>
-              <CardTitle
-                size="lg"
-                className="flex items-center text-orange-700 dark:text-orange-300"
-              >
-                <BuildingOfficeIcon className="h-5 w-5 mr-3" />
-                🏢 {isProjectBasedWork() ? "Project Details" : "Werklocatie"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Project & Location Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <BuildingOfficeIcon className="h-5 w-5 mr-2 text-gray-400" />
+                {isProjectBasedWork() ? "Project Details" : "Werklocatie"}
+              </h2>
+            </div>
+            <div className="px-6 py-6">
               {isProjectBasedWork() ? (
-                <div className="space-y-6">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="space-y-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md border border-blue-200 dark:border-blue-700">
                     <div className="flex items-center mb-2">
                       <BriefcaseIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
                       <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
                         Project-gebaseerd werk gedetecteerd
                       </span>
                     </div>
-                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
                       Voor "{workType}" is een specifiek project vereist
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                      Project *
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Project <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={shiftData.projectId}
@@ -1101,7 +1056,7 @@ export default function ShiftPage() {
                           projectId: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     >
                       <option value="">Selecteer project</option>
@@ -1111,70 +1066,61 @@ export default function ShiftPage() {
                         </option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                       Kies het specifieke project voor deze werkzaamheden
                     </p>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700 mb-4">
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-md border border-green-200 dark:border-green-700 mb-4">
                     <div className="flex items-center mb-2">
                       <BuildingOfficeIcon className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
                       <span className="text-sm font-medium text-green-800 dark:text-green-200">
                         Vaste locatie werk
                       </span>
                     </div>
-                    <p className="text-xs text-green-700 dark:text-green-300">
+                    <p className="text-sm text-green-700 dark:text-green-300">
                       Voor "{workType}" wordt gewerkt op een vaste locatie
                     </p>
                   </div>
 
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    Werklocatie *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Werklocatie <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={shiftData.location}
                     onChange={(e) =>
                       setShiftData({ ...shiftData, location: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
-                    <option value="Broers Verhuur">🏢 Broers Verhuur</option>
+                    <option value="Broers Verhuur">Broers Verhuur</option>
                     <option value="DCRT Event Decorations">
-                      🎨 DCRT Event Decorations
+                      DCRT Event Decorations
                     </option>
-                    <option value="DCRT in Building">
-                      🏗️ DCRT in Building
-                    </option>
+                    <option value="DCRT in Building">DCRT in Building</option>
                   </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Standaard werklocatie voor deze werkzaamheden
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Notities Section */}
-          <Card
-            variant="glass"
-            padding="lg"
-            className="border-pink-200 dark:border-pink-800"
-          >
-            <CardHeader>
-              <CardTitle
-                size="lg"
-                className="flex items-center text-pink-700 dark:text-pink-300"
-              >
-                <DocumentTextIcon className="h-5 w-5 mr-3" />
-                📝 Aanvullende Informatie
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Additional Information Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <DocumentTextIcon className="h-5 w-5 mr-2 text-gray-400" />
+                Aanvullende Informatie
+              </h2>
+            </div>
+            <div className="px-6 py-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Notities (optioneel)
                 </label>
                 <textarea
@@ -1183,44 +1129,36 @@ export default function ShiftPage() {
                     setShiftData({ ...shiftData, notes: e.target.value })
                   }
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="Eventuele aanvullende informatie of instructies..."
                 />
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Voeg eventuele instructies of opmerkingen toe voor deze dienst
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Action Buttons */}
-          <Card variant="default" padding="lg">
-            <div className="button-group keyline-spacing">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={() => router.back()}
-                elevation="soft"
-                rounded="lg"
-                className="touch-target-lg component-padding-md"
-              >
-                ❌ Annuleren
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                loading={loading}
-                disabled={loading}
-                elevation="medium"
-                rounded="lg"
-                className="touch-target-lg component-padding-md"
-              >
-                {isEditing ? "✅ Dienst Bijwerken" : "➕ Dienst Toevoegen"}
-              </Button>
-            </div>
-          </Card>
+          <div className="flex justify-end space-x-4 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={() => router.back()}
+            >
+              Annuleren
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              disabled={loading}
+            >
+              {isEditing ? "Dienst Bijwerken" : "Dienst Toevoegen"}
+            </Button>
+          </div>
         </form>
 
         {/* Quick Assign Work Pattern Modal */}

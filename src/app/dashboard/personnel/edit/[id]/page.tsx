@@ -71,6 +71,12 @@ interface Employee {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   workTypes?: string[];
+  // Contract fields
+  contractType?: string;
+  contractStartDate?: Date | null;
+  contractEndDate?: Date | null;
+  contractStatus?: string;
+  contractVersion?: number;
 }
 
 interface WorkType {
@@ -2052,42 +2058,231 @@ export default function EditEmployeeTabs() {
                     <CurrencyEuroIcon className="h-5 w-5 mr-2 text-gray-500" />
                     Financiële Gegevens
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        IBAN Nummer
-                      </label>
-                      <Input
-                        type="text"
-                        value={employee.iban || ""}
-                        onChange={(e) =>
-                          setEmployee({ ...employee, iban: e.target.value })
-                        }
-                        placeholder="NL91ABNA0417164300"
-                      />
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        KvK Nummer
-                      </label>
-                      <Input
-                        type="text"
-                        value={employee.kvkNumber || ""}
-                        onChange={(e) =>
-                          setEmployee({
-                            ...employee,
-                            kvkNumber: e.target.value,
-                          })
-                        }
-                        placeholder="12345678"
-                      />
+                  {/* Salary Section - Dynamic based on employee type */}
+                  <div className="mb-6">
+                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      Salaris & Vergoeding
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {employee.employeeType === "FREELANCER" ? (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Uurtarief (excl. BTW)
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <CurrencyEuroIcon className="h-5 w-5 text-gray-400" />
+                              </div>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={employee.hourlyRate || ""}
+                                onChange={(e) =>
+                                  setEmployee({
+                                    ...employee,
+                                    hourlyRate: e.target.value,
+                                  })
+                                }
+                                placeholder="25.00"
+                                className="pl-10"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Uurtarief exclusief BTW voor freelance werk
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              BTW Nummer
+                            </label>
+                            <Input
+                              type="text"
+                              value={employee.btwNumber || ""}
+                              onChange={(e) =>
+                                setEmployee({
+                                  ...employee,
+                                  btwNumber: e.target.value,
+                                })
+                              }
+                              placeholder="NL123456789B01"
+                            />
+                          </div>
+                        </>
+                      ) : employee.employeeType === "FLEX_WORKER" ? (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Bruto Uurloon
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <CurrencyEuroIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={employee.hourlyWage || ""}
+                              onChange={(e) =>
+                                setEmployee({
+                                  ...employee,
+                                  hourlyWage: e.target.value,
+                                })
+                              }
+                              placeholder="15.50"
+                              className="pl-10"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Bruto uurloon voor oproepkrachten
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Bruto Maandsalaris
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <CurrencyEuroIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={employee.monthlySalary || ""}
+                              onChange={(e) =>
+                                setEmployee({
+                                  ...employee,
+                                  monthlySalary: e.target.value,
+                                })
+                              }
+                              placeholder="3500.00"
+                              className="pl-10"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Bruto maandsalaris voor vaste medewerkers
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Cost calculation display */}
+                      {employee.employeeType === "FREELANCER" &&
+                        employee.hourlyRate && (
+                          <div className="md:col-span-2">
+                            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                              <h6 className="text-sm font-medium text-green-900 dark:text-green-100 mb-2">
+                                💡 Kostenberekening per dag (8 uur)
+                              </h6>
+                              <p className="text-sm text-green-800 dark:text-green-200">
+                                €
+                                {(parseFloat(employee.hourlyRate) * 8).toFixed(
+                                  2
+                                )}{" "}
+                                per dag (excl. BTW)
+                              </p>
+                              <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                                BTW (21%) komt hier nog bovenop: €
+                                {(
+                                  parseFloat(employee.hourlyRate) *
+                                  8 *
+                                  1.21
+                                ).toFixed(2)}{" "}
+                                incl. BTW
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                      {employee.employeeType === "FLEX_WORKER" &&
+                        employee.hourlyWage && (
+                          <div className="md:col-span-2">
+                            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
+                              <h6 className="text-sm font-medium text-orange-900 dark:text-orange-100 mb-2">
+                                💡 Kostenberekening per dag (8 uur)
+                              </h6>
+                              <p className="text-sm text-orange-800 dark:text-orange-200">
+                                €
+                                {(parseFloat(employee.hourlyWage) * 8).toFixed(
+                                  2
+                                )}{" "}
+                                per dag (bruto loon)
+                              </p>
+                              <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                Werkgeverslasten (ca. 25-30%) komen hier nog
+                                bovenop
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                      {employee.employeeType === "PERMANENT" &&
+                        employee.monthlySalary && (
+                          <div className="md:col-span-2">
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                              <h6 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                                💡 Kostenberekening per dag (o.b.v. 22
+                                werkdagen)
+                              </h6>
+                              <p className="text-sm text-blue-800 dark:text-blue-200">
+                                €
+                                {(
+                                  parseFloat(employee.monthlySalary) / 22
+                                ).toFixed(2)}{" "}
+                                per dag (alleen loon, excl. werkgeverslasten)
+                              </p>
+                              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                Werkgeverslasten (ca. 25-30%) komen hier nog
+                                bovenop
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Banking Information */}
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      Bankinformatie
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          IBAN Nummer
+                        </label>
+                        <Input
+                          type="text"
+                          value={employee.iban || ""}
+                          onChange={(e) =>
+                            setEmployee({ ...employee, iban: e.target.value })
+                          }
+                          placeholder="NL91ABNA0417164300"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          KvK Nummer
+                        </label>
+                        <Input
+                          type="text"
+                          value={employee.kvkNumber || ""}
+                          onChange={(e) =>
+                            setEmployee({
+                              ...employee,
+                              kvkNumber: e.target.value,
+                            })
+                          }
+                          placeholder="12345678"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Contract Management Section - keeping existing contract functionality */}
-                <div>
+                {/* Contract Management Section */}
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
                       <DocumentTextIcon className="h-5 w-5 mr-2 text-gray-500" />
@@ -2103,22 +2298,295 @@ export default function EditEmployeeTabs() {
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                       size="sm"
                     >
-                      📄 Nieuw Contract
+                      <DocumentTextIcon className="h-4 w-4 mr-2" />
+                      Nieuw Contract
                     </Button>
                   </div>
 
-                  {/* Existing contracts display */}
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                      💡 <strong>Contractbeheer:</strong> Klik op "Nieuw
-                      Contract" om contracten aan te maken en te beheren voor
-                      deze medewerker.
-                    </p>
-                    <div className="text-sm text-gray-500 dark:text-gray-500">
-                      Contractoverzicht en -beheer wordt geopend in een nieuw
-                      tabblad.
+                  {/* Only show detailed contract info for permanent employees */}
+                  {employee.employeeType === "PERMANENT" ? (
+                    <div className="space-y-6">
+                      {/* Contract Basics */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Contract Startdatum
+                          </label>
+                          <input
+                            type="date"
+                            value={
+                              employee.contractStartDate
+                                ? employee.contractStartDate
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                            }
+                            onChange={(e) =>
+                              setEmployee({
+                                ...employee,
+                                contractStartDate: e.target.value
+                                  ? new Date(e.target.value)
+                                  : null,
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Contract Type
+                          </label>
+                          <select
+                            value={
+                              employee.contractType || "PERMANENT_FULL_TIME"
+                            }
+                            onChange={(e) =>
+                              setEmployee({
+                                ...employee,
+                                contractType: e.target.value,
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            <option value="PERMANENT_FULL_TIME">
+                              Vast contract voltijd
+                            </option>
+                            <option value="PERMANENT_PART_TIME">
+                              Vast contract deeltijd
+                            </option>
+                            <option value="TEMPORARY_FULL_TIME">
+                              Tijdelijk contract voltijd
+                            </option>
+                            <option value="TEMPORARY_PART_TIME">
+                              Tijdelijk contract deeltijd
+                            </option>
+                            <option value="PROBATION">
+                              Proeftijd contract
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Contract Duration */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Contract Einddatum
+                          </label>
+                          <input
+                            type="date"
+                            value={
+                              employee.contractEndDate
+                                ? employee.contractEndDate
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                            }
+                            onChange={(e) =>
+                              setEmployee({
+                                ...employee,
+                                contractEndDate: e.target.value
+                                  ? new Date(e.target.value)
+                                  : null,
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Laat leeg voor onbepaalde tijd
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Contract Status
+                          </label>
+                          <select
+                            value={employee.contractStatus || "ACTIVE"}
+                            onChange={(e) =>
+                              setEmployee({
+                                ...employee,
+                                contractStatus: e.target.value,
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            <option value="DRAFT">Concept</option>
+                            <option value="PENDING_SIGNATURE">
+                              Wacht op ondertekening
+                            </option>
+                            <option value="ACTIVE">Actief</option>
+                            <option value="EXPIRED">Verlopen</option>
+                            <option value="TERMINATED">Beëindigd</option>
+                            <option value="SUSPENDED">Opgeschort</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Contract Series Information */}
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                        <h5 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-3 flex items-center">
+                          <ClockIcon className="h-4 w-4 mr-2" />
+                          Contract Geschiedenis
+                        </h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs text-blue-800 dark:text-blue-200 mb-1">
+                              Contract Volgnummer
+                            </label>
+                            <select
+                              value={employee.contractVersion || 1}
+                              onChange={(e) =>
+                                setEmployee({
+                                  ...employee,
+                                  contractVersion: parseInt(e.target.value),
+                                })
+                              }
+                              className="w-full px-2 py-1 text-sm border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-blue-900/30 text-blue-900 dark:text-blue-100"
+                            >
+                              <option value={1}>Eerste contract</option>
+                              <option value={2}>Tweede contract</option>
+                              <option value={3}>Derde contract</option>
+                              <option value={4}>Vierde contract</option>
+                              <option value={5}>Vijfde contract+</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-blue-800 dark:text-blue-200 mb-1">
+                              Duur Type
+                            </label>
+                            <div className="text-sm text-blue-900 dark:text-blue-100">
+                              {employee.contractEndDate ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
+                                  Bepaalde tijd
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                  Onbepaalde tijd
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contract Expiration Warning */}
+                      {employee.contractEndDate &&
+                        (() => {
+                          const endDate = new Date(employee.contractEndDate);
+                          const today = new Date();
+                          const daysUntilExpiry = Math.ceil(
+                            (endDate.getTime() - today.getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          );
+
+                          if (daysUntilExpiry <= 60 && daysUntilExpiry > 0) {
+                            return (
+                              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                                <div className="flex items-center mb-2">
+                                  <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
+                                  <span className="text-sm font-medium text-red-800 dark:text-red-200">
+                                    Contract Verloopt Binnenkort
+                                  </span>
+                                </div>
+                                <p className="text-sm text-red-700 dark:text-red-300">
+                                  Dit contract verloopt over {daysUntilExpiry}{" "}
+                                  dagen op{" "}
+                                  {endDate.toLocaleDateString("nl-NL", {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                  })}
+                                  . Actie vereist voor verlenging.
+                                </p>
+                              </div>
+                            );
+                          } else if (daysUntilExpiry <= 0) {
+                            return (
+                              <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-600 rounded-lg p-4">
+                                <div className="flex items-center mb-2">
+                                  <ExclamationTriangleIcon className="h-5 w-5 text-red-700 dark:text-red-300 mr-2" />
+                                  <span className="text-sm font-medium text-red-900 dark:text-red-100">
+                                    Contract Verlopen
+                                  </span>
+                                </div>
+                                <p className="text-sm text-red-800 dark:text-red-200">
+                                  Dit contract is verlopen op{" "}
+                                  {endDate.toLocaleDateString("nl-NL", {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                  })}
+                                  . Update de status of maak een nieuw contract.
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                      {/* Contract Actions */}
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                          Contract Acties
+                        </h5>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setShowPersonnelContractManagement(true)
+                            }
+                            className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-blue-900/20"
+                          >
+                            <DocumentTextIcon className="h-4 w-4 mr-2" />
+                            Beheer Contracten
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // TODO: Open contract renewal flow
+                              console.log("Open contract renewal");
+                            }}
+                            className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
+                          >
+                            <ClockIcon className="h-4 w-4 mr-2" />
+                            Verlengen
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 mr-2" />
+                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                          Contract Management
+                        </span>
+                      </div>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                        Uitgebreide contractinformatie is alleen beschikbaar
+                        voor vaste medewerkers.
+                        {employee.employeeType === "FLEX_WORKER" &&
+                          " Oproepkrachten hebben geen vast contract."}
+                        {employee.employeeType === "FREELANCER" &&
+                          " Freelancers gebruiken project-specifieke overeenkomsten."}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPersonnelContractManagement(true)}
+                        className="text-amber-700 border-amber-300 hover:bg-amber-100 dark:text-amber-300 dark:border-amber-600 dark:hover:bg-amber-900/20"
+                      >
+                        <DocumentTextIcon className="h-4 w-4 mr-2" />
+                        Contract Management
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
