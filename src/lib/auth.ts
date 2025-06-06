@@ -34,11 +34,14 @@ export const authOptions: NextAuthOptions = {
                     }
 
                     // Check if user account is approved
+                    // TODO: Re-enable after database migration
+                    /*
                     if (user.accountStatus !== 'APPROVED') {
                         console.log('User account not approved:', user.accountStatus);
                         // Return a specific error for account status
                         throw new Error('ACCOUNT_NOT_APPROVED');
                     }
+                    */
 
                     const isPasswordValid = await compare(credentials.password, user.password);
                     console.log('Password valid:', isPasswordValid);

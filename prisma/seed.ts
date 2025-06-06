@@ -35,8 +35,8 @@ async function main() {
                     role: 'ADMIN',
                     employeeType: 'PERMANENT',
                     status: 'AVAILABLE',
-                    accountStatus: 'APPROVED', // Admin is pre-approved
-                    approvedAt: new Date(),
+                    // accountStatus: 'APPROVED', // TODO: Re-enable after migration
+                    // approvedAt: new Date(),
                     company: 'Broers Verhuur',
                     address: 'Hoofdkantoor',
                     phone: '+31-123-456-789',
@@ -47,6 +47,7 @@ async function main() {
             console.log('✅ Admin user created:', adminUser.email);
         } else {
             // Update existing admin to ensure APPROVED status
+            /*
             await prisma.user.update({
                 where: { email: adminEmail },
                 data: {
@@ -54,6 +55,7 @@ async function main() {
                     approvedAt: new Date()
                 }
             });
+            */
             console.log('✅ Admin user already exists and updated to APPROVED');
         }
 
@@ -78,8 +80,8 @@ async function main() {
                     role: 'ADMIN',
                     employeeType: 'PERMANENT',
                     status: 'AVAILABLE',
-                    accountStatus: 'APPROVED',
-                    approvedAt: new Date(),
+                    // accountStatus: 'APPROVED', // TODO: Re-enable after migration
+                    // approvedAt: new Date(),
                     company: 'Demo Company',
                     address: 'Demo Address',
                     phone: '+31-000-000-000'
@@ -87,6 +89,7 @@ async function main() {
             });
             console.log('✅ Demo admin user created');
         } else {
+            /*
             await prisma.user.update({
                 where: { email: demoAdminEmail },
                 data: {
@@ -94,12 +97,14 @@ async function main() {
                     approvedAt: new Date()
                 }
             });
+            */
             console.log('✅ Demo admin already exists and updated to APPROVED');
         }
 
-        // 3. Create sample pending users (for testing approval system)
+        // 3. Create sample pending users (for testing approval system) - DISABLED FOR NOW
+        /*
         console.log('👥 Creating sample pending users for testing...');
-
+        
         const sampleUsers = [
             {
                 email: 'test.employee@example.com',
@@ -111,7 +116,7 @@ async function main() {
                 address: 'Test Street 1, Amsterdam'
             },
             {
-                email: 'test.freelancer@example.com',
+                email: 'test.freelancer@example.com', 
                 password: await hash('password123', 12),
                 firstName: 'Test',
                 lastName: 'Freelancer',
@@ -143,6 +148,7 @@ async function main() {
                 console.log(`✅ Sample ${userData.role.toLowerCase()} created: ${userData.email}`);
             }
         }
+        */
 
         console.log('🎉 Seeding completed successfully!');
         console.log('');

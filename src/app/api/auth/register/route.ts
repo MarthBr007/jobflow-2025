@@ -68,7 +68,7 @@ export async function POST(request: Request) {
                 password: hashedPassword,
                 role: role || 'FREELANCER',
                 status: 'AVAILABLE',
-                accountStatus: 'PENDING', // Requires admin approval
+                // accountStatus: 'PENDING', // TODO: Re-enable after database migration
                 address,
                 phone,
                 availableDays: role === 'EMPLOYEE' ? availableDays : null,
