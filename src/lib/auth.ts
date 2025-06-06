@@ -33,6 +33,13 @@ export const authOptions: NextAuthOptions = {
                         return null;
                     }
 
+                    // Check if user account is approved
+                    if (user.accountStatus !== 'APPROVED') {
+                        console.log('User account not approved:', user.accountStatus);
+                        // Return a specific error for account status
+                        throw new Error('ACCOUNT_NOT_APPROVED');
+                    }
+
                     const isPasswordValid = await compare(credentials.password, user.password);
                     console.log('Password valid:', isPasswordValid);
 

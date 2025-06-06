@@ -21,6 +21,9 @@ model User {
   company                String?
   phone                  String?
   status                 UserStatus               @default(AVAILABLE)
+  accountStatus          AccountStatus            @default(PENDING)
+  approvedBy             String?
+  approvedAt             DateTime?
   archived               Boolean                  @default(false)
   archivedAt             DateTime?
   lastClockIn            DateTime?
@@ -103,6 +106,8 @@ model User {
   @@index([contractStatus])
   @@index([employeeType])
   @@index([status])
+  @@index([accountStatus])
+  @@index([approvedBy])
   @@index([hasContract])
   @@index([lastLoginAt])
   @@index([createdAt])
@@ -111,6 +116,7 @@ model User {
   @@index([archived, company])
   @@index([role, employeeType])
   @@index([contractStartDate, contractEndDate])
+  @@index([accountStatus, createdAt])
 }
 
 model UserWorkType {
@@ -830,6 +836,13 @@ enum UserStatus {
   AVAILABLE
   WORKING
   UNAVAILABLE
+}
+
+enum AccountStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
 enum AvailabilityStatus {

@@ -71,7 +71,12 @@ export default function Register() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Registratie succesvol! Je kunt nu inloggen.");
+        alert(
+          `Registratie succesvol! ${
+            data.message ||
+            "Je account wacht op goedkeuring van een administrator."
+          }`
+        );
         router.push("/");
       } else {
         alert(data.error || "Er is een fout opgetreden");

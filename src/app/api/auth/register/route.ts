@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         // Hash password
         const hashedPassword = await hash(password, 12);
 
-        // Create user
+        // Create user with PENDING status for admin approval
         const user = await prisma.user.create({
             data: {
                 firstName,
@@ -68,6 +68,7 @@ export async function POST(request: Request) {
                 password: hashedPassword,
                 role: role || 'FREELANCER',
                 status: 'AVAILABLE',
+                accountStatus: 'PENDING', // Requires admin approval
                 address,
                 phone,
                 availableDays: role === 'EMPLOYEE' ? availableDays : null,
@@ -80,7 +81,10 @@ export async function POST(request: Request) {
         // Remove password from response
         const { password: _, ...userWithoutPassword } = user;
 
-        return NextResponse.json(userWithoutPassword);
+        return NextResponse.json({
+            ...userWithoutPassword,
+            message: 'Registratie succesvol! Je account wacht op goedkeuring van een administrator. Je ontvangt een e-mail wanneer je account is goedgekeurd.'
+        });
     } catch (error) {
         console.error('Error registering user:', error);
         return NextResponse.json(
