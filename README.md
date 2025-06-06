@@ -68,3 +68,9 @@ npm run dev
 ---
 
 **CrewFlow** - De toekomst van personeelsbeheer 🌟 
+
+<!-- Build test comment added -->
+
+## Overzicht
+
+CrewFlow is een moderne, gebruiksvriendelijke applicatie voor werknemerbeheer en projectplanning. Ontworpen voor Nederlandse bedrijven die hun HR-processen willen stroomlijnen en digitaliseren. 
