@@ -10,10 +10,10 @@ import { nl } from "date-fns/locale";
 function calculateHours(startTime: string, endTime: string, breakMinutes: number = 0): number {
   const [startHour, startMin] = startTime.split(':').map(Number);
   const [endHour, endMin] = endTime.split(':').map(Number);
-  
+
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
-  
+
   const totalMinutes = endMinutes - startMinutes - breakMinutes;
   return Math.max(0, totalMinutes / 60);
 }
@@ -21,10 +21,17 @@ function calculateHours(startTime: string, endTime: string, breakMinutes: number
 // Get planned hours for a specific day based on work pattern
 function getPlannedHoursForDay(dayOfWeek: number, workPattern: any): number {
   if (!workPattern?.workDays) return 0;
-  
-  const workDay = workPattern.workDays.find((day: any) => day.dayOfWeek === dayOfWeek);
+
+  // workDays is JSON data, parse it if it's a string
+  const workDays = typeof workPattern.workDays === 'string'
+    ? JSON.parse(workPattern.workDays)
+    : workPattern.workDays;
+
+  if (!Array.isArray(workDays)) return 0;
+
+  const workDay = workDays.find((day: any) => day.dayOfWeek === dayOfWeek);
   if (!workDay || !workDay.isWorkingDay) return 0;
-  
+
   return calculateHours(
     workDay.startTime || "09:00",
     workDay.endTime || "17:00",
@@ -50,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const weekParam = searchParams.get('week') || format(new Date(), 'yyyy-\'W\'ww');
-    
+
     // Parse week parameter (format: 2024-W01)
     const [year, weekNumber] = weekParam.split('-W');
     const weekStart = startOfWeek(new Date(parseInt(year), 0, 1 + (parseInt(weekNumber) - 1) * 7), { weekStartsOn: 1 });
@@ -74,11 +81,7 @@ export async function GET(request: NextRequest) {
             ]
           },
           include: {
-            pattern: {
-              include: {
-                workDays: true
-              }
-            }
+            pattern: true
           },
           orderBy: {
             startDate: 'desc'
@@ -105,7 +108,7 @@ export async function GET(request: NextRequest) {
     for (const employee of employees) {
       // Skip if no work pattern assigned (for permanent employees this indicates setup issue)
       const currentPattern = employee.workPatternAssignments[0]?.pattern;
-      
+
       if (employee.employeeType === 'PERMANENT' && !currentPattern) {
         // Create entry indicating missing work pattern
         hoursEntries.push({
@@ -155,7 +158,7 @@ export async function GET(request: NextRequest) {
         const currentDay = addDays(weekStart, i);
         const dayOfWeek = getDay(currentDay);
         const dateStr = format(currentDay, 'yyyy-MM-dd');
-        
+
         const dayEntries = entriesByDay.get(dateStr) || [];
         let dayActualHours = 0;
         let dayStartTime = '';
@@ -182,8 +185,8 @@ export async function GET(request: NextRequest) {
         actualHours += dayActualHours;
 
         // Get planned hours for this day
-        const dayPlannedHours = employee.employeeType === 'PERMANENT' 
-          ? getPlannedHoursForDay(dayOfWeek, currentPattern) 
+        const dayPlannedHours = employee.employeeType === 'PERMANENT'
+          ? getPlannedHoursForDay(dayOfWeek, currentPattern)
           : 0; // Flex workers don't have fixed daily patterns
 
         const dayDiscrepancy = dayActualHours - dayPlannedHours;
@@ -239,7 +242,9 @@ export async function GET(request: NextRequest) {
           name: currentPattern.name,
           description: currentPattern.description,
           totalHoursPerWeek: currentPattern.totalHoursPerWeek,
-          workDays: currentPattern.workDays
+          workDays: typeof currentPattern.workDays === 'string'
+            ? JSON.parse(currentPattern.workDays)
+            : currentPattern.workDays
         } : null,
         status
       });
@@ -290,9 +295,9 @@ export async function PUT(request: NextRequest) {
     // Get the user's time entries for this approval
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { 
-        id: true, 
-        name: true, 
+      select: {
+        id: true,
+        name: true,
         company: true,
         employeeType: true
       }
@@ -353,7 +358,7 @@ export async function PUT(request: NextRequest) {
     } else {
       // If rejected, we might want to add notes or handle differently
       // For now, just mark as rejected (you could add a rejected status to time entries)
-      
+
       return NextResponse.json({
         success: true,
         message: `Uren afgewezen voor ${user.name}`,
