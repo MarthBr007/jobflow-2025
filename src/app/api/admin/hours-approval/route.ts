@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
             hoursWorked: dayActualHours,
             plannedDayHours: dayPlannedHours,
             dayDiscrepancy: dayDiscrepancy,
-            approved: dayEntries.length > 0 ? dayEntries.every(e => e.approved) : false
+            approved: dayEntries.length > 0 ? dayEntries.every((e: any) => e.approved) : false
           });
         }
       }
